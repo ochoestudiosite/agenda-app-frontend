@@ -8,7 +8,7 @@ export default function Home() {
       {/* ── Hero ──────────────────────────────────────────────────────────────── */}
       <section className="pt-16 pb-20 sm:pt-24 sm:pb-28 animate-fade-up">
         <p className="label-section mb-5">Barbería Premium · Ciudad de México</p>
-        <h1 className="font-display text-[2.75rem] sm:text-6xl font-semibold leading-[1.08] tracking-tightest text-ink mb-6">
+        <h1 className="font-display text-[2.75rem] sm:text-6xl font-bold leading-[1.06] tracking-tightest text-ink mb-6">
           La experiencia<br />
           del <em className="not-italic text-gold">barbero perfecto.</em>
         </h1>
@@ -57,7 +57,7 @@ export default function Home() {
           </div>
           <div className="relative">
             <p className="label-section text-stone-500 dark:text-ink-3 mb-3">Próxima cita</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-semibold text-stone-50 dark:text-ink mb-3 tracking-tightest">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-stone-50 dark:text-ink mb-3 tracking-tightest">
               ¿Listo para tu look?
             </h2>
             <p className="text-stone-400 dark:text-ink-2 mb-8 max-w-sm mx-auto text-[0.9375rem] leading-relaxed">

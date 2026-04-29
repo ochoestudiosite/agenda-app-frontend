@@ -21,8 +21,10 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
-        sans:    ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        // Plus Jakarta Sans — geometric humanist sans-serif, very Apple/SF Pro-like
+        display: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        // System stack: SF Pro on Apple devices, Inter on everything else
+        sans:    ['-apple-system', 'BlinkMacSystemFont', '"Inter"', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '1rem' }],
@@ -30,7 +32,7 @@ export default {
       letterSpacing: {
         tightest: '-0.03em',
         tighter:  '-0.02em',
-        tight:    '-0.01em',
+        tight:    '-0.015em',
         widest2:  '0.15em',
         widest3:  '0.2em',
       },
@@ -40,7 +42,7 @@ export default {
         '4xl': '32px',
       },
       boxShadow: {
-        // Apple-style layered shadows
+        // Apple-style layered shadows — very subtle in light, absent in dark
         'xs':    '0 1px 2px 0 rgb(0 0 0 / 0.04)',
         'card':  '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 4px 16px 0 rgb(0 0 0 / 0.05)',
         'float': '0 2px 8px 0 rgb(0 0 0 / 0.06), 0 12px 40px 0 rgb(0 0 0 / 0.08)',
@@ -54,14 +56,14 @@ export default {
         'shimmer':    'shimmer 1.6s infinite',
       },
       keyframes: {
-        fadeIn:    { from: { opacity: 0 },                                       to: { opacity: 1 } },
-        fadeUp:    { from: { opacity: 0, transform: 'translateY(16px)' },         to: { opacity: 1, transform: 'translateY(0)' } },
-        fadeUpSm:  { from: { opacity: 0, transform: 'translateY(8px)' },          to: { opacity: 1, transform: 'translateY(0)' } },
-        scaleIn:   { from: { opacity: 0, transform: 'scale(0.94)' },             to: { opacity: 1, transform: 'scale(1)' } },
-        shimmer:   { from: { backgroundPosition: '-200% 0' },                    to: { backgroundPosition: '200% 0' } },
+        fadeIn:    { from: { opacity: 0 },                                to: { opacity: 1 } },
+        fadeUp:    { from: { opacity: 0, transform: 'translateY(16px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+        fadeUpSm:  { from: { opacity: 0, transform: 'translateY(8px)' },  to: { opacity: 1, transform: 'translateY(0)' } },
+        scaleIn:   { from: { opacity: 0, transform: 'scale(0.94)' },      to: { opacity: 1, transform: 'scale(1)' } },
+        shimmer:   { from: { backgroundPosition: '-200% 0' },             to: { backgroundPosition: '200% 0' } },
       },
       transitionTimingFunction: {
-        'spring': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        'spring':    'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
         'bounce-sm': 'cubic-bezier(0.34, 1.3, 0.64, 1)',
       },
       transitionDuration: {

@@ -4,35 +4,35 @@
 
 /* ── Token system — RGB channels (no wrapper) for opacity modifier support ── */
 :root {
-  /* Warm stone palette — Premium neutral light */
-  --surface:      250 250 249;   /* stone-50  */
-  --card:         255 255 255;   /* white     */
-  --raised:       245 245 244;   /* stone-100 */
-  --edge:         231 229 228;   /* stone-200 */
-  --edge-strong:  168 162 158;   /* stone-400 */
-  --ink:           28  25  23;   /* stone-900 */
-  --ink-2:         87  83  78;   /* stone-600 */
-  --ink-3:        168 162 158;   /* stone-400 */
-  --gold:         146 104  10;   /* amber-700 — 5:1 on white ✓ */
-  --gold-light:   180 137  38;   /* hover     */
-  --gold-muted:   253 240 214;   /* amber-50  */
-  --on-gold:      255 255 255;
+  /* Apple Human Interface Guidelines — Light mode system colors */
+  --surface:       242 242 247;   /* systemGroupedBackground  #F2F2F7 */
+  --card:          255 255 255;   /* systemBackground         #FFFFFF */
+  --raised:        229 229 234;   /* systemGray5              #E5E5EA */
+  --edge:          209 209 214;   /* systemGray4              #D1D1D6 */
+  --edge-strong:   174 174 178;   /* systemGray2              #AEAEB2 */
+  --ink:            29  29  31;   /* label                    #1D1D1F */
+  --ink-2:          99  99 102;   /* secondaryLabel           #636366 */
+  --ink-3:         174 174 178;   /* tertiaryLabel            #AEAEB2 */
+  --gold:          146 104  10;   /* premium warm gold — AA on white ✓ */
+  --gold-light:    170 126  36;   /* hover                              */
+  --gold-muted:    255 249 232;   /* subtle gold tint                   */
+  --on-gold:       255 255 255;
 }
 
 .dark {
-  /* Deep stone dark — premium near-black */
-  --surface:       12  10   9;   /* stone-950 */
-  --card:          28  25  23;   /* stone-900 */
-  --raised:        41  37  36;   /* stone-800 */
-  --edge:          68  64  60;   /* stone-700 */
-  --edge-strong:  120 113 108;   /* stone-500 */
-  --ink:          250 250 249;   /* stone-50  */
-  --ink-2:        168 162 158;   /* stone-400 */
-  --ink-3:        120 113 108;   /* stone-500 */
-  --gold:         212 180  80;   /* bright amber — 9:1 on stone-950 ✓ */
-  --gold-light:   224 196 104;
-  --gold-muted:    66  48   5;   /* deep amber bg */
-  --on-gold:       28  25  23;
+  /* Apple Human Interface Guidelines — Dark mode (OLED-optimised) */
+  --surface:         0   0   0;   /* pure black OLED          #000000  */
+  --card:           28  28  30;   /* secondarySystemBg dark   #1C1C1E  */
+  --raised:         44  44  46;   /* tertiarySystemBg dark    #2C2C2E  */
+  --edge:           58  58  60;   /* separator dark           #3A3A3C  */
+  --edge-strong:    99  99 102;   /* systemGray dark          #636366  */
+  --ink:           255 255 255;
+  --ink-2:         174 174 178;   /* systemGray2 dark         #AEAEB2  */
+  --ink-3:          99  99 102;   /* systemGray dark          #636366  */
+  --gold:          214 172  72;   /* warm gold on black       #D6AC48  */
+  --gold-light:    228 190  95;   /* hover                              */
+  --gold-muted:     52  38   6;   /* deep gold bg                       */
+  --on-gold:        28  28  30;   /* dark text on bright gold           */
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────────── */
@@ -45,7 +45,8 @@
   }
 
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* SF Pro on Apple devices; Inter everywhere else */
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'ss01', 'cv05';
@@ -54,19 +55,18 @@
   * { box-sizing: border-box; }
 
   :focus-visible {
-    outline: 2px solid rgb(var(--gold) / 0.7);
+    outline: 2px solid rgb(var(--gold) / 0.65);
     outline-offset: 2px;
     border-radius: 6px;
   }
 
-  /* Smooth theme transition */
+  /* Smooth theme transition — only color props, never transforms */
   *, *::before, *::after {
     transition-property: background-color, border-color, color, fill, stroke, box-shadow;
-    transition-duration: 180ms;
+    transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  /* But NOT layout-affecting props — don't break animation */
   button, a, input, select, textarea {
     transition-property: background-color, border-color, color, opacity, box-shadow, transform;
   }
@@ -82,7 +82,7 @@
 /* ── Components ────────────────────────────────────────────────────────────── */
 @layer components {
 
-  /* Card — premium layered shadow */
+  /* Card — Apple-style inset grouped list card */
   .card {
     @apply bg-card border border-edge rounded-2xl;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 4px 16px 0 rgb(0 0 0 / 0.04);
@@ -91,7 +91,7 @@
     box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
   }
 
-  /* Elevated card — for modals / floating panels */
+  /* Elevated card — modals / floating panels */
   .card-float {
     @apply bg-card border border-edge rounded-2xl;
     box-shadow: 0 2px 8px 0 rgb(0 0 0 / 0.06), 0 16px 48px 0 rgb(0 0 0 / 0.10);
@@ -100,7 +100,7 @@
   /* Divider */
   .divider { @apply border-t border-edge; }
 
-  /* Section label — small uppercase tracking */
+  /* Section label */
   .label-section {
     @apply text-2xs font-semibold uppercase tracking-widest3 text-ink-3;
   }
@@ -118,7 +118,7 @@
     animation: shimmer 1.6s infinite;
   }
 
-  /* Status badge */
+  /* Status badges */
   .badge {
     @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border;
   }
