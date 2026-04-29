@@ -1,40 +1,53 @@
 const STEPS = [
   { n: 1, label: 'Servicio' },
-  { n: 2, label: 'Barbero' },
-  { n: 3, label: 'Fecha y Hora' },
-  { n: 4, label: 'Tus Datos' },
+  { n: 2, label: 'Barbero'  },
+  { n: 3, label: 'Horario'  },
+  { n: 4, label: 'Datos'    },
 ];
 
 export default function StepIndicator({ currentStep }) {
+  const progress = ((currentStep - 1) / (STEPS.length - 1)) * 100;
+
   return (
-    <div className="flex items-center justify-center mb-8">
-      {STEPS.map((step, i) => (
-        <div key={step.n} className="flex items-center">
-          <div className="flex flex-col items-center gap-1.5">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200
-                ${currentStep > step.n
-                  ? 'bg-gold text-on-gold'
-                  : currentStep === step.n
-                  ? 'bg-gold/15 border-2 border-gold text-gold'
-                  : 'bg-raised border border-edge text-ink-3'
-                }`}
-            >
-              {currentStep > step.n ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              ) : step.n}
+    <div className="mb-10 animate-fade-in">
+      {/* Progress bar */}
+      <div className="relative h-0.5 bg-edge rounded-full mb-4 overflow-hidden">
+        <div
+          className="absolute inset-y-0 left-0 bg-gold rounded-full transition-all duration-500 ease-spring"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* Step labels */}
+      <div className="flex justify-between">
+        {STEPS.map(step => {
+          const done    = currentStep > step.n;
+          const current = currentStep === step.n;
+          return (
+            <div key={step.n} className="flex flex-col items-center gap-1.5">
+              <div className={[
+                'w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300',
+                done    ? 'bg-gold'
+                : current ? 'bg-gold/15 ring-2 ring-gold ring-offset-2 ring-offset-surface'
+                          : 'bg-raised border border-edge',
+              ].join(' ')}>
+                {done ? (
+                  <svg className="w-3 h-3 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className={`text-[0.6875rem] font-semibold ${current ? 'text-gold' : 'text-ink-3'}`}>
+                    {step.n}
+                  </span>
+                )}
+              </div>
+              <span className={`text-[0.6875rem] font-medium hidden sm:block transition-colors ${current ? 'text-ink' : done ? 'text-ink-3' : 'text-ink-3/60'}`}>
+                {step.label}
+              </span>
             </div>
-            <span className={`text-xs hidden sm:block transition-colors ${currentStep === step.n ? 'text-gold font-medium' : 'text-ink-3'}`}>
-              {step.label}
-            </span>
-          </div>
-          {i < STEPS.length - 1 && (
-            <div className={`w-12 sm:w-20 h-px mx-1 mb-5 transition-colors duration-300 ${currentStep > step.n ? 'bg-gold' : 'bg-edge'}`} />
-          )}
-        </div>
-      ))}
+          );
+        })}
+      </div>
     </div>
   );
 }

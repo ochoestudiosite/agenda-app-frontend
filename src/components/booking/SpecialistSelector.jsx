@@ -6,21 +6,28 @@ export default function SpecialistSelector() {
   const { data, isLoading } = useServices();
   const { state, dispatch } = useBooking();
 
-  if (isLoading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>;
+  if (isLoading) return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-pulse">
+      {[...Array(3)].map((_, i) => <div key={i} className="h-40 rounded-2xl skeleton" />)}
+    </div>
+  );
 
   return (
-    <div className="animate-slide-up">
+    <div className="animate-fade-up">
       <BackButton onClick={() => dispatch({ type: 'GO_BACK' })} />
-      <h2 className="font-display text-2xl font-semibold mb-1 text-ink">Elige tu barbero</h2>
-      <p className="text-ink-2 text-sm mb-6">
-        Servicio: <span className="text-gold font-medium">{state.service?.name}</span>
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {data.specialists.map(specialist => (
+      <div className="mb-7">
+        <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige tu barbero</h2>
+        <p className="text-ink-3 text-sm mt-1">
+          Para <span className="text-ink font-medium">{state.service?.name}</span>
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {data.specialists.map((sp, i) => (
           <SpecialistCard
-            key={specialist.id}
-            specialist={specialist}
-            onSelect={() => dispatch({ type: 'SET_SPECIALIST', payload: specialist })}
+            key={sp.id}
+            specialist={sp}
+            delay={i * 50}
+            onSelect={() => dispatch({ type: 'SET_SPECIALIST', payload: sp })}
           />
         ))}
       </div>
@@ -28,30 +35,46 @@ export default function SpecialistSelector() {
   );
 }
 
-function SpecialistCard({ specialist, onSelect }) {
+function SpecialistCard({ specialist, onSelect, delay }) {
   return (
     <button
       onClick={onSelect}
-      className="card p-5 flex flex-col items-center gap-3 hover:border-gold/50 hover:bg-raised transition-all duration-200 group active:scale-[0.99] cursor-pointer"
+      className="group flex sm:flex-col items-center sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge bg-card
+                 text-left sm:text-center hover:border-gold/40 hover:shadow-card
+                 active:scale-[0.99] transition-all duration-240 cursor-pointer animate-fade-up"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
-      <div className="w-16 h-16 rounded-full bg-raised border-2 border-edge group-hover:border-gold/60 flex items-center justify-center transition-all duration-200">
+      {/* Avatar */}
+      <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-raised border-2 border-edge
+                      group-hover:border-gold/50 flex items-center justify-center transition-all duration-240">
         <span className="font-display text-xl font-bold text-gold">{specialist.initials}</span>
       </div>
-      <div className="text-center">
-        <p className="font-medium text-ink group-hover:text-gold transition-colors">{specialist.name}</p>
-        <p className="text-ink-3 text-xs mt-1 leading-snug">{specialist.specialty}</p>
+
+      {/* Info */}
+      <div className="flex-1 sm:flex-none">
+        <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160">
+          {specialist.name}
+        </p>
+        <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{specialist.specialty}</p>
       </div>
+
+      {/* Mobile chevron */}
+      <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
     </button>
   );
 }
 
-function BackButton({ onClick }) {
+export function BackButton({ onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1.5 text-ink-3 hover:text-gold text-sm mb-6 transition-colors duration-150 cursor-pointer"
+      className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-3 hover:text-ink mb-6
+                 transition-colors duration-160 cursor-pointer group"
     >
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-160"
+           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
       </svg>
       Volver

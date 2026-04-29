@@ -5,19 +5,20 @@ import { formatDate, formatTime, formatPrice } from '../../utils/formatters';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
+import { BackButton } from './SpecialistSelector';
 
 export default function ClientForm() {
   const { state, dispatch } = useBooking();
-  const toast = useToast();
+  const toast          = useToast();
   const createMutation = useCreateAppointment();
 
-  const [name, setName]     = useState(state.clientName);
-  const [phone, setPhone]   = useState(state.clientPhone);
+  const [name,   setName]   = useState(state.clientName);
+  const [phone,  setPhone]  = useState(state.clientPhone);
   const [errors, setErrors] = useState({});
 
   function validate() {
     const errs = {};
-    if (!name.trim() || name.trim().length < 2) errs.name = 'Ingresa tu nombre (mínimo 2 caracteres).';
+    if (!name.trim() || name.trim().length < 2) errs.name = 'Ingresa tu nombre completo (mínimo 2 caracteres).';
     if (!/^\d{10}$/.test(phone.trim())) errs.phone = 'El teléfono debe tener exactamente 10 dígitos.';
     return errs;
   }
@@ -27,9 +28,7 @@ export default function ClientForm() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-
     dispatch({ type: 'SET_CLIENT', payload: { name: name.trim(), phone: phone.trim() } });
-
     try {
       const result = await createMutation.mutateAsync({
         serviceId:    state.service.id,
@@ -51,52 +50,29 @@ export default function ClientForm() {
   }
 
   return (
-    <div className="animate-slide-up max-w-xl mx-auto">
-      <button
-        onClick={() => dispatch({ type: 'GO_BACK' })}
-        className="flex items-center gap-1.5 text-ink-3 hover:text-gold text-sm mb-6 transition-colors duration-150 cursor-pointer"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Volver
-      </button>
-
-      <h2 className="font-display text-2xl font-semibold mb-2 text-ink">Confirma tu cita</h2>
-      <p className="text-ink-2 text-sm mb-6">Revisa los detalles y completa tus datos</p>
-
-      {/* Summary card */}
-      <div className="card p-4 mb-6 space-y-2.5">
-        <SummaryRow label="Servicio"  value={state.service?.name} />
-        <SummaryRow label="Barbero"   value={state.specialist?.name} />
-        <SummaryRow label="Fecha"     value={formatDate(state.date)} />
-        <SummaryRow label="Hora"      value={formatTime(state.time)} />
-        <div className="divider pt-2 mt-1">
-          <SummaryRow label="Total" value={formatPrice(state.service?.price)} gold />
+    <div className="animate-fade-up max-w-lg mx-auto">
+      <BackButton onClick={() => dispatch({ type: 'GO_BACK' })} />
+      <div className="mb-7">
+        <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Confirma tu cita</h2>
+        <p className="text-ink-3 text-sm mt-1">Revisa los detalles y completa tus datos</p>
+      </div>
+      <div className="card p-5 mb-6 space-y-3">
+        <SummaryRow label="Servicio" value={state.service?.name} />
+        <SummaryRow label="Barbero"  value={state.specialist?.name} />
+        <SummaryRow label="Fecha"    value={formatDate(state.date)} />
+        <SummaryRow label="Hora"     value={formatTime(state.time)} />
+        <div className="pt-3 border-t border-edge flex justify-between items-center">
+          <span className="text-sm font-semibold text-ink">Total</span>
+          <span className="text-lg font-semibold text-gold tabular-nums">{formatPrice(state.service?.price)}</span>
         </div>
       </div>
-
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <Input
-          label="Nombre completo"
-          placeholder="Juan García"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          error={errors.name}
-          required
-          autoComplete="name"
-        />
-        <Input
-          label="Teléfono"
-          placeholder="5512345678"
-          value={phone}
+        <Input label="Nombre completo" placeholder="Juan García" value={name}
+          onChange={e => setName(e.target.value)} error={errors.name} required autoComplete="name" />
+        <Input label="Teléfono" placeholder="5512345678" value={phone}
           onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-          error={errors.phone}
-          required
-          inputMode="tel"
-          autoComplete="tel"
-          helper="10 dígitos sin espacios ni guiones"
-        />
+          error={errors.phone} required inputMode="tel" autoComplete="tel"
+          helper="10 dígitos sin espacios ni guiones" />
         <Button type="submit" size="lg" className="w-full mt-2" loading={createMutation.isPending}>
           Confirmar reservación
         </Button>
@@ -105,11 +81,11 @@ export default function ClientForm() {
   );
 }
 
-function SummaryRow({ label, value, gold }) {
+function SummaryRow({ label, value }) {
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-ink-2 text-sm">{label}</span>
-      <span className={`text-sm font-medium ${gold ? 'text-gold' : 'text-ink'}`}>{value}</span>
+    <div className="flex justify-between items-center gap-4">
+      <span className="text-sm text-ink-3">{label}</span>
+      <span className="text-sm font-medium text-ink text-right">{value}</span>
     </div>
   );
 }

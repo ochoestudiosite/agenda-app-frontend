@@ -15,20 +15,23 @@ export default function AppointmentLookup({ onSearch, loading }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-sm mx-auto" noValidate>
-      <Input
-        label="Código de confirmación"
-        placeholder="ABC123"
-        value={code}
-        onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-        error={error}
-        required
-        className="tracking-[0.3em] text-center text-lg font-display"
-        autoCapitalize="characters"
-        helper="6 caracteres — letras y números"
-        maxLength={6}
-      />
-      <Button type="submit" size="lg" className="w-full mt-4" loading={loading}>
+    <form onSubmit={handleSubmit} className="max-w-xs mx-auto" noValidate>
+      <div className="card p-6 mb-4">
+        <p className="label-section mb-4 text-center">Código de confirmación</p>
+        <Input
+          placeholder="ABC123"
+          value={code}
+          onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+          error={error}
+          required
+          className="tracking-[0.35em] text-center text-xl font-display font-bold text-gold"
+          autoCapitalize="characters"
+          maxLength={6}
+          autoFocus
+        />
+        <p className="text-ink-3 text-xs text-center mt-2">6 caracteres — letras y números</p>
+      </div>
+      <Button type="submit" size="lg" className="w-full" loading={loading}>
         Buscar cita
       </Button>
     </form>

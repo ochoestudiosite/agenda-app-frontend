@@ -2,91 +2,136 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Semantic color tokens ──────────────────────────────────────────────────
-   RGB channel values (no rgb() wrapper) so Tailwind's opacity modifier works:
-   bg-gold/20  →  rgb(var(--gold) / 0.2)
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ── Token system — RGB channels (no wrapper) for opacity modifier support ── */
 :root {
-  /* Light mode — warm cream + deep amber gold */
-  --surface:     250 250 249;   /* #fafaf9  warm off-white */
-  --card:        255 255 255;   /* #ffffff  pure white cards */
-  --raised:      244 244 245;   /* #f4f4f5  zinc-100 */
-  --edge:        228 228 231;   /* #e4e4e7  zinc-200 */
-  --edge-strong: 161 161 170;   /* #a1a1aa  zinc-400 */
-  --ink:          24  24  27;   /* #18181b  zinc-900 */
-  --ink-2:        82  82  91;   /* #52525b  zinc-600 */
-  --ink-3:       161 161 170;   /* #a1a1aa  zinc-400 */
-  --gold:        146 104  10;   /* #92680a  deep amber — 5:1 on white ✓ */
-  --gold-light:  184 142  40;   /* #b88e28  hover */
-  --gold-muted:  222 194 126;   /* #dec27e  subtle tint bg */
-  --on-gold:     255 255 255;   /* white text on gold button (light mode) */
+  /* Warm stone palette — Premium neutral light */
+  --surface:      250 250 249;   /* stone-50  */
+  --card:         255 255 255;   /* white     */
+  --raised:       245 245 244;   /* stone-100 */
+  --edge:         231 229 228;   /* stone-200 */
+  --edge-strong:  168 162 158;   /* stone-400 */
+  --ink:           28  25  23;   /* stone-900 */
+  --ink-2:         87  83  78;   /* stone-600 */
+  --ink-3:        168 162 158;   /* stone-400 */
+  --gold:         146 104  10;   /* amber-700 — 5:1 on white ✓ */
+  --gold-light:   180 137  38;   /* hover     */
+  --gold-muted:   253 240 214;   /* amber-50  */
+  --on-gold:      255 255 255;
 }
 
 .dark {
-  /* Dark mode — near-black + bright gold */
-  --surface:      13  13  13;   /* #0d0d0d */
-  --card:         20  20  20;   /* #141414 */
-  --raised:       26  26  26;   /* #1a1a1a */
-  --edge:         38  38  38;   /* #262626 */
-  --edge-strong:  64  64  64;   /* #404040 */
-  --ink:         245 245 245;   /* #f5f5f5 */
-  --ink-2:       163 163 163;   /* #a3a3a3 */
-  --ink-3:       115 115 115;   /* #737373 */
-  --gold:        201 168  76;   /* #c9a84c — 9:1 on #0d0d0d ✓ */
-  --gold-light:  212 185 106;   /* #d4b96a  hover */
-  --gold-muted:   70  50  10;   /* subtle tint bg */
-  --on-gold:      13  13  13;   /* dark text on gold button (dark mode) */
+  /* Deep stone dark — premium near-black */
+  --surface:       12  10   9;   /* stone-950 */
+  --card:          28  25  23;   /* stone-900 */
+  --raised:        41  37  36;   /* stone-800 */
+  --edge:          68  64  60;   /* stone-700 */
+  --edge-strong:  120 113 108;   /* stone-500 */
+  --ink:          250 250 249;   /* stone-50  */
+  --ink-2:        168 162 158;   /* stone-400 */
+  --ink-3:        120 113 108;   /* stone-500 */
+  --gold:         212 180  80;   /* bright amber — 9:1 on stone-950 ✓ */
+  --gold-light:   224 196 104;
+  --gold-muted:    66  48   5;   /* deep amber bg */
+  --on-gold:       28  25  23;
 }
 
-/* ── Base styles ──────────────────────────────────────────────────────────── */
+/* ── Base ──────────────────────────────────────────────────────────────────── */
 @layer base {
   html {
     background-color: rgb(var(--surface));
     color: rgb(var(--ink));
-    transition: background-color 0.2s ease, color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
 
   body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'ss01', 'cv05';
   }
 
   * { box-sizing: border-box; }
 
   :focus-visible {
-    outline: 2px solid rgb(var(--gold));
+    outline: 2px solid rgb(var(--gold) / 0.7);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 6px;
+  }
+
+  /* Smooth theme transition */
+  *, *::before, *::after {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  /* But NOT layout-affecting props — don't break animation */
+  button, a, input, select, textarea {
+    transition-property: background-color, border-color, color, opacity, box-shadow, transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-/* ── Component shorthands ─────────────────────────────────────────────────── */
+/* ── Components ────────────────────────────────────────────────────────────── */
 @layer components {
+
+  /* Card — premium layered shadow */
   .card {
-    @apply bg-card border border-edge rounded-xl;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.07);
-    transition: border-color 0.15s ease;
+    @apply bg-card border border-edge rounded-2xl;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 4px 16px 0 rgb(0 0 0 / 0.04);
   }
   .dark .card {
-    box-shadow: none;
+    box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
   }
 
-  .divider {
-    @apply border-t border-edge;
+  /* Elevated card — for modals / floating panels */
+  .card-float {
+    @apply bg-card border border-edge rounded-2xl;
+    box-shadow: 0 2px 8px 0 rgb(0 0 0 / 0.06), 0 16px 48px 0 rgb(0 0 0 / 0.10);
   }
 
-  .gold-gradient {
-    background: linear-gradient(135deg,
-      rgb(var(--gold)) 0%,
-      rgb(var(--gold-light)) 50%,
-      rgb(var(--gold)) 100%
+  /* Divider */
+  .divider { @apply border-t border-edge; }
+
+  /* Section label — small uppercase tracking */
+  .label-section {
+    @apply text-2xs font-semibold uppercase tracking-widest3 text-ink-3;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    @apply bg-raised overflow-hidden relative;
+    background: linear-gradient(
+      90deg,
+      rgb(var(--raised)) 0%,
+      rgb(var(--edge)) 50%,
+      rgb(var(--raised)) 100%
     );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite;
   }
+
+  /* Status badge */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border;
+  }
+  .badge-confirmed   { @apply bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20; }
+  .badge-cancelled   { @apply bg-red-500/10    text-red-700    dark:text-red-400    border-red-500/20; }
+  .badge-rescheduled { @apply bg-blue-500/10   text-blue-700   dark:text-blue-400   border-blue-500/20; }
 }
 
-/* ── Scrollbar ────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: rgb(var(--surface)); }
-::-webkit-scrollbar-thumb { background: rgb(var(--edge-strong)); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgb(var(--gold)); }
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--edge-strong) / 0.5);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--gold) / 0.5); }
