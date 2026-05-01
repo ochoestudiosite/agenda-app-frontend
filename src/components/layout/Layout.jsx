@@ -1,9 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { useConfig } from '../../hooks/useConfig';
 import { ToastProvider } from '../ui/Toast';
 
 export default function Layout({ children }) {
-  const { pathname } = useLocation();
+  const { pathname }   = useLocation();
+  const { data: config } = useConfig();
+  const bizName = config?.business_name ?? 'BarberPro';
 
   return (
     <ToastProvider>
@@ -18,7 +21,7 @@ export default function Layout({ children }) {
                 <ScissorsIcon />
               </span>
               <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink">
-                BarberPro
+                {bizName}
               </span>
             </Link>
 
@@ -50,10 +53,10 @@ export default function Layout({ children }) {
               <span className="w-5 h-5 rounded-md bg-gold/10 flex items-center justify-center">
                 <ScissorsIcon className="w-2.5 h-2.5 text-gold" />
               </span>
-              <span className="text-xs font-medium text-ink-3">BarberPro</span>
+              <span className="text-xs font-medium text-ink-3">{bizName}</span>
             </div>
             <p className="text-xs text-ink-3">
-              © {new Date().getFullYear()} BarberPro · Todos los derechos reservados
+              © {new Date().getFullYear()} {bizName} · Todos los derechos reservados
             </p>
           </div>
         </footer>

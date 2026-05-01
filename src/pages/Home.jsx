@@ -1,13 +1,20 @@
 import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
+import { useConfig } from '../hooks/useConfig';
 
 export default function Home() {
+  const { data: config } = useConfig();
+  const bizName = config?.business_name ?? 'BarberPro';
+  const bizLocation = config?.business_address
+    ? config.business_address.split(',').slice(-1)[0]?.trim()
+    : 'Ciudad de México';
+
   return (
     <div className="max-w-3xl mx-auto px-5">
 
       {/* ── Hero ──────────────────────────────────────────────────────────────── */}
       <section className="pt-16 pb-20 sm:pt-24 sm:pb-28 animate-fade-up">
-        <p className="label-section mb-5">Barbería Premium · Ciudad de México</p>
+        <p className="label-section mb-5">Barbería Premium · {bizLocation}</p>
         <h1 className="font-display text-[2.75rem] sm:text-6xl font-bold leading-[1.06] tracking-tightest text-ink mb-6">
           La experiencia<br />
           del <em className="not-italic text-gold">barbero perfecto.</em>

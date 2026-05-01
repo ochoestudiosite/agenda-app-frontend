@@ -1,21 +1,18 @@
 import { useState } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { useAvailability } from '../../hooks/useAvailability';
+import { useConfig } from '../../hooks/useConfig';
 import { formatTime, generateSlots, groupSlots } from '../../utils/formatters';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import { BackButton } from './SpecialistSelector';
 
-const DAYS_CLOSED       = [0];         // 0 = Sunday
-const MAX_ADVANCE       = 30;          // days
-const MIN_BOOKING_BUFFER = 60;         // minutes: earliest bookable = now + 60 min
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS_ES   = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
 
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-
 function slotToMinutes(slot) {
   const [h, m] = slot.split(':').map(Number);
   return h * 60 + m;
@@ -23,10 +20,29 @@ function slotToMinutes(slot) {
 
 export default function DateTimePicker() {
   const { state, dispatch } = useBooking();
+  const { data: config }   = useConfig();
 
-  // today at midnight (for calendar disabled logic)
+  // ── Config values with safe fallbacks ────────────────────────────────────
+  const maxAdvance    = config?.max_advance_days   ?? 30;
+  const leadMins      = config?.booking_lead_mins  ?? 60;
+  const intervalMins  = config?.slot_interval_mins ?? 30;
+  const bizHours      = config?.hours              ?? [];
+
+  // Days with is_open === false → disabled in calendar
+  const daysClosed = bizHours.length > 0
+    ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
+    : [0]; // fallback: closed on Sundays
+
+  // Returns the business_hours entry for a given date (or null if closed/unknown)
+  function getDayEntry(date) {
+    if (!date) return null;
+    const entry = bizHours.find(h => h.day_of_week === date.getDay());
+    return entry ?? null;
+  }
+
+  // ── Calendar bounds ───────────────────────────────────────────────────────
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + MAX_ADVANCE);
+  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
 
   const [viewMonth,    setViewMonth]    = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(null);
@@ -36,25 +52,23 @@ export default function DateTimePicker() {
   const { data: availData, isFetching } = useAvailability(dateStr);
   const busySlots = availData?.busySlots || [];
 
+  // ── Slot generation for selected day ─────────────────────────────────────
   const duration = state.service?.duration || 30;
-  const allSlots = generateSlots(9, 19, duration);
-  const grouped  = groupSlots(allSlots);
+  const dayEntry = getDayEntry(selectedDate);
+  const openTime  = dayEntry?.open_time  ?? '9:00';
+  const closeTime = dayEntry?.close_time ?? '19:00';
+  const allSlots  = selectedDate ? generateSlots(openTime, closeTime, duration, intervalMins) : [];
+  const grouped   = groupSlots(allSlots);
 
   // ── Past-slot validation ──────────────────────────────────────────────────
-  // Re-evaluates on every render (so it stays accurate during long sessions)
-  const now = new Date();
-  const todayStr = toDateStr(today);
+  const now          = new Date();
+  const todayStr     = toDateStr(today);
   const isSelectedToday = !!selectedDate && toDateStr(selectedDate) === todayStr;
-
-  // Cutoff = current time + booking buffer (in minutes from midnight)
-  const cutoffMins = now.getHours() * 60 + now.getMinutes() + MIN_BOOKING_BUFFER;
+  const cutoffMins   = now.getHours() * 60 + now.getMinutes() + leadMins;
 
   function isSlotPast(slot) {
-    // Only applies when the selected date is today
     return isSelectedToday && slotToMinutes(slot) <= cutoffMins;
   }
-
-  // True if today is selected but every slot has already passed
   const allSlotsExhausted = isSelectedToday && allSlots.every(s => isSlotPast(s) || busySlots.includes(s));
 
   // ── Calendar helpers ──────────────────────────────────────────────────────
@@ -65,12 +79,12 @@ export default function DateTimePicker() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d));
 
   function isDayDisabled(d) {
-    return d < today || d > maxDate || DAYS_CLOSED.includes(d.getDay());
+    return d < today || d > maxDate || daysClosed.includes(d.getDay());
   }
 
   function handleSelectDate(date) {
     setSelectedDate(date);
-    setSelectedTime(null); // always clear time when date changes
+    setSelectedTime(null);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -86,9 +100,8 @@ export default function DateTimePicker() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
 
-        {/* ── Calendar ─────────────────────────────────────────────────── */}
+        {/* ── Calendar ───────────────────────────────────────────────────── */}
         <div className="card p-5">
-          {/* Month nav */}
           <div className="flex items-center justify-between mb-5">
             <button
               onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1))}
@@ -109,14 +122,12 @@ export default function DateTimePicker() {
             </button>
           </div>
 
-          {/* Day headers */}
           <div className="grid grid-cols-7 mb-2">
             {DAYS_ES.map(d => (
               <div key={d} className="text-center text-[0.6875rem] font-medium text-ink-3 py-1">{d}</div>
             ))}
           </div>
 
-          {/* Day grid */}
           <div className="grid grid-cols-7 gap-y-1">
             {cells.map((date, i) => {
               if (!date) return <div key={`e-${i}`} />;
@@ -146,10 +157,9 @@ export default function DateTimePicker() {
           </div>
         </div>
 
-        {/* ── Time slots ───────────────────────────────────────────────── */}
+        {/* ── Time slots ─────────────────────────────────────────────────── */}
         <div className="card p-5 min-h-[280px] flex flex-col">
 
-          {/* No date selected */}
           {!selectedDate && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
@@ -161,14 +171,10 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {/* Loading */}
           {selectedDate && isFetching && (
-            <div className="flex-1 flex items-center justify-center">
-              <Spinner size="sm" />
-            </div>
+            <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
           )}
 
-          {/* All slots exhausted for today */}
           {selectedDate && !isFetching && allSlotsExhausted && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
@@ -177,35 +183,29 @@ export default function DateTimePicker() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-ink">Sin horarios disponibles hoy</p>
+                <p className="text-sm font-medium text-ink">Sin horarios disponibles</p>
                 <p className="text-xs text-ink-3 mt-1">Los horarios de hoy ya pasaron.<br/>Selecciona otra fecha para continuar.</p>
               </div>
             </div>
           )}
 
-          {/* Slot grid */}
           {selectedDate && !isFetching && !allSlotsExhausted && (
             <div className="space-y-4 flex-1">
-
-              {/* Today's buffer hint */}
               {isSelectedToday && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold/8 border border-gold/20">
                   <svg className="w-3.5 h-3.5 text-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                   <p className="text-xs text-gold font-medium">
-                    Solo horarios con al menos {MIN_BOOKING_BUFFER} min de anticipación
+                    Solo horarios con al menos {leadMins} min de anticipación
                   </p>
                 </div>
               )}
 
               {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
                 const slots = grouped[key];
-                if (!slots.length) return null;
-
-                // Filter out all-past+busy groups so we don't render an empty section
-                const hasAvailable = slots.some(s => !isSlotPast(s) && !busySlots.includes(s));
-                const allGone      = slots.every(s => isSlotPast(s) || busySlots.includes(s));
+                if (!slots?.length) return null;
+                const allGone = slots.every(s => isSlotPast(s) || busySlots.includes(s));
                 if (allGone) return null;
 
                 return (
@@ -216,12 +216,11 @@ export default function DateTimePicker() {
                         const past = isSlotPast(slot);
                         const busy = busySlots.includes(slot);
                         const sel  = selectedTime === slot;
-                        const unavailable = past || busy;
-
+                        const unavail = past || busy;
                         return (
                           <button
                             key={slot}
-                            disabled={unavailable}
+                            disabled={unavail}
                             onClick={() => setSelectedTime(slot)}
                             aria-label={
                               past ? `${formatTime(slot)} — horario pasado` :
@@ -230,22 +229,10 @@ export default function DateTimePicker() {
                             }
                             className={[
                               'py-2.5 rounded-xl text-xs font-medium transition-all duration-160 relative',
-                              // Past: muted gray, no interaction
-                              past && !busy
-                                ? 'text-ink-3/35 bg-raised/40 cursor-not-allowed'
-                                : '',
-                              // Busy/taken: strikethrough
-                              busy
-                                ? 'text-ink-3/40 line-through bg-raised/50 cursor-not-allowed'
-                                : '',
-                              // Selected
-                              sel && !unavailable
-                                ? 'bg-gold text-on-gold shadow-xs'
-                                : '',
-                              // Available
-                              !unavailable && !sel
-                                ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97] cursor-pointer'
-                                : '',
+                              past && !busy ? 'text-ink-3/35 bg-raised/40 cursor-not-allowed' : '',
+                              busy          ? 'text-ink-3/40 line-through bg-raised/50 cursor-not-allowed' : '',
+                              sel && !unavail ? 'bg-gold text-on-gold shadow-xs' : '',
+                              !unavail && !sel ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97] cursor-pointer' : '',
                             ].join(' ')}
                           >
                             {formatTime(slot)}
@@ -261,7 +248,6 @@ export default function DateTimePicker() {
         </div>
       </div>
 
-      {/* Continue CTA — only when a valid future slot is selected */}
       {selectedDate && selectedTime && !isSlotPast(selectedTime) && (
         <div className="mt-6 flex justify-end animate-fade-in">
           <Button

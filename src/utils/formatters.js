@@ -31,15 +31,24 @@ export function capitalize(str) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 }
 
-// Generate all 30-min slots between start and end hour
-export function generateSlots(startHour, endHour, serviceDuration = 30) {
+// Parse "HH:MM" or integer hour to minutes-from-midnight
+function toMins(t) {
+  if (typeof t === 'number') return t * 60;
+  const [h, m = 0] = String(t).split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
+// Generate time slots between openTime and closeTime.
+// openTime / closeTime: "HH:MM" string OR integer hour (backward-compat).
+// intervalMins: slot interval (default 30).
+// serviceDuration: service length in minutes — last slot must finish by closeTime.
+export function generateSlots(openTime, closeTime, serviceDuration = 30, intervalMins = 30) {
+  const start = toMins(openTime);
+  const end   = toMins(closeTime);
   const slots = [];
-  for (let h = startHour; h < endHour; h++) {
-    for (const m of [0, 30]) {
-      const totalEnd = h * 60 + m + serviceDuration;
-      if (totalEnd <= endHour * 60) {
-        slots.push(`${h}:${m === 0 ? '00' : m}`);
-      }
+  for (let m = start; m < end; m += intervalMins) {
+    if (m + serviceDuration <= end) {
+      slots.push(`${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`);
     }
   }
   return slots;

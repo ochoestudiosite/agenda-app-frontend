@@ -19,6 +19,7 @@ async function request(method, path, body) {
 }
 
 export const api = {
+  getConfig:   () => request('GET', '/config'),
   getServices: () => request('GET', '/services'),
   getSpecialists: () => request('GET', '/services/specialists'),
   getAvailability: (date) => request('GET', `/availability?date=${date}`),

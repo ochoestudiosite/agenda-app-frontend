@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { formatDate, formatTime, formatPrice, generateSlots, groupSlots } from '../../utils/formatters';
 import { useAvailability } from '../../hooks/useAvailability';
+import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
 import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 
-const MONTHS_ES   = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DAYS_ES     = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
-const DAYS_CLOSED = [0];
-const MAX_ADVANCE = 30;
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAYS_ES   = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
 
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -17,17 +16,17 @@ function toDateStr(d) {
 
 export default function AppointmentCard({ appointment, onUpdated }) {
   const toast = useToast();
-  const [mode, setMode]         = useState('view');
-  const [newDate, setNewDate]   = useState(null);
-  const [newTime, setNewTime]   = useState(null);
+  const [mode,      setMode]      = useState('view');
+  const [newDate,   setNewDate]   = useState(null);
+  const [newTime,   setNewTime]   = useState(null);
   const [viewMonth, setViewMonth] = useState(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
 
-  const dateStr    = newDate ? toDateStr(newDate) : null;
+  const dateStr = newDate ? toDateStr(newDate) : null;
   const { data: availData, isFetching } = useAvailability(mode === 'reschedule' ? dateStr : null);
-  const busySlots  = availData?.busySlots || [];
+  const busySlots = availData?.busySlots || [];
 
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
@@ -95,9 +94,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           <p className="text-sm text-ink mb-1 font-medium">¿Cancelar esta cita?</p>
           <p className="text-xs text-ink-3 mb-4">Esta acción no se puede deshacer.</p>
           <div className="flex gap-3">
-            <Button variant="danger" loading={cancelMutation.isPending} onClick={handleCancel}>
-              Sí, cancelar
-            </Button>
+            <Button variant="danger" loading={cancelMutation.isPending} onClick={handleCancel}>Sí, cancelar</Button>
             <Button variant="ghost" onClick={() => setMode('view')}>Volver</Button>
           </div>
         </div>
@@ -106,14 +103,10 @@ export default function AppointmentCard({ appointment, onUpdated }) {
       {mode === 'reschedule' && (
         <ReschedulePanel
           appointment={appointment}
-          viewMonth={viewMonth}
-          setViewMonth={setViewMonth}
-          newDate={newDate}
-          setNewDate={d => { setNewDate(d); setNewTime(null); }}
-          newTime={newTime}
-          setNewTime={setNewTime}
-          busySlots={busySlots}
-          isFetching={isFetching}
+          viewMonth={viewMonth}      setViewMonth={setViewMonth}
+          newDate={newDate}          setNewDate={d => { setNewDate(d); setNewTime(null); }}
+          newTime={newTime}          setNewTime={setNewTime}
+          busySlots={busySlots}      isFetching={isFetching}
           onConfirm={handleReschedule}
           onCancel={() => setMode('view')}
           isLoading={rescheduleMutation.isPending}
@@ -124,9 +117,23 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 }
 
 function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNewDate, newTime, setNewTime, busySlots, isFetching, onConfirm, onCancel, isLoading }) {
+  const { data: config } = useConfig();
+
+  const maxAdvance   = config?.max_advance_days   ?? 30;
+  const intervalMins = config?.slot_interval_mins ?? 30;
+  const bizHours     = config?.hours ?? [];
+  const daysClosed   = bizHours.length > 0
+    ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
+    : [0];
+
+  function getDayEntry(date) {
+    if (!date || !bizHours.length) return null;
+    return bizHours.find(h => h.day_of_week === date.getDay()) ?? null;
+  }
+
   const today   = new Date(); today.setHours(0, 0, 0, 0);
-  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + MAX_ADVANCE);
-  const isDisabled = d => d < today || d > maxDate || DAYS_CLOSED.includes(d.getDay());
+  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
+  const isDisabled = d => d < today || d > maxDate || daysClosed.includes(d.getDay());
 
   const firstDay    = viewMonth.getDay();
   const daysInMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
@@ -134,8 +141,11 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d));
 
-  const allSlots = generateSlots(9, 19, appointment.serviceDuration);
-  const grouped  = groupSlots(allSlots);
+  const dayEntry  = getDayEntry(newDate);
+  const openTime  = dayEntry?.open_time  ?? '9:00';
+  const closeTime = dayEntry?.close_time ?? '19:00';
+  const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins) : [];
+  const grouped   = groupSlots(allSlots);
 
   return (
     <div className="mt-5 border-t border-edge pt-5 space-y-4 animate-fade-in">
@@ -176,9 +186,9 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
         <div className="grid grid-cols-7 gap-y-0.5">
           {cells.map((date, i) => {
             if (!date) return <div key={`e-${i}`} />;
-            const disabled  = isDisabled(date);
-            const isToday   = toDateStr(date) === toDateStr(today);
-            const isSel     = newDate && toDateStr(date) === toDateStr(newDate);
+            const disabled = isDisabled(date);
+            const isToday  = toDateStr(date) === toDateStr(today);
+            const isSel    = newDate && toDateStr(date) === toDateStr(newDate);
             return (
               <button
                 key={toDateStr(date)}
@@ -186,8 +196,8 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
                 onClick={() => setNewDate(date)}
                 className={[
                   'relative h-8 text-xs rounded-lg font-medium transition-all duration-160',
-                  disabled   ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
-                  isSel      ? 'bg-gold text-on-gold shadow-xs' : '',
+                  disabled  ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
+                  isSel     ? 'bg-gold text-on-gold shadow-xs' : '',
                   !isSel && isToday && !disabled ? 'text-gold font-semibold' : '',
                   !isSel && !disabled ? 'hover:bg-raised text-ink' : '',
                 ].join(' ')}
@@ -205,14 +215,12 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
       {/* Time slots */}
       {newDate && (
         isFetching ? (
-          <div className="flex justify-center py-6">
-            <Spinner size="sm" />
-          </div>
+          <div className="flex justify-center py-6"><Spinner size="sm" /></div>
         ) : (
           <div className="space-y-3">
             {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
               const slots = grouped[key];
-              if (!slots.length) return null;
+              if (!slots?.length) return null;
               return (
                 <div key={key}>
                   <p className="label-section mb-2">{label}</p>
@@ -227,14 +235,12 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
                           onClick={() => setNewTime(slot)}
                           className={[
                             'py-2 rounded-xl text-xs font-medium transition-all duration-160',
-                            busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50'
-                                 : 'cursor-pointer',
+                            busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : 'cursor-pointer',
                             sel  ? 'bg-gold text-on-gold shadow-xs'
-                                 : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]'
-                                         : '',
+                                 : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]' : '',
                           ].join(' ')}
                         >
-                          {slot}
+                          {formatTime(slot)}
                         </button>
                       );
                     })}
@@ -247,11 +253,7 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
       )}
 
       <div className="flex gap-3 pt-1">
-        <Button
-          onClick={onConfirm}
-          disabled={!newDate || !newTime}
-          loading={isLoading}
-        >
+        <Button onClick={onConfirm} disabled={!newDate || !newTime} loading={isLoading}>
           Confirmar reagendo
         </Button>
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
@@ -270,15 +272,7 @@ function DetailRow({ label, value, gold }) {
 }
 
 function StatusBadge({ status }) {
-  const cls = {
-    confirmed:   'badge badge-confirmed',
-    cancelled:   'badge badge-cancelled',
-    rescheduled: 'badge badge-rescheduled',
-  };
+  const cls    = { confirmed: 'badge badge-confirmed', cancelled: 'badge badge-cancelled', rescheduled: 'badge badge-rescheduled' };
   const labels = { confirmed: 'Confirmada', cancelled: 'Cancelada', rescheduled: 'Reagendada' };
-  return (
-    <span className={cls[status] || 'badge'}>
-      {labels[status] || status}
-    </span>
-  );
+  return <span className={cls[status] || 'badge'}>{labels[status] || status}</span>;
 }
