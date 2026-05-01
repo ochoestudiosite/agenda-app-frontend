@@ -8,6 +8,7 @@ export function useServices() {
       const [s, sp] = await Promise.all([api.getServices(), api.getSpecialists()]);
       return { services: s.services, specialists: sp.specialists };
     },
-    staleTime: Infinity, // static data — never refetch
+    staleTime: 2 * 60 * 1000, // 2 min — refetch when admin changes services/staff
+    refetchOnWindowFocus: true,
   });
 }

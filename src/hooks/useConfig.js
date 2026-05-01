@@ -5,7 +5,7 @@ export function useConfig() {
   return useQuery({
     queryKey: ['config'],
     queryFn:  api.getConfig,
-    staleTime: Infinity, // config cached for the session; invalidated on admin changes
-    gcTime:    Infinity,
+    staleTime: 2 * 60 * 1000, // 2 min — picks up admin changes without hard reload
+    refetchOnWindowFocus: true,
   });
 }
