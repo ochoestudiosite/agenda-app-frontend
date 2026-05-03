@@ -23,8 +23,11 @@ export default function BranchSelector({ branches }) {
                        transition-all duration-240 cursor-pointer animate-fade-up"
             style={{ animationDelay: `${i * 40}ms`, animationFillMode: 'both' }}
           >
-            <div className="shrink-0 flex items-center justify-center w-14 h-14 rounded-xl bg-raised group-hover:bg-gold/8 transition-colors duration-240">
-              <LocationIcon />
+            <div className="shrink-0 w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center bg-raised group-hover:bg-gold/8 transition-colors duration-240">
+              {branch.image_url
+                ? <img src={branch.image_url} alt={branch.name} className="w-full h-full object-cover" />
+                : <BranchInitials name={branch.name} />
+              }
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160 truncate">
@@ -45,12 +48,12 @@ export default function BranchSelector({ branches }) {
   );
 }
 
-function LocationIcon() {
+function BranchInitials({ name }) {
+  const initials = name
+    ? name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+    : '?';
   return (
-    <svg className="w-5 h-5 text-ink-3 group-hover:text-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-    </svg>
+    <span className="text-[1.125rem] font-bold text-gold/80 select-none">{initials}</span>
   );
 }
 

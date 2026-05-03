@@ -27,7 +27,7 @@ export default function StepIndicator({ currentStep, hasBranch = false }) {
 
       {/* Step labels */}
       <div className="flex justify-between">
-        {STEPS.map(step => {
+        {STEPS.map((step, idx) => {
           const done    = stepIdx > STEPS.findIndex(s => s.n === step.n);
           const current = currentStep === step.n;
           return (
@@ -44,7 +44,7 @@ export default function StepIndicator({ currentStep, hasBranch = false }) {
                   </svg>
                 ) : (
                   <span className={`text-[0.6875rem] font-semibold ${current ? 'text-gold' : 'text-ink-3'}`}>
-                    {step.n}
+                    {idx + 1}
                   </span>
                 )}
               </div>
