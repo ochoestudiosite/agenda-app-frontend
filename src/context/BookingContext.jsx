@@ -4,6 +4,7 @@ const BookingContext = createContext(null);
 
 const initialState = {
   step: 1,
+  branch: null,
   service: null,
   specialist: null,
   date: null,
@@ -15,6 +16,8 @@ const initialState = {
 
 function reducer(state, action) {
   switch (action.type) {
+    case 'SET_BRANCH':
+      return { ...state, branch: action.payload };
     case 'SET_SERVICE':
       return { ...state, service: action.payload, step: 2, specialist: null, date: null, time: null };
     case 'SET_SPECIALIST':
@@ -26,6 +29,7 @@ function reducer(state, action) {
     case 'SET_CONFIRMATION':
       return { ...state, confirmation: action.payload, step: 5 };
     case 'GO_BACK':
+      if (state.step === 1 && state.branch) return { ...state, branch: null };
       return { ...state, step: Math.max(1, state.step - 1) };
     case 'RESET':
       return initialState;

@@ -37,6 +37,7 @@ export default function ClientForm() {
         time:         state.time,
         clientName:   name.trim(),
         clientPhone:  phone.trim(),
+        branchId:     state.branch?.id ?? null,
       });
       dispatch({ type: 'SET_CONFIRMATION', payload: result });
     } catch (err) {

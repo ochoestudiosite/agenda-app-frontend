@@ -1,12 +1,19 @@
-const STEPS = [
+const BASE_STEPS = [
   { n: 1, label: 'Servicio' },
   { n: 2, label: 'Barbero'  },
   { n: 3, label: 'Horario'  },
   { n: 4, label: 'Datos'    },
 ];
 
-export default function StepIndicator({ currentStep }) {
-  const progress = ((currentStep - 1) / (STEPS.length - 1)) * 100;
+const BRANCH_STEPS = [
+  { n: 0, label: 'Sucursal' },
+  ...BASE_STEPS,
+];
+
+export default function StepIndicator({ currentStep, hasBranch = false }) {
+  const STEPS    = hasBranch ? BRANCH_STEPS : BASE_STEPS;
+  const stepIdx  = STEPS.findIndex(s => s.n === currentStep);
+  const progress = STEPS.length > 1 ? (Math.max(0, stepIdx) / (STEPS.length - 1)) * 100 : 0;
 
   return (
     <div className="mb-10 animate-fade-in">
@@ -21,7 +28,7 @@ export default function StepIndicator({ currentStep }) {
       {/* Step labels */}
       <div className="flex justify-between">
         {STEPS.map(step => {
-          const done    = currentStep > step.n;
+          const done    = stepIdx > STEPS.findIndex(s => s.n === step.n);
           const current = currentStep === step.n;
           return (
             <div key={step.n} className="flex flex-col items-center gap-1.5">
