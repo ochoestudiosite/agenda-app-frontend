@@ -27,6 +27,7 @@ export default function DateTimePicker() {
   const leadMins      = config?.booking_lead_mins  ?? 60;
   const intervalMins  = config?.slot_interval_mins ?? 30;
   const bizHours      = config?.hours              ?? [];
+  const timeFmt       = config?.time_format        ?? '12h';
 
   // Days with is_open === false → disabled in calendar
   const daysClosed = bizHours.length > 0
@@ -223,9 +224,9 @@ export default function DateTimePicker() {
                             disabled={unavail}
                             onClick={() => setSelectedTime(slot)}
                             aria-label={
-                              past ? `${formatTime(slot)} — horario pasado` :
-                              busy ? `${formatTime(slot)} — no disponible` :
-                              formatTime(slot)
+                              past ? `${formatTime(slot, timeFmt)} — horario pasado` :
+                              busy ? `${formatTime(slot, timeFmt)} — no disponible` :
+                              formatTime(slot, timeFmt)
                             }
                             className={[
                               'py-2.5 rounded-xl text-xs font-medium transition-all duration-160 relative',
@@ -235,7 +236,7 @@ export default function DateTimePicker() {
                               !unavail && !sel ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97] cursor-pointer' : '',
                             ].join(' ')}
                           >
-                            {formatTime(slot)}
+                            {formatTime(slot, timeFmt)}
                           </button>
                         );
                       })}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { useCreateAppointment } from '../../hooks/useAppointment';
+import { useConfig } from '../../hooks/useConfig';
 import { formatDate, formatTime, formatPrice } from '../../utils/formatters';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -9,6 +10,8 @@ import { BackButton } from './SpecialistSelector';
 
 export default function ClientForm() {
   const { state, dispatch } = useBooking();
+  const { data: config }   = useConfig();
+  const timeFmt = config?.time_format ?? '12h';
   const toast          = useToast();
   const createMutation = useCreateAppointment();
 
@@ -61,7 +64,7 @@ export default function ClientForm() {
         <SummaryRow label="Servicio" value={state.service?.name} />
         <SummaryRow label="Barbero"  value={state.specialist?.name} />
         <SummaryRow label="Fecha"    value={formatDate(state.date)} />
-        <SummaryRow label="Hora"     value={formatTime(state.time)} />
+        <SummaryRow label="Hora"     value={formatTime(state.time, timeFmt)} />
         <div className="pt-3 border-t border-edge flex justify-between items-center">
           <span className="text-sm font-semibold text-ink">Total</span>
           <span className="text-lg font-semibold text-gold tabular-nums">{formatPrice(state.service?.price)}</span>

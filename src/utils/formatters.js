@@ -9,9 +9,10 @@ export function formatDate(dateStr) {
   });
 }
 
-export function formatTime(timeStr) {
+export function formatTime(timeStr, fmt = '12h') {
   if (!timeStr) return '';
   const [h, m] = timeStr.split(':').map(Number);
+  if (fmt === '24h') return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   return new Date(2000, 0, 1, h, m).toLocaleTimeString('es-MX', {
     hour: 'numeric',
     minute: '2-digit',

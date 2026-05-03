@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
+import { useConfig } from '../../hooks/useConfig';
 import { formatDate, formatTime, formatPrice } from '../../utils/formatters';
 import Button from '../ui/Button';
 
 export default function BookingConfirmation() {
   const { state, dispatch } = useBooking();
+  const { data: config }   = useConfig();
+  const timeFmt = config?.time_format ?? '12h';
   const { confirmation } = state;
 
   return (
@@ -44,7 +47,7 @@ export default function BookingConfirmation() {
         <DetailRow icon={<ScissorsIcon />} label="Servicio" value={`${confirmation?.serviceName} — ${formatPrice(confirmation?.servicePrice)}`} />
         <DetailRow icon={<UserIcon />}     label="Barbero"  value={confirmation?.specialistName} />
         <DetailRow icon={<CalendarIcon />} label="Fecha"    value={formatDate(confirmation?.date)} />
-        <DetailRow icon={<ClockIcon />}    label="Hora"     value={formatTime(confirmation?.time)} />
+        <DetailRow icon={<ClockIcon />}    label="Hora"     value={formatTime(confirmation?.time, timeFmt)} />
         <DetailRow icon={<PhoneIcon />}    label="Teléfono" value={confirmation?.clientPhone} />
       </div>
 

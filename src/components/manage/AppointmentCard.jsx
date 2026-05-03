@@ -16,6 +16,8 @@ function toDateStr(d) {
 
 export default function AppointmentCard({ appointment, onUpdated }) {
   const toast = useToast();
+  const { data: config } = useConfig();
+  const timeFmt = config?.time_format ?? '12h';
   const [mode,      setMode]      = useState('view');
   const [newDate,   setNewDate]   = useState(null);
   const [newTime,   setNewTime]   = useState(null);
@@ -78,7 +80,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         <DetailRow label="Precio"   value={formatPrice(appointment.servicePrice)} gold />
         <DetailRow label="Barbero"  value={appointment.specialistName} />
         <DetailRow label="Fecha"    value={formatDate(appointment.date)} />
-        <DetailRow label="Hora"     value={formatTime(appointment.time)} />
+        <DetailRow label="Hora"     value={formatTime(appointment.time, timeFmt)} />
       </div>
 
       {/* Actions */}
@@ -240,7 +242,7 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
                                  : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]' : '',
                           ].join(' ')}
                         >
-                          {formatTime(slot)}
+                          {formatTime(slot, timeFmt)}
                         </button>
                       );
                     })}
