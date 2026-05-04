@@ -1,4 +1,5 @@
 import { useBooking } from '../../context/BookingContext';
+import { toTitleCase } from '../../utils/formatters';
 
 export default function BranchSelector({ branches }) {
   const { dispatch } = useBooking();
@@ -31,7 +32,7 @@ export default function BranchSelector({ branches }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160 truncate">
-                {branch.name}
+                {toTitleCase(branch.name)}
               </p>
               {branch.address && (
                 <p className="text-xs text-ink-3 mt-0.5 leading-snug line-clamp-2">{branch.address}</p>

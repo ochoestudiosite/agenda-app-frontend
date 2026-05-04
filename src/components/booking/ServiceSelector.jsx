@@ -1,6 +1,6 @@
 import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
-import { formatPrice } from '../../utils/formatters';
+import { formatPrice, toTitleCase } from '../../utils/formatters';
 import Spinner from '../ui/Spinner';
 
 export default function ServiceSelector() {
@@ -56,7 +56,7 @@ function ServiceCard({ service, onSelect, delay }) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160 truncate">
-          {service.name}
+          {toTitleCase(service.name)}
         </p>
         <p className="text-xs text-ink-3 mt-0.5 leading-snug line-clamp-1">{service.description}</p>
       </div>

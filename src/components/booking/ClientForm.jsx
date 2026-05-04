@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { useCreateAppointment } from '../../hooks/useAppointment';
 import { useConfig } from '../../hooks/useConfig';
-import { formatDate, formatTime, formatPrice } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
@@ -61,8 +61,8 @@ export default function ClientForm() {
         <p className="text-ink-3 text-sm mt-1">Revisa los detalles y completa tus datos</p>
       </div>
       <div className="card p-5 mb-6 space-y-3">
-        <SummaryRow label="Servicio" value={state.service?.name} />
-        <SummaryRow label="Barbero"  value={state.specialist?.name} />
+        <SummaryRow label="Servicio" value={toTitleCase(state.service?.name)} />
+        <SummaryRow label="Barbero"  value={toTitleCase(state.specialist?.name)} />
         <SummaryRow label="Fecha"    value={formatDate(state.date)} />
         <SummaryRow label="Hora"     value={formatTime(state.time, timeFmt)} />
         <div className="pt-3 border-t border-edge flex justify-between items-center">

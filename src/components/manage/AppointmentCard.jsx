@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatDate, formatTime, formatPrice, generateSlots, groupSlots } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { useAvailability } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
@@ -70,15 +70,15 @@ export default function AppointmentCard({ appointment, onUpdated }) {
             <span className="font-display text-xl font-bold text-gold tracking-wider">{appointment.code}</span>
             <StatusBadge status={appointment.status} />
           </div>
-          <p className="text-ink-3 text-sm">{appointment.clientName} · {appointment.clientPhone}</p>
+          <p className="text-ink-3 text-sm">{toTitleCase(appointment.clientName)} · {appointment.clientPhone}</p>
         </div>
       </div>
 
       {/* Details */}
       <div className="space-y-2.5 mb-6">
-        <DetailRow label="Servicio" value={`${appointment.serviceName} (${appointment.serviceDuration} min)`} />
+        <DetailRow label="Servicio" value={`${toTitleCase(appointment.serviceName)} (${appointment.serviceDuration} min)`} />
         <DetailRow label="Precio"   value={formatPrice(appointment.servicePrice)} gold />
-        <DetailRow label="Barbero"  value={appointment.specialistName} />
+        <DetailRow label="Barbero"  value={toTitleCase(appointment.specialistName)} />
         <DetailRow label="Fecha"    value={formatDate(appointment.date)} />
         <DetailRow label="Hora"     value={formatTime(appointment.time, timeFmt)} />
       </div>

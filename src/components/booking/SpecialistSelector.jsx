@@ -1,5 +1,6 @@
 import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
+import { toTitleCase } from '../../utils/formatters';
 import Spinner from '../ui/Spinner';
 
 export default function SpecialistSelector() {
@@ -24,7 +25,7 @@ export default function SpecialistSelector() {
       <div className="mb-7">
         <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige tu barbero</h2>
         <p className="text-ink-3 text-sm mt-1">
-          Para <span className="text-ink font-medium">{state.service?.name}</span>
+          Para <span className="text-ink font-medium">{toTitleCase(state.service?.name)}</span>
         </p>
       </div>
 
@@ -84,7 +85,7 @@ function SpecialistCard({ specialist, onSelect, delay }) {
       {/* Info */}
       <div className="flex-1 sm:flex-none">
         <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160">
-          {specialist.name}
+          {toTitleCase(specialist.name)}
         </p>
         <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{specialist.specialty}</p>
       </div>

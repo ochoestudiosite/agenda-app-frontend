@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
-import { formatDate, formatTime, formatPrice } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import Button from '../ui/Button';
 
 export default function BookingConfirmation() {
@@ -44,8 +44,8 @@ export default function BookingConfirmation() {
 
       {/* Appointment details */}
       <div className="card p-5 text-left space-y-3 mb-8">
-        <DetailRow icon={<ScissorsIcon />} label="Servicio" value={`${confirmation?.serviceName} — ${formatPrice(confirmation?.servicePrice)}`} />
-        <DetailRow icon={<UserIcon />}     label="Barbero"  value={confirmation?.specialistName} />
+        <DetailRow icon={<ScissorsIcon />} label="Servicio" value={`${toTitleCase(confirmation?.serviceName)} — ${formatPrice(confirmation?.servicePrice)}`} />
+        <DetailRow icon={<UserIcon />}     label="Barbero"  value={toTitleCase(confirmation?.specialistName)} />
         <DetailRow icon={<CalendarIcon />} label="Fecha"    value={formatDate(confirmation?.date)} />
         <DetailRow icon={<ClockIcon />}    label="Hora"     value={formatTime(confirmation?.time, timeFmt)} />
         <DetailRow icon={<PhoneIcon />}    label="Teléfono" value={confirmation?.clientPhone} />

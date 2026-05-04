@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { useAvailability } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
-import { formatTime, generateSlots, groupSlots } from '../../utils/formatters';
+import { formatTime, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import { BackButton } from './SpecialistSelector';
@@ -95,7 +95,7 @@ export default function DateTimePicker() {
       <div className="mb-7">
         <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige fecha y hora</h2>
         <p className="text-ink-3 text-sm mt-1">
-          Con <span className="text-ink font-medium">{state.specialist?.name}</span>
+          Con <span className="text-ink font-medium">{toTitleCase(state.specialist?.name)}</span>
         </p>
       </div>
 

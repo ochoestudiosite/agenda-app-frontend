@@ -32,6 +32,14 @@ export function capitalize(str) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 }
 
+// Unicode-safe title case: "pedro lopéZ" → "Pedro Lopéz"
+export function toTitleCase(str) {
+  if (!str) return str ?? '';
+  return str.trim().toLowerCase().split(/\s+/).map(
+    w => w ? w[0].toUpperCase() + w.slice(1) : w
+  ).join(' ');
+}
+
 // Parse "HH:MM" or integer hour to minutes-from-midnight
 function toMins(t) {
   if (typeof t === 'number') return t * 60;
