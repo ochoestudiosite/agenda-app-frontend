@@ -1,9 +1,19 @@
 const BASE = `${import.meta.env.VITE_API_URL || ''}/api`;
 
+function getTenantSlug() {
+  const parts = window.location.hostname.split('.');
+  return parts.length >= 3 ? parts[0] : null;
+}
+
 async function request(method, path, body) {
+  const slug = getTenantSlug();
+  const headers = {};
+  if (body) headers['Content-Type'] = 'application/json';
+  if (slug) headers['X-Tenant-Slug'] = slug;
+
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 
