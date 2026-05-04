@@ -4,15 +4,15 @@ import { useConfig } from '../../hooks/useConfig';
 import { ToastProvider } from '../ui/Toast';
 
 export default function Layout({ children }) {
-  const { pathname }   = useLocation();
-  const { data: config } = useConfig();
-  const bizName = config?.business_name ?? 'BarberPro';
+  const { pathname }              = useLocation();
+  const { data: config, isLoading } = useConfig();
+  const bizName = config?.business_name;
 
   return (
     <ToastProvider>
       <div className="min-h-dvh bg-surface flex flex-col">
 
-        {/* Nav — Apple-style thin header */}
+        {/* Nav */}
         <header className="sticky top-0 z-40 border-b border-edge/60 bg-surface/80 backdrop-blur-xl backdrop-saturate-150">
           <div className="max-w-3xl mx-auto px-5 h-14 flex items-center justify-between">
 
@@ -20,9 +20,12 @@ export default function Layout({ children }) {
               <span className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center shrink-0">
                 <ScissorsIcon />
               </span>
-              <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink">
-                {bizName}
-              </span>
+              {isLoading
+                ? <span className="h-4 w-28 skeleton rounded-md" />
+                : <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink">
+                    {bizName || 'BarberPro'}
+                  </span>
+              }
             </Link>
 
             <div className="flex items-center gap-1">
@@ -32,7 +35,6 @@ export default function Layout({ children }) {
                 <NavLink to="/gestionar" active={pathname.startsWith('/gestionar')}>Mis Citas</NavLink>
               </nav>
 
-              {/* Mobile nav links */}
               <nav className="flex sm:hidden items-center gap-0.5 mr-1">
                 <MobileNavLink to="/agendar"   active={pathname.startsWith('/agendar')}>Agendar</MobileNavLink>
                 <MobileNavLink to="/gestionar" active={pathname.startsWith('/gestionar')}>Mis Citas</MobileNavLink>
@@ -53,10 +55,13 @@ export default function Layout({ children }) {
               <span className="w-5 h-5 rounded-md bg-gold/10 flex items-center justify-center">
                 <ScissorsIcon className="w-2.5 h-2.5 text-gold" />
               </span>
-              <span className="text-xs font-medium text-ink-3">{bizName}</span>
+              {isLoading
+                ? <span className="h-3 w-20 skeleton rounded-md" />
+                : <span className="text-xs font-medium text-ink-3">{bizName || 'BarberPro'}</span>
+              }
             </div>
             <p className="text-xs text-ink-3">
-              © {new Date().getFullYear()} {bizName} · Todos los derechos reservados
+              © {new Date().getFullYear()} {bizName || 'BarberPro'} · Todos los derechos reservados
             </p>
           </div>
         </footer>
@@ -71,10 +76,7 @@ function NavLink({ to, active, children }) {
     <Link
       to={to}
       className={`relative px-3.5 py-1.5 text-[0.8125rem] font-medium rounded-lg transition-all duration-160
-        ${active
-          ? 'text-ink'
-          : 'text-ink-3 hover:text-ink-2 hover:bg-raised'
-        }`}
+        ${active ? 'text-ink' : 'text-ink-3 hover:text-ink-2 hover:bg-raised'}`}
     >
       {children}
       {active && (
@@ -89,10 +91,7 @@ function MobileNavLink({ to, active, children }) {
     <Link
       to={to}
       className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-all duration-160
-        ${active
-          ? 'text-gold bg-gold/8'
-          : 'text-ink-3 hover:text-ink-2'
-        }`}
+        ${active ? 'text-gold bg-gold/8' : 'text-ink-3 hover:text-ink-2'}`}
     >
       {children}
     </Link>

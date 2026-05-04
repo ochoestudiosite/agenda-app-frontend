@@ -3,18 +3,24 @@ import Button from '../components/ui/Button';
 import { useConfig } from '../hooks/useConfig';
 
 export default function Home() {
-  const { data: config } = useConfig();
-  const bizName = config?.business_name ?? 'BarberPro';
+  const { data: config, isLoading } = useConfig();
   const bizLocation = config?.business_address
     ? config.business_address.split(',').slice(-1)[0]?.trim()
-    : 'Ciudad de México';
+    : null;
 
   return (
     <div className="max-w-3xl mx-auto px-5">
 
-      {/* ── Hero ──────────────────────────────────────────────────────────────── */}
+      {/* ── Hero ── */}
       <section className="pt-16 pb-20 sm:pt-24 sm:pb-28 animate-fade-up">
-        <p className="label-section mb-5">Barbería Premium · {bizLocation}</p>
+        <div className="mb-5">
+          {isLoading
+            ? <span className="inline-block h-3.5 w-52 skeleton rounded-md" />
+            : <p className="label-section">
+                Barbería Premium{bizLocation ? ` · ${bizLocation}` : ''}
+              </p>
+          }
+        </div>
         <h1 className="font-display text-[2.75rem] sm:text-6xl font-bold leading-[1.06] tracking-tightest text-ink mb-6">
           La experiencia<br />
           del <em className="not-italic text-gold">barbero perfecto.</em>
@@ -37,7 +43,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Features ──────────────────────────────────────────────────────────── */}
+      {/* ── Features ── */}
       <section className="pb-20">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {FEATURES.map((f, i) => (
@@ -56,7 +62,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── CTA strip ─────────────────────────────────────────────────────────── */}
+      {/* ── CTA strip ── */}
       <section className="mb-20 animate-fade-up" style={{ animationDelay: '180ms', animationFillMode: 'both' }}>
         <div className="relative overflow-hidden rounded-3xl bg-ink dark:bg-card border border-edge p-8 sm:p-12 text-center">
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

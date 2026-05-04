@@ -8,9 +8,20 @@ export default function ServiceSelector() {
   const { dispatch } = useBooking();
 
   if (isLoading) return (
-    <div className="space-y-3 animate-pulse">
+    <div className="space-y-2.5">
+      <div className="mb-7 space-y-2">
+        <div className="h-7 w-48 skeleton rounded-xl" />
+        <div className="h-4 w-32 skeleton rounded-lg" />
+      </div>
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="h-20 rounded-2xl skeleton" />
+        <div key={i} className="flex items-center gap-4 p-5 rounded-2xl border border-edge bg-card">
+          <div className="shrink-0 w-14 h-14 rounded-xl skeleton" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 skeleton rounded-lg" style={{ width: `${55 + (i % 3) * 15}%` }} />
+            <div className="h-3 skeleton rounded-md" style={{ width: `${35 + (i % 2) * 20}%` }} />
+          </div>
+          <div className="shrink-0 h-4 w-14 skeleton rounded-lg" />
+        </div>
       ))}
     </div>
   );

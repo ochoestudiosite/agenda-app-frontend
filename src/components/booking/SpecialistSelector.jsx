@@ -8,8 +8,23 @@ export default function SpecialistSelector() {
   const { state, dispatch } = useBooking();
 
   if (isLoading) return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-pulse">
-      {[...Array(3)].map((_, i) => <div key={i} className="h-40 rounded-2xl skeleton" />)}
+    <div>
+      <div className="h-7 w-24 skeleton rounded-lg mb-6" />
+      <div className="mb-7 space-y-2">
+        <div className="h-7 w-40 skeleton rounded-xl" />
+        <div className="h-4 w-56 skeleton rounded-lg" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="flex sm:flex-col items-center sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge bg-card">
+            <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full skeleton" />
+            <div className="flex-1 sm:flex-none sm:w-full space-y-2 sm:text-center">
+              <div className="h-4 skeleton rounded-lg sm:mx-auto" style={{ width: `${50 + i * 15}%` }} />
+              <div className="h-3 skeleton rounded-md sm:mx-auto" style={{ width: `${35 + i * 10}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 
