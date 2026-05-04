@@ -38,7 +38,7 @@ export default function SpecialistSelector() {
     <div className="animate-fade-up">
       <BackButton onClick={() => dispatch({ type: 'GO_BACK' })} />
       <div className="mb-7">
-        <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige tu barbero</h2>
+        <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige tu especialista</h2>
         <p className="text-ink-3 text-sm mt-1">
           Para <span className="text-ink font-medium">{toTitleCase(state.service?.name)}</span>
         </p>

@@ -18,12 +18,12 @@ export default function Layout({ children }) {
 
             <Link to="/" className="flex items-center gap-2.5 group">
               <span className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center shrink-0">
-                <ScissorsIcon />
+                <CalendarIcon />
               </span>
               {isLoading
                 ? <span className="h-4 w-28 skeleton rounded-md" />
                 : <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink">
-                    {bizName || 'BarberPro'}
+                    {bizName || 'Cita24'}
                   </span>
               }
             </Link>
@@ -53,15 +53,15 @@ export default function Layout({ children }) {
           <div className="max-w-3xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="w-5 h-5 rounded-md bg-gold/10 flex items-center justify-center">
-                <ScissorsIcon className="w-2.5 h-2.5 text-gold" />
+                <CalendarIcon className="w-2.5 h-2.5 text-gold" />
               </span>
               {isLoading
                 ? <span className="h-3 w-20 skeleton rounded-md" />
-                : <span className="text-xs font-medium text-ink-3">{bizName || 'BarberPro'}</span>
+                : <span className="text-xs font-medium text-ink-3">{bizName || 'Cita24'}</span>
               }
             </div>
             <p className="text-xs text-ink-3">
-              © {new Date().getFullYear()} {bizName || 'BarberPro'} · Todos los derechos reservados
+              © {new Date().getFullYear()} {bizName || 'Cita24'} · Todos los derechos reservados
             </p>
           </div>
         </footer>
@@ -112,11 +112,11 @@ function ThemeToggle() {
   );
 }
 
-function ScissorsIcon({ className = 'w-3.5 h-3.5 text-on-gold' }) {
+function CalendarIcon({ className = 'w-3.5 h-3.5 text-on-gold' }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
-      <path strokeLinecap="round" d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12" />
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
     </svg>
   );
 }

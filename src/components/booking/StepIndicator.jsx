@@ -1,6 +1,6 @@
 const BASE_STEPS = [
   { n: 1, label: 'Servicio' },
-  { n: 2, label: 'Barbero'  },
+  { n: 2, label: 'Especialista' },
   { n: 3, label: 'Horario'  },
   { n: 4, label: 'Datos'    },
 ];

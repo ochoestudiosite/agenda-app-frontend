@@ -78,7 +78,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
       <div className="space-y-2.5 mb-6">
         <DetailRow label="Servicio" value={`${toTitleCase(appointment.serviceName)} (${appointment.serviceDuration} min)`} />
         <DetailRow label="Precio"   value={formatPrice(appointment.servicePrice)} gold />
-        <DetailRow label="Barbero"  value={toTitleCase(appointment.specialistName)} />
+        <DetailRow label="Especialista" value={toTitleCase(appointment.specialistName)} />
         <DetailRow label="Fecha"    value={formatDate(appointment.date)} />
         <DetailRow label="Hora"     value={formatTime(appointment.time, timeFmt)} />
       </div>

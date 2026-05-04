@@ -63,7 +63,7 @@ export default function ClientForm() {
       </div>
       <div className="card p-5 mb-6 space-y-3">
         <SummaryRow label="Servicio" value={toTitleCase(state.service?.name)} />
-        <SummaryRow label="Barbero"  value={toTitleCase(state.specialist?.name)} />
+        <SummaryRow label="Especialista" value={toTitleCase(state.specialist?.name)} />
         <SummaryRow label="Fecha"    value={formatDate(state.date)} />
         <SummaryRow label="Hora"     value={formatTime(state.time, timeFmt)} />
         <div className="pt-3 border-t border-edge flex justify-between items-center">

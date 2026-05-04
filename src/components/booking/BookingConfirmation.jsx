@@ -45,7 +45,7 @@ export default function BookingConfirmation() {
       {/* Appointment details */}
       <div className="card p-5 text-left space-y-3 mb-8">
         <DetailRow icon={<ScissorsIcon />} label="Servicio" value={`${toTitleCase(confirmation?.serviceName)} — ${formatPrice(confirmation?.servicePrice)}`} />
-        <DetailRow icon={<UserIcon />}     label="Barbero"  value={toTitleCase(confirmation?.specialistName)} />
+        <DetailRow icon={<UserIcon />}     label="Especialista" value={toTitleCase(confirmation?.specialistName)} />
         <DetailRow icon={<CalendarIcon />} label="Fecha"    value={formatDate(confirmation?.date)} />
         <DetailRow icon={<ClockIcon />}    label="Hora"     value={formatTime(confirmation?.time, timeFmt)} />
         <DetailRow icon={<PhoneIcon />}    label="Teléfono" value={confirmation?.clientPhone} />
