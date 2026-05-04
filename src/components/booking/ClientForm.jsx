@@ -11,7 +11,8 @@ import { BackButton } from './SpecialistSelector';
 export default function ClientForm() {
   const { state, dispatch } = useBooking();
   const { data: config }   = useConfig();
-  const timeFmt = config?.time_format ?? '12h';
+  const timeFmt        = config?.time_format ?? '12h';
+  const configBranches = config?.branches ?? [];
   const toast          = useToast();
   const createMutation = useCreateAppointment();
 
@@ -40,7 +41,7 @@ export default function ClientForm() {
         time:         state.time,
         clientName:   name.trim(),
         clientPhone:  phone.trim(),
-        branchId:     state.branch?.id ?? null,
+        branchId:     state.branch?.id ?? (configBranches.length === 1 ? configBranches[0].id : null),
       });
       dispatch({ type: 'SET_CONFIRMATION', payload: result });
     } catch (err) {
