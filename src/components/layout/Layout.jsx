@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useConfig } from '../../hooks/useConfig';
@@ -12,6 +13,7 @@ export default function Layout({ children }) {
     return <TenantNotFound suspended={error?.status === 403} />;
   }
   const bizName = config?.business_name;
+  const logoUrl = config?.logo_url ?? null;
 
   return (
     <ToastProvider>
@@ -22,9 +24,7 @@ export default function Layout({ children }) {
           <div className="max-w-3xl mx-auto px-5 h-14 flex items-center justify-between">
 
             <Link to="/" className="flex items-center gap-2.5 group">
-              <span className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center shrink-0">
-                <CalendarIcon />
-              </span>
+              <BizLogo url={logoUrl} size="nav" />
               {isLoading
                 ? <span className="h-4 w-28 skeleton rounded-md" />
                 : <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink">
@@ -57,9 +57,7 @@ export default function Layout({ children }) {
         <footer className="border-t border-edge/60 py-8 safe-area-bottom">
           <div className="max-w-3xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-md bg-gold/10 flex items-center justify-center">
-                <CalendarIcon className="w-2.5 h-2.5 text-gold" />
-              </span>
+              <BizLogo url={logoUrl} size="footer" />
               {isLoading
                 ? <span className="h-3 w-20 skeleton rounded-md" />
                 : <span className="text-xs font-medium text-ink-3">{bizName || 'Cita24'}</span>
@@ -123,6 +121,38 @@ function CalendarIcon({ className = 'w-3.5 h-3.5 text-on-gold' }) {
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
     </svg>
+  );
+}
+
+// Renders the business logo if logo_url is set and loads correctly, otherwise
+// falls back to the CalendarIcon on its gold background.
+// Only accepts https:// or data:image/ URLs — anything else is treated as absent.
+function BizLogo({ url, size = 'nav' }) {
+  const [failed, setFailed] = useState(false);
+  const safe = url && !failed && (url.startsWith('https://') || url.startsWith('data:image/'));
+
+  if (size === 'nav') {
+    return safe ? (
+      <span className="w-7 h-7 rounded-lg shrink-0 overflow-hidden bg-raised border border-edge/50">
+        <img src={url} alt="" onError={() => setFailed(true)}
+             className="w-full h-full object-cover" loading="lazy" />
+      </span>
+    ) : (
+      <span className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center shrink-0">
+        <CalendarIcon />
+      </span>
+    );
+  }
+
+  return safe ? (
+    <span className="w-5 h-5 rounded-md shrink-0 overflow-hidden bg-raised border border-edge/40">
+      <img src={url} alt="" onError={() => setFailed(true)}
+           className="w-full h-full object-cover" loading="lazy" />
+    </span>
+  ) : (
+    <span className="w-5 h-5 rounded-md bg-gold/10 flex items-center justify-center">
+      <CalendarIcon className="w-2.5 h-2.5 text-gold" />
+    </span>
   );
 }
 function SunIcon() {
