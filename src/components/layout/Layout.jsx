@@ -2,10 +2,15 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useConfig } from '../../hooks/useConfig';
 import { ToastProvider } from '../ui/Toast';
+import TenantNotFound from '../../pages/TenantNotFound';
 
 export default function Layout({ children }) {
-  const { pathname }              = useLocation();
-  const { data: config, isLoading } = useConfig();
+  const { pathname }                        = useLocation();
+  const { data: config, isLoading, error } = useConfig();
+
+  if (error?.status === 404 || error?.status === 403) {
+    return <TenantNotFound suspended={error?.status === 403} />;
+  }
   const bizName = config?.business_name;
 
   return (
