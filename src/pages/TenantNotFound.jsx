@@ -38,9 +38,9 @@ export default function TenantNotFound({ suspended = false }) {
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
         <a
           href="https://cita24.com"
-          className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl
-                     bg-raised border border-edge text-ink-2 text-sm font-medium
-                     hover:bg-edge/40 transition-colors duration-160"
+          className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl
+                     border border-edge bg-raised text-ink-2 text-sm font-semibold
+                     hover:bg-edge/40 transition-colors duration-150"
         >
           <HomeIcon />
           Ir a Cita24
@@ -48,9 +48,9 @@ export default function TenantNotFound({ suspended = false }) {
         {!suspended && (
           <a
             href="https://cita24.com/registro"
-            className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl
-                       bg-gold text-on-gold text-sm font-semibold
-                       hover:opacity-90 transition-opacity duration-160"
+            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl
+                       border border-transparent bg-gold text-on-gold text-sm font-semibold
+                       hover:opacity-90 transition-opacity duration-150"
           >
             Registra tu negocio
             <ArrowRight />
