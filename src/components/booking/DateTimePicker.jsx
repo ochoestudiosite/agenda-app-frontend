@@ -43,6 +43,15 @@ export default function DateTimePicker() {
   const { state, dispatch } = useBooking();
   const { data: config }   = useConfig();
 
+  // ── Calendar bounds ───────────────────────────────────────────────────────
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const maxAdvance    = config?.max_advance_days   ?? 30;
+  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
+
+  const [viewMonth,    setViewMonth]    = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+
   const bizHours      = config?.hours              ?? [];
   const timeFmt       = config?.time_format        ?? '12h';
 
@@ -55,27 +64,17 @@ export default function DateTimePicker() {
   // ── Expert: Prioritize live config from API to avoid refresh issues ──────
   const intervalMins  = liveConfig.interval || config?.slot_interval_mins || 30;
   const leadMins      = liveConfig.leadMins || config?.booking_lead_mins || 60;
-  const maxAdvance    = config?.max_advance_days   ?? 30;
 
   // Days with is_open === false → disabled in calendar
   const daysClosed = bizHours.length > 0
     ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
-    : [0]; // fallback: closed on Sundays
+    : [0]; 
 
-  // Returns the business_hours entry for a given date (or null if closed/unknown)
   function getDayEntry(date) {
     if (!date) return null;
     const entry = bizHours.find(h => h.day_of_week === date.getDay());
     return entry ?? null;
   }
-
-  // ── Calendar bounds ───────────────────────────────────────────────────────
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
-
-  const [viewMonth,    setViewMonth]    = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
 
   // ── Handled above ──
 
