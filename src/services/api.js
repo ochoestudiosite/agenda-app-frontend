@@ -5,27 +5,50 @@ function getTenantSlug() {
   return parts.length >= 3 ? parts[0] : null;
 }
 
-async function request(method, path, body) {
+const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
+async function request(method, path, body, retryCount = 0) {
   const slug = getTenantSlug();
   const headers = {};
+  const MAX_RETRIES = 2;
+
   if (body) headers['Content-Type'] = 'application/json';
   if (slug) headers['X-Tenant-Slug'] = slug;
 
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
 
-  const data = await res.json().catch(() => ({}));
+    // Handle 429 Too Many Requests with Exponential Backoff
+    if (res.status === 429 && retryCount < MAX_RETRIES) {
+      const retryAfter = res.headers.get('Retry-After') || 2;
+      const delay = (parseInt(retryAfter) * 1000) + (Math.random() * 1000); // Add jitter
+      console.warn(`[API] Rate limited (429). Retrying in ${delay}ms... (Attempt ${retryCount + 1})`);
+      await sleep(delay);
+      return request(method, path, body, retryCount + 1);
+    }
 
-  if (!res.ok) {
-    const err = new Error(data.error || `HTTP ${res.status}`);
-    err.status = res.status;
-    throw err;
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const err = new Error(data.message || data.error || `HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+
+    return data;
+  } catch (error) {
+    if (error.status === 429) throw error;
+    // For network errors, try one retry
+    if (retryCount < MAX_RETRIES) {
+      await sleep(1000 * (retryCount + 1));
+      return request(method, path, body, retryCount + 1);
+    }
+    throw error;
   }
-
-  return data;
 }
 
 export const api = {
