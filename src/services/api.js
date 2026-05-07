@@ -32,7 +32,7 @@ export const api = {
   getConfig:   () => request('GET', '/config'),
   getServices: () => request('GET', '/services'),
   getSpecialists: () => request('GET', '/services/specialists'),
-  getAvailability: (date) => request('GET', `/availability?date=${date}`),
+  getAvailability: (date, specialistId) => request('GET', `/availability?date=${date}${specialistId ? `&specialistId=${specialistId}` : ''}`),
   createAppointment: (body) => request('POST', '/appointments', body),
   getAppointment: (code) => request('GET', `/appointments/${code}`),
   rescheduleAppointment: (code, body) => request('PUT', `/appointments/${code}`, body),

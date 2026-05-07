@@ -50,7 +50,7 @@ export default function DateTimePicker() {
   const [selectedTime, setSelectedTime] = useState(null);
 
   const dateStr = selectedDate ? toDateStr(selectedDate) : null;
-  const { data: availData, isFetching } = useAvailability(dateStr);
+  const { data: availData, isFetching } = useAvailability(dateStr, state.specialist?.id);
   const busySlots = availData?.busySlots || [];
 
   // ── Slot generation for selected day ─────────────────────────────────────
