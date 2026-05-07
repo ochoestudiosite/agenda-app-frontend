@@ -79,7 +79,7 @@ export default function ClientForm() {
       </div>
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <Input label="Nombre completo" placeholder="Juan García" value={name}
-          onChange={e => setName(e.target.value)} error={errors.name} required autoComplete="name" />
+          onChange={e => setName(e.target.value)} error={errors.name} required autoComplete="name" maxLength={60} />
         <PhoneInput label="Teléfono" placeholder="55 1234 5678" value={phone}
           onChange={e => setPhone(e.target.value)}
           error={errors.phone} required autoComplete="tel"
