@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useBooking } from '../../context/BookingContext';
-import { useAvailability } from '../../hooks/useAvailability';
+import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { formatTime, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import Spinner from '../ui/Spinner';
@@ -57,11 +57,16 @@ export default function DateTimePicker() {
 
   const dateStr = selectedDate ? toDateStr(selectedDate) : null;
   const { data: availData, isFetching } = useAvailability(dateStr, state.specialist?.id);
-  
+
+  const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
+  const { data: blockedData } = useBlockedDates(monthStr, state.specialist?.id);
+  const blockedDates = blockedData?.blockedDates || [];
+
   const liveConfig = availData?.config || {};
   const busySlots  = availData?.busySlots || [];
+  const staffBlocked = availData?.staffBlocked;
 
-  // ── Expert: Prioritize live config from API to avoid refresh issues ──────
+  // ── Expert: Prioritize live config from avoid refresh issues ──────
   const intervalMins  = liveConfig.interval || config?.slot_interval_mins || 30;
   const leadMins      = liveConfig.leadMins || config?.booking_lead_mins || 60;
 
@@ -105,7 +110,12 @@ export default function DateTimePicker() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d));
 
   function isDayDisabled(d) {
-    return d < today || d > maxDate || daysClosed.includes(d.getDay());
+    if (d < today || d > maxDate) return true;
+    if (daysClosed.includes(d.getDay())) return true;
+    const dateStr = toDateStr(d);
+    if (blockedDates.includes(dateStr)) return true;
+    if (blockedDates.includes(`recurring:${d.getDay()}`)) return true;
+    return false;
   }
 
   function handleSelectDate(date) {
@@ -201,7 +211,23 @@ export default function DateTimePicker() {
             <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
           )}
 
-          {selectedDate && !isFetching && allSlotsExhausted && (
+          {selectedDate && !isFetching && staffBlocked && (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
+              <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728v.474A6 6 0 015.636 20.636m-7.07 1.029a6 6 0 01-8.485 0"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-ink">Día no disponible</p>
+                <p className="text-xs text-ink-3 mt-1">
+                  {staffBlocked.reason || 'El especialista no estará disponible este día.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {selectedDate && !isFetching && !staffBlocked && allSlotsExhausted && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                 <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
