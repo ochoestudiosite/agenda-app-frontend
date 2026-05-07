@@ -25,11 +25,14 @@ function minutesToSlot(mins) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-function isSlotBusy(slot, duration, busySlots, interval) {
+function isSlotBusy(slot, duration, busySlots, interval, closeTimeMins) {
   const start = slotToMinutes(slot);
   const end = start + duration;
   
-  // A slot is busy if ANY of its required sub-slots are in the busySlots array
+  // Rule 1: Cannot exceed business hours
+  if (end > closeTimeMins) return true;
+
+  // Rule 2: Cannot overlap with existing busy slots
   for (let t = start; t < end; t += interval) {
     if (busySlots.includes(minutesToSlot(t))) return true;
   }
@@ -224,7 +227,8 @@ export default function DateTimePicker() {
               {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
                 const slots = grouped[key];
                 if (!slots?.length) return null;
-                const allGone = slots.every(s => isSlotPast(s) || isSlotBusy(s, duration, busySlots, intervalMins));
+                const closeMins = slotToMinutes(closeTime);
+                const allGone = slots.every(s => isSlotPast(s) || isSlotBusy(s, duration, busySlots, intervalMins, closeMins));
                 if (allGone) return null;
 
                 return (
@@ -233,7 +237,8 @@ export default function DateTimePicker() {
                     <div className="grid grid-cols-3 gap-2">
                       {slots.map(slot => {
                         const past = isSlotPast(slot);
-                        const busy = isSlotBusy(slot, duration, busySlots, intervalMins);
+                        const closeMins = slotToMinutes(closeTime);
+                        const busy = isSlotBusy(slot, duration, busySlots, intervalMins, closeMins);
                         const sel  = selectedTime === slot;
                         const unavail = past || busy;
                         return (

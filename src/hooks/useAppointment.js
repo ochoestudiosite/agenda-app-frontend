@@ -11,7 +11,13 @@ export function useAppointmentLookup(code) {
 }
 
 export function useCreateAppointment() {
-  return useMutation({ mutationFn: api.createAppointment });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.createAppointment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['availability'] });
+    },
+  });
 }
 
 export function useRescheduleAppointment() {

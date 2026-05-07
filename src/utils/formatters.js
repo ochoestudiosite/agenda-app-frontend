@@ -56,9 +56,7 @@ export function generateSlots(openTime, closeTime, serviceDuration = 30, interva
   const end   = toMins(closeTime);
   const slots = [];
   for (let m = start; m < end; m += intervalMins) {
-    if (m + serviceDuration <= end) {
-      slots.push(`${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`);
-    }
+    slots.push(`${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`);
   }
   return slots;
 }
