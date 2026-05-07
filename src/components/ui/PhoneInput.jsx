@@ -62,7 +62,7 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
             value={code} 
             onChange={handleCodeChange}
             className="h-[50px] bg-transparent text-[0.9375rem] pl-4 pr-7 appearance-none cursor-pointer focus:outline-none text-ink"
-            style={{ width: '90px' }}
+            style={{ width: '110px' }}
           >
             {COUNTRIES.map(c => (
               <option key={c.code} value={c.code} className="bg-card text-ink">

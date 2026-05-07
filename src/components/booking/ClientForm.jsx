@@ -25,9 +25,11 @@ export default function ClientForm() {
     const errs = {};
     if (!name.trim() || name.trim().length < 2) errs.name = 'Ingresa tu nombre completo (mínimo 2 caracteres).';
     
-    // Check if the number part has at least 10 digits
-    const rawNumber = phone.replace(/^\+\d+/, '').replace(/\D/g, '');
-    if (rawNumber.length < 10) errs.phone = 'El teléfono debe tener 10 dígitos.';
+    const COUNTRIES = ['+52', '+1', '+57', '+54', '+34', '+56', '+51'];
+    const code = COUNTRIES.find(c => phone.startsWith(c)) || '';
+    const rawNumber = phone.slice(code.length).replace(/\D/g, '');
+    
+    if (rawNumber.length !== 10) errs.phone = 'El teléfono debe tener 10 dígitos.';
     return errs;
   }
 
