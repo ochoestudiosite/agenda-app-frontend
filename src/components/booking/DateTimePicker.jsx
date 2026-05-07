@@ -43,12 +43,19 @@ export default function DateTimePicker() {
   const { state, dispatch } = useBooking();
   const { data: config }   = useConfig();
 
-  // ── Config values with safe fallbacks ────────────────────────────────────
-  const maxAdvance    = config?.max_advance_days   ?? 30;
-  const leadMins      = config?.booking_lead_mins  ?? 60;
-  const intervalMins  = config?.slot_interval_mins ?? 30;
   const bizHours      = config?.hours              ?? [];
   const timeFmt       = config?.time_format        ?? '12h';
+
+  const dateStr = selectedDate ? toDateStr(selectedDate) : null;
+  const { data: availData, isFetching } = useAvailability(dateStr, state.specialist?.id);
+  
+  const liveConfig = availData?.config || {};
+  const busySlots  = availData?.busySlots || [];
+
+  // ── Expert: Prioritize live config from API to avoid refresh issues ──────
+  const intervalMins  = liveConfig.interval || config?.slot_interval_mins || 30;
+  const leadMins      = liveConfig.leadMins || config?.booking_lead_mins || 60;
+  const maxAdvance    = config?.max_advance_days   ?? 30;
 
   // Days with is_open === false → disabled in calendar
   const daysClosed = bizHours.length > 0
@@ -70,15 +77,13 @@ export default function DateTimePicker() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
 
-  const dateStr = selectedDate ? toDateStr(selectedDate) : null;
-  const { data: availData, isFetching } = useAvailability(dateStr, state.specialist?.id);
-  const busySlots = availData?.busySlots || [];
+  // ── Handled above ──
 
   // ── Slot generation for selected day ─────────────────────────────────────
-  const duration = state.service?.duration || 30;
-  const dayEntry = getDayEntry(selectedDate);
-  const openTime  = dayEntry?.open_time  ?? '9:00';
-  const closeTime = dayEntry?.close_time ?? '19:00';
+  const duration  = state.service?.duration || 30;
+  const dayEntry  = getDayEntry(selectedDate);
+  const openTime  = liveConfig.openTime  || dayEntry?.open_time  || '9:00';
+  const closeTime = liveConfig.closeTime || dayEntry?.close_time || '19:00';
   const allSlots  = selectedDate ? generateSlots(openTime, closeTime, duration, intervalMins) : [];
   const grouped   = groupSlots(allSlots);
 
