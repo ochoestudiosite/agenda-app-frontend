@@ -14,8 +14,26 @@ function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function slotToMinutes(slot) {
+  if (!slot) return 0;
   const [h, m] = slot.split(':').map(Number);
   return h * 60 + m;
+}
+
+function minutesToSlot(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
+
+function isSlotBusy(slot, duration, busySlots, interval) {
+  const start = slotToMinutes(slot);
+  const end = start + duration;
+  
+  // A slot is busy if ANY of its required sub-slots are in the busySlots array
+  for (let t = start; t < end; t += interval) {
+    if (busySlots.includes(minutesToSlot(t))) return true;
+  }
+  return false;
 }
 
 export default function DateTimePicker() {
@@ -206,7 +224,7 @@ export default function DateTimePicker() {
               {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
                 const slots = grouped[key];
                 if (!slots?.length) return null;
-                const allGone = slots.every(s => isSlotPast(s) || busySlots.includes(s));
+                const allGone = slots.every(s => isSlotPast(s) || isSlotBusy(s, duration, busySlots, intervalMins));
                 if (allGone) return null;
 
                 return (
@@ -215,7 +233,7 @@ export default function DateTimePicker() {
                     <div className="grid grid-cols-3 gap-2">
                       {slots.map(slot => {
                         const past = isSlotPast(slot);
-                        const busy = busySlots.includes(slot);
+                        const busy = isSlotBusy(slot, duration, busySlots, intervalMins);
                         const sel  = selectedTime === slot;
                         const unavail = past || busy;
                         return (
