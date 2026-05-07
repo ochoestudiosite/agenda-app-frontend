@@ -4,6 +4,7 @@ import { useCreateAppointment } from '../../hooks/useAppointment';
 import { useConfig } from '../../hooks/useConfig';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import Input from '../ui/Input';
+import PhoneInput from '../ui/PhoneInput';
 import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { BackButton } from './SpecialistSelector';
@@ -23,7 +24,10 @@ export default function ClientForm() {
   function validate() {
     const errs = {};
     if (!name.trim() || name.trim().length < 2) errs.name = 'Ingresa tu nombre completo (mínimo 2 caracteres).';
-    if (!/^\d{10}$/.test(phone.trim())) errs.phone = 'El teléfono debe tener exactamente 10 dígitos.';
+    
+    // Check if the number part has at least 10 digits
+    const rawNumber = phone.replace(/^\+\d+/, '').replace(/\D/g, '');
+    if (rawNumber.length < 10) errs.phone = 'El teléfono debe tener 10 dígitos.';
     return errs;
   }
 
@@ -74,10 +78,10 @@ export default function ClientForm() {
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <Input label="Nombre completo" placeholder="Juan García" value={name}
           onChange={e => setName(e.target.value)} error={errors.name} required autoComplete="name" />
-        <Input label="Teléfono" placeholder="5512345678" value={phone}
-          onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-          error={errors.phone} required inputMode="tel" autoComplete="tel"
-          helper="10 dígitos sin espacios ni guiones" />
+        <PhoneInput label="Teléfono" placeholder="55 1234 5678" value={phone}
+          onChange={e => setPhone(e.target.value)}
+          error={errors.phone} required autoComplete="tel"
+          helper="10 dígitos (asegúrate de incluir la lada)" />
         <Button type="submit" size="lg" className="w-full mt-2" loading={createMutation.isPending}>
           Confirmar reservación
         </Button>
