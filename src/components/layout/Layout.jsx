@@ -4,6 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useConfig } from '../../hooks/useConfig';
 import { ToastProvider } from '../ui/Toast';
 import TenantNotFound from '../../pages/TenantNotFound';
+import ThemeToggle from '../ui/ThemeToggle';
 
 export default function Layout({ children }) {
   const { pathname }                        = useLocation();
@@ -14,6 +15,18 @@ export default function Layout({ children }) {
   }
   const bizName = config?.business_name;
   const logoUrl = config?.logo_url ?? null;
+
+  const isHome = pathname === '/';
+
+  if (isHome) {
+    return (
+      <ToastProvider>
+        <main className="min-h-dvh flex flex-col bg-surface text-ink transition-colors duration-300">
+          {children}
+        </main>
+      </ToastProvider>
+    );
+  }
 
   return (
     <ToastProvider>
@@ -45,7 +58,7 @@ export default function Layout({ children }) {
                 <MobileNavLink to="/gestionar" active={pathname.startsWith('/gestionar')}>Mis Citas</MobileNavLink>
               </nav>
 
-              <ThemeToggle />
+              <ThemeToggle className="ml-1" />
             </div>
           </div>
         </header>
@@ -101,19 +114,7 @@ function MobileNavLink({ to, active, children }) {
   );
 }
 
-function ThemeToggle() {
-  const { isDark, toggle } = useTheme();
-  return (
-    <button
-      onClick={toggle}
-      aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-      className="w-9 h-9 flex items-center justify-center rounded-lg text-ink-3
-                 hover:text-ink-2 hover:bg-raised transition-all duration-160 cursor-pointer ml-1"
-    >
-      {isDark ? <SunIcon /> : <MoonIcon />}
-    </button>
-  );
-}
+
 
 function CalendarIcon({ className = 'w-3.5 h-3.5 text-on-gold' }) {
   return (
@@ -155,18 +156,5 @@ function BizLogo({ url, size = 'nav' }) {
     </span>
   );
 }
-function SunIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <circle cx="12" cy="12" r="4" />
-      <path strokeLinecap="round" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-    </svg>
-  );
-}
-function MoonIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-    </svg>
-  );
-}
+
+

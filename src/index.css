@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,34 +7,56 @@
 /* ── Token system — RGB channels (no wrapper) for opacity modifier support ── */
 :root {
   /* Apple Human Interface Guidelines — Light mode system colors */
-  --surface:       242 242 247;   /* systemGroupedBackground  #F2F2F7 */
-  --card:          255 255 255;   /* systemBackground         #FFFFFF */
-  --raised:        229 229 234;   /* systemGray5              #E5E5EA */
-  --edge:          209 209 214;   /* systemGray4              #D1D1D6 */
-  --edge-strong:   174 174 178;   /* systemGray2              #AEAEB2 */
-  --ink:            29  29  31;   /* label                    #1D1D1F */
-  --ink-2:          99  99 102;   /* secondaryLabel           #636366 */
-  --ink-3:         174 174 178;   /* tertiaryLabel            #AEAEB2 */
-  --gold:          146 104  10;   /* premium warm gold — AA on white ✓ */
-  --gold-light:    170 126  36;   /* hover                              */
-  --gold-muted:    255 249 232;   /* subtle gold tint                   */
-  --on-gold:       255 255 255;
+  --surface: 242 242 247;
+  /* systemGroupedBackground  #F2F2F7 */
+  --card: 255 255 255;
+  /* systemBackground         #FFFFFF */
+  --raised: 229 229 234;
+  /* systemGray5              #E5E5EA */
+  --edge: 209 209 214;
+  /* systemGray4              #D1D1D6 */
+  --edge-strong: 174 174 178;
+  /* systemGray2              #AEAEB2 */
+  --ink: 29 29 31;
+  /* label                    #1D1D1F */
+  --ink-2: 99 99 102;
+  /* secondaryLabel           #636366 */
+  --ink-3: 174 174 178;
+  /* tertiaryLabel            #AEAEB2 */
+  --gold: 146 104 10;
+  /* premium warm gold — AA on white ✓ */
+  --gold-light: 170 126 36;
+  /* hover                              */
+  --gold-muted: 255 249 232;
+  /* subtle gold tint                   */
+  --on-gold: 255 255 255;
 }
 
 .dark {
   /* Apple Human Interface Guidelines — Dark mode (OLED-optimised) */
-  --surface:         0   0   0;   /* pure black OLED          #000000  */
-  --card:           28  28  30;   /* secondarySystemBg dark   #1C1C1E  */
-  --raised:         44  44  46;   /* tertiarySystemBg dark    #2C2C2E  */
-  --edge:           58  58  60;   /* separator dark           #3A3A3C  */
-  --edge-strong:    99  99 102;   /* systemGray dark          #636366  */
-  --ink:           255 255 255;
-  --ink-2:         174 174 178;   /* systemGray2 dark         #AEAEB2  */
-  --ink-3:          99  99 102;   /* systemGray dark          #636366  */
-  --gold:          214 172  72;   /* warm gold on black       #D6AC48  */
-  --gold-light:    228 190  95;   /* hover                              */
-  --gold-muted:     52  38   6;   /* deep gold bg                       */
-  --on-gold:        28  28  30;   /* dark text on bright gold           */
+  --surface: 0 0 0;
+  /* pure black OLED          #000000  */
+  --card: 28 28 30;
+  /* secondarySystemBg dark   #1C1C1E  */
+  --raised: 44 44 46;
+  /* tertiarySystemBg dark    #2C2C2E  */
+  --edge: 58 58 60;
+  /* separator dark           #3A3A3C  */
+  --edge-strong: 99 99 102;
+  /* systemGray dark          #636366  */
+  --ink: 255 255 255;
+  --ink-2: 174 174 178;
+  /* systemGray2 dark         #AEAEB2  */
+  --ink-3: 99 99 102;
+  /* systemGray dark          #636366  */
+  --gold: 214 172 72;
+  /* warm gold on black       #D6AC48  */
+  --gold-light: 228 190 95;
+  /* hover                              */
+  --gold-muted: 52 38 6;
+  /* deep gold bg                       */
+  --on-gold: 28 28 30;
+  /* dark text on bright gold           */
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────────── */
@@ -42,17 +66,30 @@
     color: rgb(var(--ink));
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    transition-property: background-color, color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
   }
 
   body {
-    /* SF Pro on Apple devices; Inter everywhere else */
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+    /* Inter for body */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'ss01', 'cv05';
   }
 
-  * { box-sizing: border-box; }
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
 
   :focus-visible {
     outline: 2px solid rgb(var(--gold) / 0.65);
@@ -61,21 +98,20 @@
   }
 
   /* Smooth theme transition — only color props, never transforms */
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     transition-property: background-color, border-color, color, fill, stroke, box-shadow;
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  button, a, input, select, textarea {
+  button,
+  a,
+  input,
+  select,
+  textarea {
     transition-property: background-color, border-color, color, opacity, box-shadow, transform;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
   }
 }
 
@@ -87,6 +123,7 @@
     @apply bg-card border border-edge rounded-2xl;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 4px 16px 0 rgb(0 0 0 / 0.04);
   }
+
   .dark .card {
     box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
   }
@@ -98,7 +135,9 @@
   }
 
   /* Divider */
-  .divider { @apply border-t border-edge; }
+  .divider {
+    @apply border-t border-edge;
+  }
 
   /* Section label */
   .label-section {
@@ -108,12 +147,10 @@
   /* Skeleton shimmer */
   .skeleton {
     @apply bg-raised overflow-hidden relative;
-    background: linear-gradient(
-      90deg,
-      rgb(var(--raised)) 0%,
-      rgb(var(--edge)) 50%,
-      rgb(var(--raised)) 100%
-    );
+    background: linear-gradient(90deg,
+        rgb(var(--raised)) 0%,
+        rgb(var(--edge)) 50%,
+        rgb(var(--raised)) 100%);
     background-size: 200% 100%;
     animation: shimmer 1.6s infinite;
   }
@@ -122,16 +159,110 @@
   .badge {
     @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border;
   }
-  .badge-confirmed   { @apply bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20; }
-  .badge-cancelled   { @apply bg-red-500/10    text-red-700    dark:text-red-400    border-red-500/20; }
-  .badge-rescheduled { @apply bg-blue-500/10   text-blue-700   dark:text-blue-400   border-blue-500/20; }
+
+  .badge-confirmed {
+    @apply bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20;
+  }
+
+  .badge-cancelled {
+    @apply bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20;
+  }
+
+  .badge-rescheduled {
+    @apply bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20;
+  }
+}
+
+@layer utilities {
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-card/60 backdrop-blur-xl border border-edge/50;
+  }
+
+  .dark .glass {
+    @apply bg-surface/40 border-white/5;
+  }
+
+  /* Typography utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .tracking-tightest {
+    letter-spacing: -0.04em;
+  }
+
+  .tracking-tighter2 {
+    letter-spacing: -0.02em;
+  }
+
+  /* Mask fades */
+  .mask-fade-b {
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  }
+
+  .mask-fade-t {
+    mask-image: linear-gradient(to top, black 80%, transparent 100%);
+  }
+
+  /* Section constraints */
+  .section-container {
+    @apply max-w-[1200px] mx-auto px-6 sm:px-10;
+  }
+
+  /* Shimmer button premium */
+  .btn-premium {
+    @apply relative overflow-hidden bg-ink text-surface px-6 py-3 rounded-full font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
+    box-shadow: 0 4px 12px rgba(var(--gold), 0.1);
+  }
+
+  .btn-premium::after {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: premium-shimmer 3s infinite;
+  }
+
+  .btn-premium:hover::after {
+    @apply opacity-100;
+  }
+}
+
+@keyframes premium-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 ::-webkit-scrollbar-thumb {
   background: rgb(var(--edge-strong) / 0.5);
   border-radius: 99px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgb(var(--gold) / 0.5); }
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--gold) / 0.5);
+}
