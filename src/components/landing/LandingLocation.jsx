@@ -45,7 +45,8 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
 
             <div className="space-y-6">
               {address && (
-                <div className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-edge hover:border-gold/30 transition-all group">
+                <div className="flex items-start gap-4 p-5 rounded-2xl bg-card hover:shadow-lg transition-all group"
+                  style={{ boxShadow: '0 1px 3px rgb(0 0 0 / 0.04), 0 4px 20px rgb(0 0 0 / 0.03)' }}>
                   <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink group-hover:bg-ink group-hover:text-surface transition-all">
                     <MapPin size={20} />
                   </div>
@@ -57,7 +58,8 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
               )}
 
               {(phone || email) && (
-                <div className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-edge hover:border-gold/30 transition-all group">
+                <div className="flex items-start gap-4 p-5 rounded-2xl bg-card hover:shadow-lg transition-all group"
+                  style={{ boxShadow: '0 1px 3px rgb(0 0 0 / 0.04), 0 4px 20px rgb(0 0 0 / 0.03)' }}>
                   <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink group-hover:bg-ink group-hover:text-surface transition-all">
                     <Phone size={20} />
                   </div>
@@ -69,7 +71,8 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                 </div>
               )}
 
-              <div className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-edge hover:border-gold/30 transition-all group">
+              <div className="flex items-start gap-4 p-5 rounded-2xl bg-card hover:shadow-lg transition-all group"
+                style={{ boxShadow: '0 1px 3px rgb(0 0 0 / 0.04), 0 4px 20px rgb(0 0 0 / 0.03)' }}>
                 <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink group-hover:bg-ink group-hover:text-surface transition-all">
                   <Clock size={20} />
                 </div>

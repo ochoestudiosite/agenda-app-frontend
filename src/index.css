@@ -177,11 +177,21 @@
 
   /* Glassmorphism */
   .glass {
-    @apply bg-card/60 backdrop-blur-xl border border-edge/50;
+    @apply bg-card/70 backdrop-blur-2xl;
+    box-shadow: inset 0 0 0 1px rgb(var(--edge) / 0.15), 0 8px 32px rgb(0 0 0 / 0.06);
   }
 
   .dark .glass {
-    @apply bg-surface/40 border-white/5;
+    @apply bg-surface/50;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 32px rgb(0 0 0 / 0.2);
+  }
+
+  /* Line clamp */
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   /* Typography utilities */
@@ -265,4 +275,13 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--gold) / 0.5);
+}
+
+/* Hide scrollbar for mobile sliders */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
