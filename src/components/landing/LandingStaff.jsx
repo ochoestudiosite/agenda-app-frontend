@@ -1,12 +1,19 @@
 import { motion } from 'framer-motion';
-import { User, Award, Instagram, Twitter } from 'lucide-react';
+import { User, Award } from 'lucide-react';
 
-export default function LandingStaff({ staff = [], title, subtitle }) {
-  const displayStaff = staff.length > 0 ? staff : [
-    { name: 'Ricardo Islas', specialty: 'Master Barber & Founder', image: null },
-    { name: 'Ana González', specialty: 'Color Expert', image: null },
-    { name: 'Carlos Reyes', specialty: 'Stylist Senior', image: null },
-  ];
+export default function LandingStaff({ staff = [], customStaff, useCustom, title, subtitle }) {
+  // If useCustom AND customStaff exist, show those; otherwise show DB staff
+  const displayStaff = (useCustom && customStaff?.length > 0)
+    ? customStaff
+    : staff.length > 0 ? staff.map(s => ({
+        name: s.name,
+        specialty: s.specialty || s.specialties || '',
+        image: s.image || s.avatarUrl || s.avatar_url || null,
+      })) : [
+        { name: 'Ricardo Islas', specialty: 'Master Barber & Founder', image: null },
+        { name: 'Ana González', specialty: 'Color Expert', image: null },
+        { name: 'Carlos Reyes', specialty: 'Stylist Senior', image: null },
+      ];
 
   return (
     <section id="equipo" className="py-24 overflow-hidden">
@@ -28,7 +35,7 @@ export default function LandingStaff({ staff = [], title, subtitle }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           {displayStaff.map((member, i) => (
             <motion.div
-              key={member.name + i}
+              key={(member.name || '') + i}
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
@@ -50,16 +57,6 @@ export default function LandingStaff({ staff = [], title, subtitle }) {
                     <User size={120} strokeWidth={1} />
                   </div>
                 )}
-
-                {/* Social Overlay */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                  <div className="w-10 h-10 rounded-full glass flex items-center justify-center text-white hover:bg-gold transition-colors cursor-pointer">
-                    <Instagram size={18} />
-                  </div>
-                  <div className="w-10 h-10 rounded-full glass flex items-center justify-center text-white hover:bg-gold transition-colors cursor-pointer">
-                    <Twitter size={18} />
-                  </div>
-                </div>
               </div>
 
               {/* Info */}

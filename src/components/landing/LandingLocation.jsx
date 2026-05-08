@@ -1,9 +1,29 @@
 import { MapPin, Phone, Clock, Mail } from 'lucide-react';
 
-export default function LandingLocation({ config = {}, title, subtitle }) {
-  const address = config.business_address || 'Av. Insurgentes Sur 1234, Ciudad de México';
-  const phone = config.business_phone || '+52 55 1234 5678';
-  const email = config.business_email || 'hola@cita24.com';
+const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+export default function LandingLocation({ config = {}, locationConfig = {}, title, subtitle }) {
+  const address = locationConfig.address || config.business_address || '';
+  const phone   = locationConfig.phone   || config.business_phone   || '';
+  const email   = locationConfig.email   || config.business_email   || '';
+  const mapEmbed = locationConfig.map_embed_url || '';
+  const hoursText = locationConfig.hours_text || '';
+  const openNowText = locationConfig.open_now_text || 'Estamos listos para recibirte';
+  const directionsText = locationConfig.directions_text || 'Cómo llegar';
+  const directionsUrl = locationConfig.directions_url || '';
+
+  // Build hours from business_hours if available and no custom text
+  const hours = config.hours || [];
+  let hoursDisplay = hoursText;
+  if (!hoursDisplay && hours.length > 0) {
+    const openDays = hours.filter(h => h.is_open);
+    if (openDays.length > 0) {
+      const firstOpen = openDays[0];
+      const lastOpen = openDays[openDays.length - 1];
+      hoursDisplay = `${DAY_NAMES[firstOpen.day_of_week]} – ${DAY_NAMES[lastOpen.day_of_week]}: ${firstOpen.open_time?.slice(0,5)} – ${lastOpen.close_time?.slice(0,5)}`;
+    }
+  }
+  const closedDays = hours.filter(h => !h.is_open).map(h => DAY_NAMES[h.day_of_week]);
 
   return (
     <section id="ubicacion" className="py-24 bg-surface/20">
@@ -24,26 +44,30 @@ export default function LandingLocation({ config = {}, title, subtitle }) {
             </h2>
 
             <div className="space-y-6">
-              <div className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-edge hover:border-gold/30 transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink group-hover:bg-ink group-hover:text-surface transition-all">
-                  <MapPin size={20} />
+              {address && (
+                <div className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-edge hover:border-gold/30 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink group-hover:bg-ink group-hover:text-surface transition-all">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-ink-3 uppercase tracking-widest mb-1">Dirección</h4>
+                    <p className="text-ink font-medium leading-relaxed">{address}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-ink-3 uppercase tracking-widest mb-1">Dirección</h4>
-                  <p className="text-ink font-medium leading-relaxed">{address}</p>
-                </div>
-              </div>
+              )}
 
-              <div className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-edge hover:border-gold/30 transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink group-hover:bg-ink group-hover:text-surface transition-all">
-                  <Phone size={20} />
+              {(phone || email) && (
+                <div className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-edge hover:border-gold/30 transition-all group">
+                  <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink group-hover:bg-ink group-hover:text-surface transition-all">
+                    <Phone size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-ink-3 uppercase tracking-widest mb-1">Contacto</h4>
+                    {phone && <p className="text-ink font-medium leading-relaxed">{phone}</p>}
+                    {email && <p className="text-ink-3 text-sm">{email}</p>}
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-ink-3 uppercase tracking-widest mb-1">Contacto</h4>
-                  <p className="text-ink font-medium leading-relaxed">{phone}</p>
-                  <p className="text-ink-3 text-sm">{email}</p>
-                </div>
-              </div>
+              )}
 
               <div className="flex items-start gap-4 p-6 rounded-2xl bg-card border border-edge hover:border-gold/30 transition-all group">
                 <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink group-hover:bg-ink group-hover:text-surface transition-all">
@@ -51,8 +75,10 @@ export default function LandingLocation({ config = {}, title, subtitle }) {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-ink-3 uppercase tracking-widest mb-1">Horarios</h4>
-                  <p className="text-ink font-medium leading-relaxed">Lun – Sáb: 9am – 8pm</p>
-                  <p className="text-ink-3 text-sm">Domingo: Cerrado</p>
+                  <p className="text-ink font-medium leading-relaxed">{hoursDisplay || 'Lun – Sáb: 9:00 – 20:00'}</p>
+                  {closedDays.length > 0 && (
+                    <p className="text-ink-3 text-sm">{closedDays.join(', ')}: Cerrado</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -60,25 +86,42 @@ export default function LandingLocation({ config = {}, title, subtitle }) {
 
           {/* Map Side */}
           <div className="relative aspect-square lg:aspect-auto lg:h-[600px] rounded-[3rem] overflow-hidden border border-edge bg-raised shadow-2xl">
-            {/* Placeholder for map / interactive element */}
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=1000')] bg-cover bg-center grayscale opacity-60" />
-            <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent opacity-40" />
-            
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-ink flex items-center justify-center text-surface shadow-2xl animate-bounce">
-                <MapPin size={32} strokeWidth={2.5} />
-              </div>
-            </div>
+            {mapEmbed ? (
+              <iframe
+                src={mapEmbed}
+                className="absolute inset-0 w-full h-full border-none"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Ubicación del negocio"
+              />
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-raised to-edge/30" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-ink flex items-center justify-center text-surface shadow-2xl animate-bounce">
+                    <MapPin size={32} strokeWidth={2.5} />
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Float glass card */}
             <div className="absolute bottom-8 left-8 right-8 glass p-6 rounded-2xl flex items-center justify-between shadow-2xl">
               <div>
                 <p className="text-xs font-bold text-ink-3 uppercase tracking-wider mb-1">Abierto ahora</p>
-                <p className="text-sm font-bold text-ink">Estamos listos para recibirte</p>
+                <p className="text-sm font-bold text-ink">{openNowText}</p>
               </div>
-              <button className="bg-ink text-surface px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition-all">
-                Cómo llegar
-              </button>
+              {directionsUrl ? (
+                <a href={directionsUrl} target="_blank" rel="noopener noreferrer"
+                  className="bg-ink text-surface px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition-all">
+                  {directionsText}
+                </a>
+              ) : (
+                <button className="bg-ink text-surface px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition-all">
+                  {directionsText}
+                </button>
+              )}
             </div>
           </div>
         </div>
