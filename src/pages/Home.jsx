@@ -78,14 +78,8 @@ export default function Home() {
 
   // Brand color (shared across themes) → --gold, --gold-light
   const primary = design.primary || design.colors?.primary || null;
-  const designStyle = {};
-  if (primary) {
-    const rgb = hexToRgb(primary);
-    if (rgb) {
-      designStyle['--gold'] = rgb;
-      designStyle['--gold-light'] = lightenHex(primary, 24);
-    }
-  }
+  const primaryRgb = primary ? hexToRgb(primary) : null;
+  const primaryLightRgb = primary ? lightenHex(primary, 24) : null;
 
   // Per-theme surface/text tokens
   const lightTokens = design.light || {};
@@ -110,11 +104,9 @@ export default function Home() {
   // Fonts
   const headingFont = design.fonts?.heading;
   const bodyFont = design.fonts?.body;
-  if (headingFont) designStyle['--font-heading'] = `"${headingFont}", sans-serif`;
-  if (bodyFont)    designStyle['--font-body'] = `"${bodyFont}", sans-serif`;
 
   // Border radius
-  if (design.border_radius != null) designStyle['--radius'] = `${design.border_radius}px`;
+  const radius = design.border_radius;
 
   // Dynamic Google Fonts loading
   useEffect(() => {
@@ -132,15 +124,24 @@ export default function Home() {
     link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
   }, [headingFont, bodyFont]);
 
+  // Build all :root overrides in one place
+  const rootOverrides = [
+    primaryRgb ? `--gold: ${primaryRgb};` : '',
+    primaryLightRgb ? `--gold-light: ${primaryLightRgb};` : '',
+    headingFont ? `--font-heading: "${headingFont}", sans-serif;` : '',
+    bodyFont ? `--font-body: "${bodyFont}", sans-serif;` : '',
+    radius != null ? `--radius: ${radius}px;` : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink" style={designStyle}>
-      {/* Inject per-theme design tokens + font/radius overrides */}
+    <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink">
+      {/* Inject ALL design tokens at :root level so Tailwind utilities resolve correctly */}
       <style>{`
-        ${hasLight ? `:root { ${buildTokenCSS(lightTokens)} }` : hasOld ? `:root { ${buildTokenCSS(oldColors)} }` : ''}
-        ${hasDark  ? `.dark { ${buildTokenCSS(darkTokens)} }` : ''}
+        :root { ${rootOverrides} ${hasLight ? buildTokenCSS(lightTokens) : hasOld ? buildTokenCSS(oldColors) : ''} }
+        ${hasDark ? `.dark { ${primaryRgb ? `--gold: ${primaryRgb}; --gold-light: ${primaryLightRgb};` : ''} ${buildTokenCSS(darkTokens)} }` : ''}
         ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
         ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
-        ${design.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl { border-radius: var(--radius) !important; }` : ''}
+        ${radius != null ? `.card, .rounded-2xl, .rounded-3xl { border-radius: var(--radius) !important; }` : ''}
         ${design.button_style === 'pill' ? `button { border-radius: 9999px !important; }` : ''}
         ${design.button_style === 'sharp' ? `button { border-radius: 6px !important; }` : ''}
       `}</style>
