@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 import LandingNavbar from '../components/landing/LandingNavbar';
@@ -24,8 +25,21 @@ export default function Home() {
     queryFn: api.getSpecialists 
   });
 
+  const [previewConfig, setPreviewConfig] = useState(null);
+
+  // Listen for live preview updates from admin dashboard
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data?.type === 'LANDING_PREVIEW') {
+        setPreviewConfig(event.data.config);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   const businessName = config?.business_name || 'Cita24';
-  const businessDesc = config?.business_description;
+  const businessConfig = previewConfig || config?.landing_config || {};
   const services = servicesData?.data || [];
   const staff = staffData?.data || [];
 
@@ -37,25 +51,37 @@ export default function Home() {
       <main>
         {/* Hero Section */}
         <LandingHero 
-          businessName={businessName} 
-          businessDescription={businessDesc} 
+          title={businessConfig.hero?.title || businessName}
+          subtitle={businessConfig.hero?.subtitle || config?.business_description}
+          cta={businessConfig.hero?.cta_text}
         />
 
         {/* Services Section */}
-        <LandingServices services={services} />
+        {(businessConfig.services_section?.visible !== false) && (
+          <LandingServices services={services} title={businessConfig.services_section?.title} subtitle={businessConfig.services_section?.subtitle} />
+        )}
 
         {/* Staff Section */}
-        <LandingStaff staff={staff} />
+        {(businessConfig.staff_section?.visible !== false) && (
+          <LandingStaff staff={staff} title={businessConfig.staff_section?.title} subtitle={businessConfig.staff_section?.subtitle} />
+        )}
 
         {/* Testimonials Section */}
-        <LandingTestimonials />
+        {(businessConfig.testimonials_section?.visible !== false) && (
+          <LandingTestimonials items={businessConfig.testimonials} />
+        )}
 
         {/* Location & Contact Section */}
-        <LandingLocation config={config || {}} />
+        {(businessConfig.location_section?.visible !== false) && (
+          <LandingLocation config={config || {}} title={businessConfig.location_section?.title} subtitle={businessConfig.location_section?.subtitle} />
+        )}
       </main>
 
       {/* Footer / Contact */}
-      <LandingContact businessName={businessName} />
+      <LandingContact 
+        businessName={businessName} 
+        socials={businessConfig.contact_section}
+      />
 
       {/* Scroll to top decorative indicator */}
       <div className="fixed bottom-10 right-10 pointer-events-none opacity-20">
