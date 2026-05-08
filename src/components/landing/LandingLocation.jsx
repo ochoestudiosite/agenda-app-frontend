@@ -1,6 +1,6 @@
 import { MapPin, Phone, Clock, Mail } from 'lucide-react';
 
-export default function LandingLocation({ config = {} }) {
+export default function LandingLocation({ config = {}, title, subtitle }) {
   const address = config.business_address || 'Av. Insurgentes Sur 1234, Ciudad de México';
   const phone = config.business_phone || '+52 55 1234 5678';
   const email = config.business_email || 'hola@cita24.com';
@@ -13,11 +13,14 @@ export default function LandingLocation({ config = {} }) {
           <div>
             <div className="flex items-center gap-2 text-gold font-bold text-xs uppercase tracking-widest mb-4">
               <MapPin size={14} />
-              Encuéntranos
+              {title || 'Encuéntranos'}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-ink tracking-tightest leading-tight mb-8 text-balance">
-              Estamos donde <br />
-              <span className="text-ink-3">tú estás.</span>
+              {subtitle ? (
+                subtitle
+              ) : (
+                <>Estamos donde <br /><span className="text-ink-3">tú estás.</span></>
+              )}
             </h2>
 
             <div className="space-y-6">

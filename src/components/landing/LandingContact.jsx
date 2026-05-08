@@ -1,6 +1,9 @@
 import { Send, Instagram, Facebook, MessageSquare } from 'lucide-react';
 
-export default function LandingContact({ businessName }) {
+export default function LandingContact({ businessName, socials = {} }) {
+  const instagram = socials.instagram ? `https://instagram.com/${socials.instagram}` : null;
+  const facebook  = socials.facebook  ? `https://facebook.com/${socials.facebook}` : null;
+  const whatsapp  = socials.whatsapp  ? `https://wa.me/${socials.whatsapp}` : null;
   return (
     <footer className="pt-24 pb-12 bg-surface border-t border-edge">
       <div className="section-container">
@@ -15,15 +18,21 @@ export default function LandingContact({ businessName }) {
               Elevamos el estándar de la industria. Una experiencia diseñada para quienes valoran su tiempo y buscan solo lo mejor.
             </p>
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink hover:bg-gold hover:text-white transition-all cursor-pointer">
-                <Instagram size={18} />
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink hover:bg-gold hover:text-white transition-all cursor-pointer">
-                <Facebook size={18} />
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink hover:bg-gold hover:text-white transition-all cursor-pointer">
-                <MessageSquare size={18} />
-              </div>
+              {instagram && (
+                <a href={instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink hover:bg-gold hover:text-white transition-all cursor-pointer">
+                  <Instagram size={18} />
+                </a>
+              )}
+              {facebook && (
+                <a href={facebook} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink hover:bg-gold hover:text-white transition-all cursor-pointer">
+                  <Facebook size={18} />
+                </a>
+              )}
+              {whatsapp && (
+                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink hover:bg-gold hover:text-white transition-all cursor-pointer">
+                  <MessageSquare size={18} />
+                </a>
+              )}
             </div>
           </div>
 

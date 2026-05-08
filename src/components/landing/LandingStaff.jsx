@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { User, Award, Instagram, Twitter } from 'lucide-react';
 
-export default function LandingStaff({ staff = [] }) {
+export default function LandingStaff({ staff = [], title, subtitle }) {
   const displayStaff = staff.length > 0 ? staff : [
     { name: 'Ricardo Islas', specialty: 'Master Barber & Founder', image: null },
     { name: 'Ana González', specialty: 'Color Expert', image: null },
@@ -14,10 +14,14 @@ export default function LandingStaff({ staff = [] }) {
         <div className="text-center mb-16">
           <div className="flex items-center justify-center gap-2 text-gold font-bold text-xs uppercase tracking-widest mb-4">
             <Award size={14} />
-            Mentes Maestras
+            {title || 'Mentes Maestras'}
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-ink tracking-tightest leading-tight">
-            En manos de <span className="text-ink-3">los mejores.</span>
+            {subtitle ? (
+              subtitle
+            ) : (
+              <>En manos de <span className="text-ink-3">los mejores.</span></>
+            )}
           </h2>
         </div>
 

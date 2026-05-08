@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export default function LandingServices({ services = [] }) {
+export default function LandingServices({ services = [], title, subtitle }) {
   // Fallback if no services are provided
   const displayServices = services.length > 0 ? services : [
     { name: 'Corte Premium', duration: 45, price: 450, description: 'Servicio de corte completo con lavado y estilizado.' },
@@ -17,11 +17,14 @@ export default function LandingServices({ services = [] }) {
           <div className="max-w-xl">
             <div className="flex items-center gap-2 text-gold font-bold text-xs uppercase tracking-widest mb-4">
               <Sparkles size={14} />
-              Nuestros Servicios
+              {title || 'Nuestros Servicios'}
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-ink tracking-tightest leading-tight">
-              Diseñados para superar <br />
-              <span className="text-ink-3">tus expectativas.</span>
+              {subtitle ? (
+                subtitle
+              ) : (
+                <>Diseñados para superar <br /><span className="text-ink-3">tus expectativas.</span></>
+              )}
             </h2>
           </div>
           <Link to="/agendar" className="text-ink font-bold flex items-center gap-2 group">
