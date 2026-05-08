@@ -95,9 +95,11 @@ export default function Home() {
   // This is the most reliable method — inline styles on <html> always win over stylesheets
   useEffect(() => {
     const root = document.documentElement;
+    // Parse inside the effect to avoid stale closure over `design` object
+    const d = JSON.parse(designJSON);
 
     // Brand color
-    const primary = design.primary || design.colors?.primary;
+    const primary = d.primary || d.colors?.primary;
     if (primary) {
       const rgb = hexToRgb(primary);
       if (rgb) {
@@ -112,9 +114,9 @@ export default function Home() {
     }
 
     // Surface/text tokens — apply the correct set based on current theme
-    const modeTokens = isDark ? (design.dark || {}) : (design.light || {});
+    const modeTokens = isDark ? (d.dark || {}) : (d.light || {});
     // Backward compat: old flat colors
-    const oldColors = design.colors || {};
+    const oldColors = d.colors || {};
     const tokens = Object.keys(modeTokens).length > 0 ? modeTokens : oldColors;
 
     const tokenMap = [
@@ -178,20 +180,20 @@ export default function Home() {
     }
 
     // Fonts
-    if (design.fonts?.heading) {
-      root.style.setProperty('--font-heading', `"${design.fonts.heading}", sans-serif`);
+    if (d.fonts?.heading) {
+      root.style.setProperty('--font-heading', `"${d.fonts.heading}", sans-serif`);
     } else {
       root.style.removeProperty('--font-heading');
     }
-    if (design.fonts?.body) {
-      root.style.setProperty('--font-body', `"${design.fonts.body}", sans-serif`);
+    if (d.fonts?.body) {
+      root.style.setProperty('--font-body', `"${d.fonts.body}", sans-serif`);
     } else {
       root.style.removeProperty('--font-body');
     }
 
     // Border radius
-    if (design.border_radius != null) {
-      root.style.setProperty('--radius', `${design.border_radius}px`);
+    if (d.border_radius != null) {
+      root.style.setProperty('--radius', `${d.border_radius}px`);
     } else {
       root.style.removeProperty('--radius');
     }
