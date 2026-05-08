@@ -30,6 +30,9 @@
   --gold-muted: 255 249 232;
   /* subtle gold tint                   */
   --on-gold: 255 255 255;
+  --section-contrast: 15 15 15;
+  --section-contrast-text: 245 245 247;
+  --section-contrast-muted: 174 174 178;
 }
 
 .dark {
@@ -57,6 +60,9 @@
   /* deep gold bg                       */
   --on-gold: 28 28 30;
   /* dark text on bright gold           */
+  --section-contrast: 28 28 30;
+  --section-contrast-text: 245 245 247;
+  --section-contrast-muted: 142 142 147;
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────────── */

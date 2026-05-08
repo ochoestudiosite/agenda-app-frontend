@@ -19,6 +19,9 @@ export default {
           light:   'rgb(var(--gold-light) / <alpha-value>)',
           muted:   'rgb(var(--gold-muted) / <alpha-value>)',
         },
+        'section-contrast':      'rgb(var(--section-contrast) / <alpha-value>)',
+        'section-contrast-text': 'rgb(var(--section-contrast-text) / <alpha-value>)',
+        'section-contrast-muted':'rgb(var(--section-contrast-muted) / <alpha-value>)',
       },
       fontFamily: {
         // Plus Jakarta Sans — geometric humanist sans-serif, very Apple/SF Pro-like

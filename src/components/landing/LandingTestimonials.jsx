@@ -45,7 +45,7 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
   }, [handleScroll]);
 
   return (
-    <section id="testimoniales" className="py-20 md:py-24 bg-ink text-surface relative overflow-hidden">
+    <section id="testimoniales" className="py-20 md:py-24 bg-section-contrast text-section-contrast-text relative overflow-hidden">
       <div className="absolute top-0 right-0 w-96 h-96 bg-gold/15 blur-[150px] rounded-full -mr-48 -mt-48 pointer-events-none" />
       
       <div className="section-container relative">
@@ -56,7 +56,7 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
               {title || 'Testimoniales'}
             </div>
             <h2 className="text-3xl md:text-5xl font-bold tracking-tightest leading-tight">
-              {subtitle ? subtitle : (<>Lo que dicen <br className="hidden md:block" /><span className="text-surface/40">nuestros clientes.</span></>)}
+              {subtitle ? subtitle : (<>Lo que dicen <br className="hidden md:block" /><span className="text-section-contrast-muted">nuestros clientes.</span></>)}
             </h2>
           </div>
         </div>
@@ -83,17 +83,17 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
             <div className="flex items-center gap-1.5">
               {displayTestimonials.map((_, i) => (
                 <button key={i} onClick={() => scrollToSlide(i)}
-                  className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-2 bg-gold' : 'w-2 h-2 bg-surface/20'}`} />
+                  className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-2 bg-gold' : 'w-2 h-2 bg-section-contrast-muted/30'}`} />
               ))}
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => scrollToSlide(Math.max(0, activeSlide - 1))} disabled={activeSlide === 0}
-                className="w-10 h-10 rounded-full border border-surface/10 flex items-center justify-center text-surface/50 active:bg-gold active:text-on-gold transition-all disabled:opacity-20">
+                className="w-10 h-10 rounded-full border border-section-contrast-muted/20 flex items-center justify-center text-section-contrast-muted active:bg-gold active:text-on-gold transition-all disabled:opacity-20">
                 <ChevronLeft size={18} />
               </button>
-              <span className="text-xs font-bold text-surface/40 tabular-nums min-w-[3ch] text-center">{activeSlide + 1}/{displayTestimonials.length}</span>
+              <span className="text-xs font-bold text-section-contrast-muted tabular-nums min-w-[3ch] text-center">{activeSlide + 1}/{displayTestimonials.length}</span>
               <button onClick={() => scrollToSlide(Math.min(displayTestimonials.length - 1, activeSlide + 1))} disabled={activeSlide >= displayTestimonials.length - 1}
-                className="w-10 h-10 rounded-full border border-surface/10 flex items-center justify-center text-surface/50 active:bg-gold active:text-on-gold transition-all disabled:opacity-20">
+                className="w-10 h-10 rounded-full border border-section-contrast-muted/20 flex items-center justify-center text-section-contrast-muted active:bg-gold active:text-on-gold transition-all disabled:opacity-20">
                 <ChevronRight size={18} />
               </button>
             </div>
@@ -111,7 +111,7 @@ function TestimonialCard({ t, i }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: i * 0.08, duration: 0.3 }}
-      className="relative p-8 rounded-[2rem] bg-card/10 border border-edge/20 flex flex-col justify-between h-full"
+      className="relative p-8 rounded-[2rem] bg-section-contrast-text/[0.05] border border-section-contrast-muted/10 flex flex-col justify-between h-full"
     >
       <div>
         <div className="flex gap-0.5 mb-5">
@@ -119,17 +119,17 @@ function TestimonialCard({ t, i }) {
             <Star key={idx} size={13} fill="currentColor" className="text-gold" />
           ))}
         </div>
-        <p className="text-[15px] leading-relaxed text-surface/75 mb-6">
+        <p className="text-[15px] leading-relaxed text-section-contrast-text/75 mb-6">
           "{t.text}"
         </p>
       </div>
-      <div className="flex items-center gap-3 pt-4 border-t border-edge/20">
-        <div className="w-9 h-9 rounded-full bg-card/10 flex items-center justify-center font-bold text-gold text-sm">
+      <div className="flex items-center gap-3 pt-4 border-t border-section-contrast-muted/10">
+        <div className="w-9 h-9 rounded-full bg-section-contrast-text/[0.06] flex items-center justify-center font-bold text-gold text-sm">
           {t.author?.[0] || '?'}
         </div>
         <div>
-          <div className="font-bold text-sm text-surface">{t.author}</div>
-          <div className="text-[10px] text-surface/40 uppercase tracking-widest font-semibold">{t.role}</div>
+          <div className="font-bold text-sm text-section-contrast-text">{t.author}</div>
+          <div className="text-[10px] text-section-contrast-muted uppercase tracking-widest font-semibold">{t.role}</div>
         </div>
       </div>
     </motion.div>

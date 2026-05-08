@@ -156,6 +156,27 @@ export default function Home() {
       root.style.setProperty('--on-gold', luminance > 0.55 ? '28 28 30' : '255 255 255');
     }
 
+    // Auto-derive --section-contrast for inverted sections (testimonials)
+    // This is NOT linked to --ink; it's a dark bg derived independently from --surface
+    const surfHex = tokens.surface || (isDark ? '#000000' : '#F2F2F7');
+    if (surfHex) {
+      const sr = parseInt(surfHex.slice(1, 3), 16);
+      const sg = parseInt(surfHex.slice(3, 5), 16);
+      const sb = parseInt(surfHex.slice(5, 7), 16);
+      const surfLum = (0.299 * sr + 0.587 * sg + 0.114 * sb) / 255;
+      if (surfLum > 0.5) {
+        // Light surface → dark contrast section
+        root.style.setProperty('--section-contrast', '15 15 15');
+        root.style.setProperty('--section-contrast-text', '245 245 247');
+        root.style.setProperty('--section-contrast-muted', '174 174 178');
+      } else {
+        // Dark surface → slightly elevated contrast section
+        root.style.setProperty('--section-contrast', lightenHex(surfHex, 18));
+        root.style.setProperty('--section-contrast-text', '245 245 247');
+        root.style.setProperty('--section-contrast-muted', '142 142 147');
+      }
+    }
+
     // Fonts
     if (design.fonts?.heading) {
       root.style.setProperty('--font-heading', `"${design.fonts.heading}", sans-serif`);
@@ -180,6 +201,7 @@ export default function Home() {
       ['--gold', '--gold-light', '--gold-muted', '--on-gold',
        '--surface', '--card', '--raised', '--edge', '--edge-strong',
        '--ink', '--ink-2', '--ink-3',
+       '--section-contrast', '--section-contrast-text', '--section-contrast-muted',
        '--font-heading', '--font-body', '--radius'].forEach(v => root.style.removeProperty(v));
     };
   }, [designJSON, isDark]);
