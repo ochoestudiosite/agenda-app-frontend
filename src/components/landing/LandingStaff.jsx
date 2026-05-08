@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { User, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -25,10 +25,39 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
     : allStaff;
 
   const scrollRef = useRef(null);
-  const scrollBy = (dir) => {
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  const scrollToSlide = useCallback((idx) => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({ left: dir * 260, behavior: 'smooth' });
-  };
+    const container = scrollRef.current;
+    const cards = container.children;
+    if (cards[idx]) {
+      const card = cards[idx];
+      const scrollLeft = card.offsetLeft - (container.offsetWidth / 2) + (card.offsetWidth / 2);
+      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const center = container.scrollLeft + container.offsetWidth / 2;
+    let closest = 0;
+    let closestDist = Infinity;
+    Array.from(container.children).forEach((child, i) => {
+      const childCenter = child.offsetLeft + child.offsetWidth / 2;
+      const dist = Math.abs(center - childCenter);
+      if (dist < closestDist) { closestDist = dist; closest = i; }
+    });
+    setActiveSlide(closest);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   return (
     <section id="equipo" className="py-20 md:py-24 overflow-hidden">
@@ -59,19 +88,6 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
                 </button>
               </div>
             )}
-            {/* Mobile slider arrows */}
-            {allStaff.length > 2 && (
-              <div className="flex md:hidden items-center gap-2">
-                <button onClick={() => scrollBy(-1)}
-                  className="w-9 h-9 rounded-full border border-edge flex items-center justify-center text-ink/60 active:bg-ink active:text-surface transition-all">
-                  <ChevronLeft size={16} />
-                </button>
-                <button onClick={() => scrollBy(1)}
-                  className="w-9 h-9 rounded-full border border-edge flex items-center justify-center text-ink/60 active:bg-ink active:text-surface transition-all">
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -82,14 +98,37 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
           ))}
         </div>
 
-        {/* Mobile horizontal slider */}
-        <div ref={scrollRef} className="md:hidden flex gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 -mx-6 px-6">
+        {/* Mobile horizontal slider — centered */}
+        <div ref={scrollRef} className="md:hidden flex gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4">
           {allStaff.map((member, i) => (
-            <div key={(member.name || '') + i} className="snap-start shrink-0 w-[70vw] max-w-[280px]">
+            <div key={(member.name || '') + i} className="snap-center shrink-0 w-[70vw] max-w-[280px] first:ml-[15vw] last:mr-[15vw]">
               <StaffCard member={member} i={i} />
             </div>
           ))}
         </div>
+
+        {/* Mobile controls — below slider */}
+        {allStaff.length > 2 && (
+          <div className="flex md:hidden flex-col items-center gap-3 mt-4">
+            <div className="flex items-center gap-1.5">
+              {allStaff.map((_, i) => (
+                <button key={i} onClick={() => scrollToSlide(i)}
+                  className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-2 bg-gold' : 'w-2 h-2 bg-ink/15'}`} />
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => scrollToSlide(Math.max(0, activeSlide - 1))} disabled={activeSlide === 0}
+                className="w-10 h-10 rounded-full border border-edge flex items-center justify-center text-ink/60 active:bg-ink active:text-surface transition-all disabled:opacity-20">
+                <ChevronLeft size={18} />
+              </button>
+              <span className="text-xs font-bold text-ink-3 tabular-nums min-w-[3ch] text-center">{activeSlide + 1}/{allStaff.length}</span>
+              <button onClick={() => scrollToSlide(Math.min(allStaff.length - 1, activeSlide + 1))} disabled={activeSlide >= allStaff.length - 1}
+                className="w-10 h-10 rounded-full border border-edge flex items-center justify-center text-ink/60 active:bg-ink active:text-surface transition-all disabled:opacity-20">
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

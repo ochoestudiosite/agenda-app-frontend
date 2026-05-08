@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Quote, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -10,10 +10,39 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
   ];
 
   const scrollRef = useRef(null);
-  const scrollBy = (dir) => {
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  const scrollToSlide = useCallback((idx) => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({ left: dir * 300, behavior: 'smooth' });
-  };
+    const container = scrollRef.current;
+    const cards = container.children;
+    if (cards[idx]) {
+      const card = cards[idx];
+      const scrollLeft = card.offsetLeft - (container.offsetWidth / 2) + (card.offsetWidth / 2);
+      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const center = container.scrollLeft + container.offsetWidth / 2;
+    let closest = 0;
+    let closestDist = Infinity;
+    Array.from(container.children).forEach((child, i) => {
+      const childCenter = child.offsetLeft + child.offsetWidth / 2;
+      const dist = Math.abs(center - childCenter);
+      if (dist < closestDist) { closestDist = dist; closest = i; }
+    });
+    setActiveSlide(closest);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   return (
     <section id="testimoniales" className="py-20 md:py-24 bg-[#0F0F0F] text-stone-50 relative overflow-hidden">
@@ -30,17 +59,6 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
               {subtitle ? subtitle : (<>Lo que dicen <br className="hidden md:block" /><span className="opacity-40">nuestros clientes.</span></>)}
             </h2>
           </div>
-          {/* Mobile arrows */}
-          {displayTestimonials.length > 1 && (
-            <div className="flex md:hidden items-center gap-2 justify-center">
-              <button onClick={() => scrollBy(-1)} className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/50 active:bg-white/10 transition-all">
-                <ChevronLeft size={16} />
-              </button>
-              <button onClick={() => scrollBy(1)} className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-white/50 active:bg-white/10 transition-all">
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Desktop grid */}
@@ -50,14 +68,37 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
           ))}
         </div>
 
-        {/* Mobile slider */}
-        <div ref={scrollRef} className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 -mx-6 px-6">
+        {/* Mobile slider — centered */}
+        <div ref={scrollRef} className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4">
           {displayTestimonials.map((t, i) => (
-            <div key={t.author + i} className="snap-start shrink-0 w-[85vw] max-w-[340px]">
+            <div key={t.author + i} className="snap-center shrink-0 w-[85vw] max-w-[340px] first:ml-[7.5vw] last:mr-[7.5vw]">
               <TestimonialCard t={t} i={i} />
             </div>
           ))}
         </div>
+
+        {/* Mobile controls — below slider */}
+        {displayTestimonials.length > 1 && (
+          <div className="flex md:hidden flex-col items-center gap-3 mt-4">
+            <div className="flex items-center gap-1.5">
+              {displayTestimonials.map((_, i) => (
+                <button key={i} onClick={() => scrollToSlide(i)}
+                  className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-2 bg-gold' : 'w-2 h-2 bg-white/20'}`} />
+              ))}
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => scrollToSlide(Math.max(0, activeSlide - 1))} disabled={activeSlide === 0}
+                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 active:bg-white/10 transition-all disabled:opacity-20">
+                <ChevronLeft size={18} />
+              </button>
+              <span className="text-xs font-bold text-white/40 tabular-nums min-w-[3ch] text-center">{activeSlide + 1}/{displayTestimonials.length}</span>
+              <button onClick={() => scrollToSlide(Math.min(displayTestimonials.length - 1, activeSlide + 1))} disabled={activeSlide >= displayTestimonials.length - 1}
+                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 active:bg-white/10 transition-all disabled:opacity-20">
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

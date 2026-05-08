@@ -56,8 +56,64 @@ export default function Home() {
   const services = servicesData?.services || servicesData?.data || [];
   const staff = staffData?.specialists || staffData?.data || [];
 
+  // Convert hex to RGB triplet for CSS variable system
+  const hexToRgb = (hex) => {
+    if (!hex || hex.length < 7) return null;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `${r} ${g} ${b}`;
+  };
+
+  // Build design token style object
+  const design = bc.design || {};
+  const colors = design.colors || {};
+  const designStyle = {};
+  if (colors.primary)       { const rgb = hexToRgb(colors.primary);       if (rgb) { designStyle['--gold'] = rgb; designStyle['--gold-light'] = rgb; } }
+  if (colors.secondary)     { const rgb = hexToRgb(colors.secondary);     if (rgb) designStyle['--ink'] = rgb; }
+  if (colors.accent)        { const rgb = hexToRgb(colors.accent);        if (rgb) designStyle['--gold-muted'] = rgb; }
+  if (colors.surface)       { const rgb = hexToRgb(colors.surface);       if (rgb) designStyle['--surface'] = rgb; }
+  if (colors.card)          { const rgb = hexToRgb(colors.card);          if (rgb) designStyle['--card'] = rgb; }
+  if (colors.ink)           { const rgb = hexToRgb(colors.ink);           if (rgb) designStyle['--ink'] = rgb; }
+  if (colors.ink_secondary) { const rgb = hexToRgb(colors.ink_secondary); if (rgb) designStyle['--ink-2'] = rgb; }
+
+  // Fonts
+  const headingFont = design.fonts?.heading;
+  const bodyFont = design.fonts?.body;
+  if (headingFont) designStyle['--font-heading'] = `"${headingFont}", sans-serif`;
+  if (bodyFont)    designStyle['--font-body'] = `"${bodyFont}", sans-serif`;
+
+  // Border radius
+  if (design.border_radius != null) designStyle['--radius'] = `${design.border_radius}px`;
+
+  // Dynamic Google Fonts loading
+  useEffect(() => {
+    const fonts = [headingFont, bodyFont].filter(Boolean);
+    if (fonts.length === 0) return;
+    const families = [...new Set(fonts)].map(f => `family=${f.replace(/ /g, '+')}:wght@300;400;500;600;700;800`).join('&');
+    const id = 'dynamic-gfonts';
+    let link = document.getElementById(id);
+    if (!link) {
+      link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+  }, [headingFont, bodyFont]);
+
   return (
-    <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink">
+    <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink" style={designStyle}>
+      {/* Apply custom fonts via inline style on headings and body */}
+      {(headingFont || bodyFont || design.border_radius != null) && (
+        <style>{`
+          ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
+          ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
+          ${design.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl, .rounded-\\[2rem\\], .rounded-\\[1\\.75rem\\] { border-radius: var(--radius) !important; }` : ''}
+          ${design.button_style === 'pill' ? `button { border-radius: 9999px !important; }` : ''}
+          ${design.button_style === 'sharp' ? `button { border-radius: 6px !important; }` : ''}
+        `}</style>
+      )}
       <LandingNavbar 
         businessName={businessName} 
         config={bc} 
