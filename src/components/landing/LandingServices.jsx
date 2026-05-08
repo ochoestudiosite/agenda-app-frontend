@@ -148,33 +148,48 @@ function ServiceCard({ service, i, buttonText }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: i * 0.05, duration: 0.3 }}
-      className="group bg-card p-7 rounded-[1.75rem] hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-1 transition-all duration-500 h-full flex flex-col"
-      style={{ boxShadow: '0 1px 3px rgb(0 0 0 / 0.04), 0 4px 20px rgb(0 0 0 / 0.03)' }}
+      className="group bg-card rounded-[2rem] overflow-hidden border border-edge/40 hover:border-edge hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-1 transition-all duration-500 h-full flex flex-col"
     >
-      <div className="flex justify-between items-start mb-5">
-        <div className="w-11 h-11 rounded-2xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-on-gold transition-colors duration-500 overflow-hidden">
-          {service.image_url ? (
-            <img src={service.image_url} alt={service.name} className="w-full h-full object-cover" />
-          ) : (
-            <IconComp size={18} />
-          )}
+      {/* Premium Image Header */}
+      <div className="relative h-48 md:h-56 w-full bg-raised/30 overflow-hidden">
+        {service.image_url ? (
+          <img src={service.image_url} alt={service.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gold/5 to-transparent group-hover:from-gold/10 transition-colors duration-500">
+             <IconComp size={48} className="text-gold/40 group-hover:text-gold transition-colors duration-500" />
+          </div>
+        )}
+        
+        {/* Floating Price Badge (Glassmorphism) */}
+        <div className="absolute top-4 right-4 bg-card/80 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-sm border border-edge/50 flex items-center">
+          <span className="font-extrabold text-ink tracking-tight">${service.price}</span>
         </div>
-        <div className="text-right">
-          <div className="text-xl font-bold text-ink">${service.price}</div>
-          <div className="text-[10px] font-semibold text-ink-3 uppercase tracking-wider">{service.duration || service.duration_mins} min</div>
-        </div>
+
+        {/* Subtle overlay gradient on hover for premium feel */}
+        {service.image_url && <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />}
       </div>
       
-      <h3 className="text-lg font-bold text-ink mb-2 tracking-tighter2">{service.name}</h3>
-      <p className="text-ink-2 text-sm leading-relaxed mb-6 line-clamp-3 flex-1">
-        {service.description || 'Experimenta el máximo nivel de detalle y cuidado en cada sesión.'}
-      </p>
+      {/* Content Area */}
+      <div className="p-6 md:p-8 flex flex-col flex-1">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="px-2.5 py-1 rounded-md bg-raised text-[10px] font-bold text-ink-3 uppercase tracking-widest">
+            {service.duration || service.duration_mins} min
+          </div>
+        </div>
+        
+        <h3 className="text-xl md:text-2xl font-bold text-ink mb-3 tracking-tight">{service.name}</h3>
+        
+        <p className="text-ink-2 text-sm md:text-[15px] leading-relaxed mb-8 line-clamp-3 flex-1">
+          {service.description || 'Experimenta el máximo nivel de detalle y cuidado en cada sesión, con productos de primera calidad.'}
+        </p>
 
-      <Link to="/agendar" className="mt-auto">
-        <button className="w-full py-3.5 rounded-xl border border-edge/70 group-hover:border-gold group-hover:bg-gold group-hover:text-on-gold font-bold text-sm transition-all duration-300">
-          {service.button_text || buttonText || 'Reservar'}
-        </button>
-      </Link>
+        <Link to="/agendar" className="mt-auto">
+          <button className="w-full py-4 rounded-xl bg-raised border border-edge/70 text-ink font-bold text-sm group-hover:bg-gold group-hover:border-gold group-hover:text-on-gold transition-all duration-300 flex items-center justify-center gap-2">
+            {service.button_text || buttonText || 'Reservar ahora'}
+            <ArrowRight size={16} className="opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
+          </button>
+        </Link>
+      </div>
     </motion.div>
   );
 }
