@@ -61,6 +61,8 @@ export default function Home() {
           title={businessConfig.hero?.title || businessName}
           subtitle={businessConfig.hero?.subtitle || config?.business_description}
           cta={businessConfig.hero?.cta_text}
+          secondaryCta={businessConfig.hero?.secondary_cta_text}
+          features={businessConfig.hero?.features}
         />
 
         {(businessConfig.services_section?.visible !== false) && (

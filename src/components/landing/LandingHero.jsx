@@ -2,7 +2,9 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Star, ShieldCheck, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export default function LandingHero({ title, subtitle, cta }) {
+export default function LandingHero({ title, subtitle, cta, secondaryCta, features = [] }) {
+  const displayFeatures = features.length === 3 ? features : ['Pago Seguro', 'Ahorra Tiempo', 'Top Calidad'];
+
   return (
     <section className="relative pt-32 pb-20 overflow-hidden">
       {/* Background blur decorative elements */}
@@ -63,7 +65,7 @@ export default function LandingHero({ title, subtitle, cta }) {
             </Link>
             <Link to="/gestionar" className="w-full sm:w-auto">
               <button className="w-full sm:w-auto px-8 py-4 text-lg font-semibold text-ink-2 hover:text-ink transition-colors">
-                Ver mi reserva
+                {secondaryCta || 'Ver mi reserva'}
               </button>
             </Link>
           </motion.div>
@@ -77,15 +79,15 @@ export default function LandingHero({ title, subtitle, cta }) {
           >
             <div className="flex flex-col items-center gap-2">
               <ShieldCheck className="text-gold" size={24} />
-              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">Pago Seguro</span>
+              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">{displayFeatures[0]}</span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Clock className="text-gold" size={24} />
-              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">Ahorra Tiempo</span>
+              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">{displayFeatures[1]}</span>
             </div>
             <div className="hidden md:flex flex-col items-center gap-2">
               <Star className="text-gold" size={24} />
-              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">Top Calidad</span>
+              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">{displayFeatures[2]}</span>
             </div>
           </motion.div>
         </div>
