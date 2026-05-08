@@ -45,7 +45,19 @@ export default function Home() {
   }, []);
 
   const businessName = config?.business_name || 'Cita24';
-  const businessConfig = previewConfig || config?.landing_config || {};
+  
+  // Robust parsing of landing_config to handle both object and string formats
+  let savedConfig = config?.landing_config || {};
+  if (typeof savedConfig === 'string') {
+    try {
+      savedConfig = JSON.parse(savedConfig);
+    } catch (e) {
+      console.error("Error parsing landing_config:", e);
+      savedConfig = {};
+    }
+  }
+
+  const businessConfig = previewConfig || savedConfig;
   const services = servicesData?.data || [];
   const staff = staffData?.data || [];
 
