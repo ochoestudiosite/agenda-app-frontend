@@ -80,7 +80,7 @@ export default function LandingContact({ businessName, socials = {}, config = {}
                 placeholder="tu@email.com"
                 className="w-full bg-raised/30 border border-edge/50 rounded-xl py-2.5 px-4 text-xs font-medium focus:outline-none focus:border-gold transition-all"
               />
-              <button className="absolute right-1.5 top-1.5 w-7 h-7 rounded-lg bg-ink text-surface flex items-center justify-center hover:bg-gold transition-all">
+              <button className="absolute right-1.5 top-1.5 w-7 h-7 rounded-lg bg-gold text-on-gold flex items-center justify-center hover:bg-gold-light transition-all">
                 <Send size={12} />
               </button>
             </div>

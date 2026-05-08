@@ -36,7 +36,7 @@ export default function LandingNavbar({ businessName, config = {} }) {
         }`}>
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-ink flex items-center justify-center text-surface transition-transform group-hover:scale-105 active:scale-95 overflow-hidden">
+            <div className="w-9 h-9 rounded-xl bg-gold flex items-center justify-center text-on-gold transition-transform group-hover:scale-105 active:scale-95 overflow-hidden">
               {config.navbar?.logo_type === 'image' && config.navbar?.logo_url ? (
                 <img src={config.navbar.logo_url} alt="Logo" className="w-full h-full object-contain p-1.5" />
               ) : (
@@ -66,7 +66,7 @@ export default function LandingNavbar({ businessName, config = {} }) {
             <ThemeToggle />
             {showCta && (
               <Link to="/agendar">
-                <button className="bg-ink text-surface px-5 py-2 rounded-xl text-[13px] font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm">
+                <button className="bg-gold text-on-gold px-5 py-2 rounded-xl text-[13px] font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm">
                   {ctaText}
                 </button>
               </Link>
@@ -111,7 +111,7 @@ export default function LandingNavbar({ businessName, config = {} }) {
                 <>
                   <div className="h-px bg-edge/30" />
                   <Link to="/agendar" onClick={() => setIsMobileMenuOpen(false)}>
-                    <button className="w-full bg-ink text-surface py-3 rounded-xl font-bold text-sm">
+                    <button className="w-full bg-gold text-on-gold py-3 rounded-xl font-bold text-sm">
                       {ctaText}
                     </button>
                   </Link>

@@ -171,7 +171,7 @@ function ServiceCard({ service, i, buttonText }) {
       </p>
 
       <Link to="/agendar" className="mt-auto">
-        <button className="w-full py-3.5 rounded-xl border border-edge/70 group-hover:border-ink group-hover:bg-ink group-hover:text-surface font-bold text-sm transition-all duration-300">
+        <button className="w-full py-3.5 rounded-xl border border-edge/70 group-hover:border-gold group-hover:bg-gold group-hover:text-on-gold font-bold text-sm transition-all duration-300">
           {service.button_text || buttonText || 'Reservar'}
         </button>
       </Link>

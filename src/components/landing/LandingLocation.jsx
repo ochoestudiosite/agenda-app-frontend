@@ -102,7 +102,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
               <>
                 <div className="absolute inset-0 bg-gradient-to-br from-raised to-edge/30" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-ink flex items-center justify-center text-surface shadow-2xl animate-bounce">
+                  <div className="w-16 h-16 rounded-full bg-gold flex items-center justify-center text-on-gold shadow-2xl animate-bounce">
                     <MapPin size={32} strokeWidth={2.5} />
                   </div>
                 </div>
@@ -117,11 +117,11 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
               </div>
               {directionsUrl ? (
                 <a href={directionsUrl} target="_blank" rel="noopener noreferrer"
-                  className="bg-ink text-surface px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition-all">
+                  className="bg-gold text-on-gold px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition-all">
                   {directionsText}
                 </a>
               ) : (
-                <button className="bg-ink text-surface px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition-all">
+                <button className="bg-gold text-on-gold px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition-all">
                   {directionsText}
                 </button>
               )}

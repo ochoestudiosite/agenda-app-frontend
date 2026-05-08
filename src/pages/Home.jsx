@@ -33,6 +33,14 @@ export default function Home() {
       if (event.data?.type === 'LANDING_PREVIEW') {
         setPreviewConfig(event.data.config);
       }
+      if (event.data?.type === 'SET_THEME') {
+        const html = document.documentElement;
+        if (event.data.theme === 'dark') {
+          html.classList.add('dark');
+        } else {
+          html.classList.remove('dark');
+        }
+      }
     };
     window.addEventListener('message', handleMessage);
     
