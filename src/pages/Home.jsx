@@ -35,6 +35,12 @@ export default function Home() {
       }
     };
     window.addEventListener('message', handleMessage);
+    
+    // Notify parent that we are ready to receive preview data
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'LANDING_READY' }, '*');
+    }
+
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 

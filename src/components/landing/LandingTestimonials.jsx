@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { Quote, Star } from 'lucide-react';
 
-export default function LandingTestimonials() {
-  const testimonials = [
+export default function LandingTestimonials({ items = [] }) {
+  const displayTestimonials = items.length > 0 ? items : [
     {
       text: "La atención al detalle es simplemente otro nivel. Mi experiencia superó todas las expectativas que tenía.",
       author: "Juan Pérez",
@@ -41,7 +41,7 @@ export default function LandingTestimonials() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((t, i) => (
+          {displayTestimonials.map((t, i) => (
             <motion.div
               key={t.author + i}
               initial={{ opacity: 0, y: 30 }}
