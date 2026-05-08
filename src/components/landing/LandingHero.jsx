@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Star, ShieldCheck, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export default function LandingHero({ businessName, businessDescription }) {
+export default function LandingHero({ title, subtitle, cta }) {
   return (
     <section className="relative pt-32 pb-20 overflow-hidden">
       {/* Background blur decorative elements */}
@@ -31,8 +31,11 @@ export default function LandingHero({ businessName, businessDescription }) {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl lg:text-8xl font-bold text-ink tracking-tightest leading-[0.95] mb-8 text-balance"
           >
-            Tu tiempo es lo más <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold via-gold-light to-gold">valioso que tienes.</span>
+            {title ? (
+              title
+            ) : (
+              <>Tu tiempo es lo más <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-gold via-gold-light to-gold">valioso que tienes.</span></>
+            )}
           </motion.h1>
 
           {/* Description */}
@@ -42,7 +45,7 @@ export default function LandingHero({ businessName, businessDescription }) {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="max-w-2xl text-lg md:text-xl text-ink-2 leading-relaxed mb-12 text-balance"
           >
-            {businessDescription || 'Reserva servicios de alta calidad con los mejores profesionales. Sin llamadas, sin esperas, solo la mejor atención personalizada para ti.'}
+            {subtitle || 'Reserva servicios de alta calidad con los mejores profesionales. Sin llamadas, sin esperas, solo la mejor atención personalizada para ti.'}
           </motion.p>
 
           {/* Actions */}
@@ -54,7 +57,7 @@ export default function LandingHero({ businessName, businessDescription }) {
           >
             <Link to="/agendar" className="w-full sm:w-auto">
               <button className="w-full sm:w-auto btn-premium flex items-center justify-center gap-2 px-8 py-4 text-lg">
-                Reservar Cita
+                {cta || 'Reservar Cita'}
                 <ArrowRight size={20} />
               </button>
             </Link>

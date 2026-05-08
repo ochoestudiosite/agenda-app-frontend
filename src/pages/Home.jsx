@@ -50,36 +50,49 @@ export default function Home() {
   const staff = staffData?.data || [];
 
   return (
-    <div className="bg-surface min-h-screen selection:bg-gold selection:text-white">
-      {/* Navigation */}
-      <LandingNavbar businessName={businessName} config={businessConfig} />
+    <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink">
+      <LandingNavbar 
+        businessName={businessName} 
+        config={businessConfig} 
+      />
 
       <main>
-        {/* Hero Section */}
         <LandingHero 
           title={businessConfig.hero?.title || businessName}
           subtitle={businessConfig.hero?.subtitle || config?.business_description}
           cta={businessConfig.hero?.cta_text}
         />
 
-        {/* Services Section */}
         {(businessConfig.services_section?.visible !== false) && (
-          <LandingServices services={services} title={businessConfig.services_section?.title} subtitle={businessConfig.services_section?.subtitle} />
+          <LandingServices 
+            services={services} 
+            title={businessConfig.services_section?.title}
+            subtitle={businessConfig.services_section?.subtitle}
+          />
         )}
 
-        {/* Staff Section */}
         {(businessConfig.staff_section?.visible !== false) && (
-          <LandingStaff staff={staff} title={businessConfig.staff_section?.title} subtitle={businessConfig.staff_section?.subtitle} />
+          <LandingStaff 
+            staff={staff} 
+            title={businessConfig.staff_section?.title}
+            subtitle={businessConfig.staff_section?.subtitle}
+          />
         )}
 
-        {/* Testimonials Section */}
         {(businessConfig.testimonials_section?.visible !== false) && (
-          <LandingTestimonials items={businessConfig.testimonials} />
+          <LandingTestimonials 
+            items={businessConfig.testimonials} 
+            title={businessConfig.testimonials_section?.title}
+            subtitle={businessConfig.testimonials_section?.subtitle}
+          />
         )}
 
-        {/* Location & Contact Section */}
         {(businessConfig.location_section?.visible !== false) && (
-          <LandingLocation config={config || {}} title={businessConfig.location_section?.title} subtitle={businessConfig.location_section?.subtitle} />
+          <LandingLocation 
+            config={config || {}} 
+            title={businessConfig.location_section?.title}
+            subtitle={businessConfig.location_section?.subtitle} 
+          />
         )}
       </main>
 
