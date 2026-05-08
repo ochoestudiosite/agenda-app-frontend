@@ -38,10 +38,13 @@ export default function LandingNavbar({ businessName, config = {} }) {
         <div className={`relative flex items-center justify-between px-6 py-3 rounded-2xl transition-all duration-300 ${
           isScrolled ? 'glass shadow-lg shadow-black/5' : 'bg-transparent'
         }`}>
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-ink flex items-center justify-center text-surface transition-transform group-hover:scale-105 active:scale-95">
-              <LogoIcon size={20} strokeWidth={2.5} />
+            <div className="w-10 h-10 rounded-xl bg-ink flex items-center justify-center text-surface transition-transform group-hover:scale-105 active:scale-95 overflow-hidden">
+              {config.navbar?.logo_type === 'image' && config.navbar?.logo_url ? (
+                <img src={config.navbar.logo_url} alt="Logo" className="w-full h-full object-contain p-1.5" />
+              ) : (
+                <LogoIcon size={20} strokeWidth={2.5} />
+              )}
             </div>
             <span className="font-display text-xl font-bold tracking-tight text-ink">
               {displayName}
