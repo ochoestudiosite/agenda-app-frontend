@@ -58,8 +58,8 @@ export default function Home() {
 
       <main>
         <LandingHero 
-          title={businessConfig.hero?.title || businessName}
-          subtitle={businessConfig.hero?.subtitle || config?.business_description}
+          title={businessConfig.hero?.title}
+          subtitle={businessConfig.hero?.subtitle}
           cta={businessConfig.hero?.cta_text}
           secondaryCta={businessConfig.hero?.secondary_cta_text}
           features={businessConfig.hero?.features}

@@ -3,8 +3,13 @@ import * as LucideIcons from 'lucide-react';
 import { ArrowRight, Star, ShieldCheck, Clock, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export default function LandingHero({ title, subtitle, cta, secondaryCta, features = [], showFeatures = true }) {
-  const displayFeatures = features.length === 3 ? features : ['Pago Seguro', 'Ahorra Tiempo', 'Top Calidad'];
+export default function LandingHero({ title, subtitle, cta, secondaryCta, features, showFeatures = true }) {
+  const defaults = [
+    { icon: 'ShieldCheck', text: 'Pago Seguro' },
+    { icon: 'Clock', text: 'Ahorra Tiempo' },
+    { icon: 'Star', text: 'Top Calidad' }
+  ];
+  const displayFeatures = (features?.length === 3) ? features : defaults;
 
   return (
     <section className="relative pt-32 pb-20 overflow-hidden">
