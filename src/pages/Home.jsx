@@ -113,7 +113,7 @@ export default function Home() {
 
       {/* Footer / Contact */}
       <LandingContact 
-        businessName={businessName} 
+        businessName={businessConfig.navbar?.business_name || businessName} 
         socials={businessConfig.contact_section}
       />
 

@@ -21,12 +21,13 @@ export default function LandingNavbar({ businessName, config = {} }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
-    { name: 'Servicios', href: '#servicios' },
-    { name: 'Equipo', href: '#equipo' },
-    { name: 'Testimoniales', href: '#testimoniales' },
-    { name: 'Ubicación', href: '#ubicacion' },
+  const allLinks = [
+    { name: 'Servicios',     href: '#servicios',     configKey: 'services_section' },
+    { name: 'Equipo',        href: '#equipo',         configKey: 'staff_section' },
+    { name: 'Testimoniales', href: '#testimoniales',  configKey: 'testimonials_section' },
+    { name: 'Ubicación',     href: '#ubicacion',      configKey: 'location_section' },
   ];
+  const navLinks = allLinks.filter(l => config[l.configKey]?.visible !== false);
 
   return (
     <nav 

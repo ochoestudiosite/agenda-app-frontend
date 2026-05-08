@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Quote, Star } from 'lucide-react';
 
-export default function LandingTestimonials({ items = [] }) {
+export default function LandingTestimonials({ items = [], title, subtitle }) {
   const displayTestimonials = items.length > 0 ? items : [
     {
       text: "La atención al detalle es simplemente otro nivel. Mi experiencia superó todas las expectativas que tenía.",
@@ -32,11 +32,14 @@ export default function LandingTestimonials({ items = [] }) {
         <div className="text-center mb-16">
           <div className="flex items-center justify-center gap-2 text-gold font-bold text-xs uppercase tracking-widest mb-4">
             <Quote size={14} />
-            Testimoniales
+            {title || 'Testimoniales'}
           </div>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tightest leading-tight">
-            Lo que dicen <br />
-            <span className="opacity-40">nuestros clientes.</span>
+            {subtitle ? (
+              subtitle
+            ) : (
+              <>Lo que dicen <br /><span className="opacity-40">nuestros clientes.</span></>
+            )}
           </h2>
         </div>
 
@@ -52,7 +55,7 @@ export default function LandingTestimonials({ items = [] }) {
             >
               <div>
                 <div className="flex gap-1 mb-6">
-                  {[...Array(t.rating)].map((_, idx) => (
+                  {[...Array(t.rating || 5)].map((_, idx) => (
                     <Star key={idx} size={14} fill="#D6AC48" className="text-gold" />
                   ))}
                 </div>
@@ -63,7 +66,7 @@ export default function LandingTestimonials({ items = [] }) {
               
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold text-gold">
-                  {t.author[0]}
+                  {t.author?.[0] || '?'}
                 </div>
                 <div>
                   <div className="font-bold text-sm">{t.author}</div>

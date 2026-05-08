@@ -4,6 +4,10 @@ export default function LandingContact({ businessName, socials = {} }) {
   const instagram = socials.instagram ? `https://instagram.com/${socials.instagram}` : null;
   const facebook  = socials.facebook  ? `https://facebook.com/${socials.facebook}` : null;
   const whatsapp  = socials.whatsapp  ? `https://wa.me/${socials.whatsapp}` : null;
+  const tagline   = socials.tagline   || 'Elevamos el estándar de la industria. Una experiencia diseñada para quienes valoran su tiempo y buscan solo lo mejor.';
+  const newsletterText = socials.newsletter_text || 'Recibe promociones y noticias exclusivas.';
+  const copyrightText  = socials.copyright_text  || '';
+
   return (
     <footer className="pt-24 pb-12 bg-surface border-t border-edge">
       <div className="section-container">
@@ -15,7 +19,7 @@ export default function LandingContact({ businessName, socials = {} }) {
               {businessName || 'Cita24'}
             </h3>
             <p className="text-ink-2 max-w-sm mb-8 leading-relaxed">
-              Elevamos el estándar de la industria. Una experiencia diseñada para quienes valoran su tiempo y buscan solo lo mejor.
+              {tagline}
             </p>
             <div className="flex gap-4">
               {instagram && (
@@ -51,7 +55,7 @@ export default function LandingContact({ businessName, socials = {} }) {
           {/* Newsletter Col */}
           <div>
             <h4 className="text-xs font-bold text-ink uppercase tracking-widest mb-6">Novedades</h4>
-            <p className="text-xs text-ink-3 mb-4">Recibe promociones y noticias exclusivas.</p>
+            <p className="text-xs text-ink-3 mb-4">{newsletterText}</p>
             <div className="relative">
               <input 
                 type="email" 
@@ -69,7 +73,7 @@ export default function LandingContact({ businessName, socials = {} }) {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-edge flex flex-col md:flex-row items-center justify-between gap-6">
           <p className="text-xs font-medium text-ink-3">
-            © {new Date().getFullYear()} {businessName || 'Cita24'}. Todos los derechos reservados.
+            {copyrightText || `© ${new Date().getFullYear()} ${businessName || 'Cita24'}. Todos los derechos reservados.`}
           </p>
           <div className="flex gap-8">
             <a href="#" className="text-xs font-medium text-ink-3 hover:text-ink transition-colors">Privacidad</a>
