@@ -33,6 +33,7 @@ export default function Home() {
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data?.type === 'LANDING_PREVIEW') {
+        console.log('[PREVIEW] received design.light:', JSON.stringify(event.data.config?.design?.light), 'primary:', event.data.config?.design?.primary);
         setPreviewConfig(event.data.config);
       }
       if (event.data?.type === 'SET_THEME') {
@@ -118,6 +119,7 @@ export default function Home() {
     // Backward compat: old flat colors
     const oldColors = d.colors || {};
     const tokens = Object.keys(modeTokens).length > 0 ? modeTokens : oldColors;
+    console.log('[TOKENS] isDark:', isDark, 'modeTokens:', JSON.stringify(modeTokens), 'tokens.ink2:', tokens.ink2);
 
     const tokenMap = [
       ['surface', '--surface'], ['card', '--card'],
