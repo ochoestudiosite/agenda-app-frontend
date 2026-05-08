@@ -46,7 +46,7 @@ export default function Home() {
   return (
     <div className="bg-surface min-h-screen selection:bg-gold selection:text-white">
       {/* Navigation */}
-      <LandingNavbar businessName={businessName} />
+      <LandingNavbar businessName={businessName} config={businessConfig} />
 
       <main>
         {/* Hero Section */}

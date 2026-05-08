@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Calendar } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 
-export default function LandingNavbar({ businessName }) {
+export default function LandingNavbar({ businessName, config = {} }) {
+  const showCta = config.navbar?.show_cta !== false;
+  const ctaText = config.navbar?.cta_text || 'Agendar ahora';
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -52,11 +55,13 @@ export default function LandingNavbar({ businessName }) {
                 {link.name}
               </a>
             ))}
-            <Link to="/agendar">
-              <button className="bg-ink text-surface px-5 py-2.5 rounded-xl text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all">
-                Agendar ahora
-              </button>
-            </Link>
+            {showCta && (
+              <Link to="/agendar">
+                <button className="bg-ink text-surface px-5 py-2.5 rounded-xl text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all">
+                  {ctaText}
+                </button>
+              </Link>
+            )}
             <ThemeToggle />
           </div>
 
@@ -94,11 +99,13 @@ export default function LandingNavbar({ businessName }) {
                 </a>
               ))}
               <div className="h-px bg-edge/50 my-2" />
-              <Link to="/agendar" onClick={() => setIsMobileMenuOpen(false)}>
-                <button className="w-full bg-ink text-surface py-4 rounded-2xl font-bold">
-                  Agendar ahora
-                </button>
-              </Link>
+              {showCta && (
+                <Link to="/agendar" onClick={() => setIsMobileMenuOpen(false)}>
+                  <button className="w-full bg-ink text-surface py-4 rounded-2xl font-bold">
+                    {ctaText}
+                  </button>
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
