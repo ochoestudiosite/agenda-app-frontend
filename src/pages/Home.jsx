@@ -63,6 +63,7 @@ export default function Home() {
           cta={businessConfig.hero?.cta_text}
           secondaryCta={businessConfig.hero?.secondary_cta_text}
           features={businessConfig.hero?.features}
+          showFeatures={businessConfig.hero?.show_features}
         />
 
         {(businessConfig.services_section?.visible !== false) && (
