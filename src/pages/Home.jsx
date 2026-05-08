@@ -65,35 +65,47 @@ export default function Home() {
     return `${r} ${g} ${b}`;
   };
 
-  // Build design token style object — brand colors (shared across themes)
-  const design = bc.design || {};
-  const brandColors = design.colors || {};
-  const designStyle = {};
-  if (brandColors.primary) { const rgb = hexToRgb(brandColors.primary); if (rgb) { designStyle['--gold'] = rgb; designStyle['--gold-light'] = rgb; } }
-  if (brandColors.accent)  { const rgb = hexToRgb(brandColors.accent);  if (rgb) designStyle['--gold-muted'] = rgb; }
+  // Lighten a hex color for hover states
+  const lightenHex = (hex, amount = 30) => {
+    if (!hex || hex.length < 7) return null;
+    const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount);
+    const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount);
+    const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount);
+    return `${r} ${g} ${b}`;
+  };
 
-  // Build per-theme CSS for surface/text colors
+  const design = bc.design || {};
+
+  // Brand color (shared across themes) → --gold, --gold-light
+  const primary = design.primary || design.colors?.primary || null;
+  const designStyle = {};
+  if (primary) {
+    const rgb = hexToRgb(primary);
+    if (rgb) {
+      designStyle['--gold'] = rgb;
+      designStyle['--gold-light'] = lightenHex(primary, 24);
+    }
+  }
+
+  // Per-theme surface/text tokens
   const lightTokens = design.light || {};
   const darkTokens  = design.dark  || {};
-  // Fallback: support old flat colors structure for backward compat
+  // Backward compat: old flat colors structure
   const oldColors = design.colors || {};
 
-  const buildTokenCSS = (tokens, fallbacks) => {
+  const buildTokenCSS = (tokens, fallbacks = {}) => {
     const lines = [];
-    const map = [
-      ['surface', '--surface'], ['card', '--card'],
-      ['ink', '--ink'], ['ink_secondary', '--ink-2'],
-    ];
+    const map = [['surface','--surface'],['card','--card'],['ink','--ink'],['ink2','--ink-2'],['ink_secondary','--ink-2']];
     map.forEach(([key, cssVar]) => {
       const hex = tokens[key] || fallbacks[key];
       if (hex) { const rgb = hexToRgb(hex); if (rgb) lines.push(`${cssVar}: ${rgb};`); }
     });
-    return lines.join('\n      ');
+    return lines.join(' ');
   };
 
-  const hasLightTokens = Object.keys(lightTokens).length > 0;
-  const hasDarkTokens  = Object.keys(darkTokens).length > 0;
-  const hasOldFlat     = oldColors.surface || oldColors.card || oldColors.ink;
+  const hasLight = Object.keys(lightTokens).length > 0;
+  const hasDark  = Object.keys(darkTokens).length > 0;
+  const hasOld   = oldColors.surface || oldColors.card || oldColors.ink;
 
   // Fonts
   const headingFont = design.fonts?.heading;
@@ -124,11 +136,11 @@ export default function Home() {
     <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink" style={designStyle}>
       {/* Inject per-theme design tokens + font/radius overrides */}
       <style>{`
-        ${hasLightTokens ? `:root { ${buildTokenCSS(lightTokens, {})} }` : (hasOldFlat ? `:root { ${buildTokenCSS(oldColors, {})} }` : '')}
-        ${hasDarkTokens  ? `.dark { ${buildTokenCSS(darkTokens, {})} }` : ''}
+        ${hasLight ? `:root { ${buildTokenCSS(lightTokens)} }` : hasOld ? `:root { ${buildTokenCSS(oldColors)} }` : ''}
+        ${hasDark  ? `.dark { ${buildTokenCSS(darkTokens)} }` : ''}
         ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
         ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
-        ${design.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl, .rounded-\\[2rem\\], .rounded-\\[1\\.75rem\\] { border-radius: var(--radius) !important; }` : ''}
+        ${design.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl { border-radius: var(--radius) !important; }` : ''}
         ${design.button_style === 'pill' ? `button { border-radius: 9999px !important; }` : ''}
         ${design.button_style === 'sharp' ? `button { border-radius: 6px !important; }` : ''}
       `}</style>
