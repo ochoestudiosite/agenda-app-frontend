@@ -48,7 +48,7 @@ export default function LandingContact({ businessName, socials = {}, config = {}
               <div className="flex gap-2.5 flex-wrap">
                 {socialLinks.map(({ key, Icon, url }) => (
                   <a key={key} href={url} target="_blank" rel="noopener noreferrer"
-                    className="w-9 h-9 rounded-xl bg-ink/5 flex items-center justify-center text-ink/60 hover:bg-gold hover:text-white transition-all">
+                    className="w-9 h-9 rounded-xl bg-gold/10 flex items-center justify-center text-gold hover:bg-gold hover:text-on-gold transition-all">
                     <Icon size={16} />
                   </a>
                 ))}

@@ -130,6 +130,31 @@ export default function Home() {
       }
     });
 
+    // Auto-derive --ink-3 from ink2 (lighter variant for tertiary text)
+    const ink2Hex = tokens.ink2 || tokens.ink_secondary;
+    if (ink2Hex) {
+      root.style.setProperty('--ink-3', isDark ? darkenHex(ink2Hex, 30) : lightenHex(ink2Hex, 40));
+    } else {
+      root.style.removeProperty('--ink-3');
+    }
+
+    // Auto-derive surface-adjacent tokens: --raised, --edge from surface
+    const surfaceHex = tokens.surface;
+    if (surfaceHex) {
+      root.style.setProperty('--raised', isDark ? lightenHex(surfaceHex, 20) : darkenHex(surfaceHex, 13));
+      root.style.setProperty('--edge', isDark ? lightenHex(surfaceHex, 35) : darkenHex(surfaceHex, 30));
+      root.style.setProperty('--edge-strong', isDark ? lightenHex(surfaceHex, 55) : darkenHex(surfaceHex, 55));
+    }
+
+    // Auto-derive --on-gold based on primary brightness
+    if (primary) {
+      const r = parseInt(primary.slice(1, 3), 16);
+      const g = parseInt(primary.slice(3, 5), 16);
+      const b = parseInt(primary.slice(5, 7), 16);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      root.style.setProperty('--on-gold', luminance > 0.55 ? '28 28 30' : '255 255 255');
+    }
+
     // Fonts
     if (design.fonts?.heading) {
       root.style.setProperty('--font-heading', `"${design.fonts.heading}", sans-serif`);
@@ -151,7 +176,9 @@ export default function Home() {
 
     // Cleanup on unmount — remove all custom properties we set
     return () => {
-      ['--gold', '--gold-light', '--gold-muted', '--surface', '--card', '--ink', '--ink-2',
+      ['--gold', '--gold-light', '--gold-muted', '--on-gold',
+       '--surface', '--card', '--raised', '--edge', '--edge-strong',
+       '--ink', '--ink-2', '--ink-3',
        '--font-heading', '--font-body', '--radius'].forEach(v => root.style.removeProperty(v));
     };
   }, [design, isDark]);

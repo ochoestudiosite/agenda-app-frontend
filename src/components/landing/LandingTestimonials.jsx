@@ -45,7 +45,7 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
   }, [handleScroll]);
 
   return (
-    <section id="testimoniales" className="py-20 md:py-24 bg-[#0F0F0F] text-stone-50 relative overflow-hidden">
+    <section id="testimoniales" className="py-20 md:py-24 bg-ink text-surface relative overflow-hidden">
       <div className="absolute top-0 right-0 w-96 h-96 bg-gold/15 blur-[150px] rounded-full -mr-48 -mt-48 pointer-events-none" />
       
       <div className="section-container relative">
@@ -116,7 +116,7 @@ function TestimonialCard({ t, i }) {
       <div>
         <div className="flex gap-0.5 mb-5">
           {[...Array(t.rating || 5)].map((_, idx) => (
-            <Star key={idx} size={13} fill="#D6AC48" className="text-gold" />
+            <Star key={idx} size={13} fill="currentColor" className="text-gold" />
           ))}
         </div>
         <p className="text-[15px] leading-relaxed opacity-75 mb-6">

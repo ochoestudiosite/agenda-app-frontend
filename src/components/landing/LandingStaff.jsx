@@ -78,12 +78,12 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
             {needsPagination && (
               <div className="hidden md:flex items-center gap-2">
                 <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                  className="w-10 h-10 rounded-full border border-edge flex items-center justify-center hover:bg-ink hover:text-surface transition-all disabled:opacity-20 disabled:cursor-not-allowed">
+                  className="w-10 h-10 rounded-full border border-edge flex items-center justify-center hover:bg-gold hover:text-on-gold transition-all disabled:opacity-20 disabled:cursor-not-allowed">
                   <ChevronLeft size={18} />
                 </button>
                 <span className="text-xs font-bold text-ink-3 min-w-[3ch] text-center">{page + 1}/{totalPages}</span>
                 <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                  className="w-10 h-10 rounded-full border border-edge flex items-center justify-center hover:bg-ink hover:text-surface transition-all disabled:opacity-20 disabled:cursor-not-allowed">
+                  className="w-10 h-10 rounded-full border border-edge flex items-center justify-center hover:bg-gold hover:text-on-gold transition-all disabled:opacity-20 disabled:cursor-not-allowed">
                   <ChevronRight size={18} />
                 </button>
               </div>
@@ -118,12 +118,12 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => scrollToSlide(Math.max(0, activeSlide - 1))} disabled={activeSlide === 0}
-                className="w-10 h-10 rounded-full border border-edge flex items-center justify-center text-ink/60 active:bg-ink active:text-surface transition-all disabled:opacity-20">
+                className="w-10 h-10 rounded-full border border-edge flex items-center justify-center text-ink-2 active:bg-gold active:text-on-gold transition-all disabled:opacity-20">
                 <ChevronLeft size={18} />
               </button>
               <span className="text-xs font-bold text-ink-3 tabular-nums min-w-[3ch] text-center">{activeSlide + 1}/{allStaff.length}</span>
               <button onClick={() => scrollToSlide(Math.min(allStaff.length - 1, activeSlide + 1))} disabled={activeSlide >= allStaff.length - 1}
-                className="w-10 h-10 rounded-full border border-edge flex items-center justify-center text-ink/60 active:bg-ink active:text-surface transition-all disabled:opacity-20">
+                className="w-10 h-10 rounded-full border border-edge flex items-center justify-center text-ink-2 active:bg-gold active:text-on-gold transition-all disabled:opacity-20">
                 <ChevronRight size={18} />
               </button>
             </div>
