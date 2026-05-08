@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import * as LucideIcons from 'lucide-react';
 import { Menu, X, Calendar } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 
 export default function LandingNavbar({ businessName, config = {} }) {
   const showCta = config.navbar?.show_cta !== false;
   const ctaText = config.navbar?.cta_text || 'Agendar ahora';
+  
+  const displayName = config.navbar?.business_name || businessName || 'Cita24';
+  const LogoIcon = LucideIcons[config.navbar?.logo_icon] || Calendar;
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -37,10 +41,10 @@ export default function LandingNavbar({ businessName, config = {} }) {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="w-10 h-10 rounded-xl bg-ink flex items-center justify-center text-surface transition-transform group-hover:scale-105 active:scale-95">
-              <Calendar size={20} strokeWidth={2.5} />
+              <LogoIcon size={20} strokeWidth={2.5} />
             </div>
             <span className="font-display text-xl font-bold tracking-tight text-ink">
-              {businessName || 'Cita24'}
+              {displayName}
             </span>
           </Link>
 
