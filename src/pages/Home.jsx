@@ -47,7 +47,7 @@ export default function Home() {
   const businessName = config?.business_name || 'Cita24';
   
   // Robust parsing of landing_config to handle both object and string formats
-  let savedConfig = config?.landing_config || {};
+  let savedConfig = config?.landing || config?.landing_config || {};
   if (typeof savedConfig === 'string') {
     try {
       savedConfig = JSON.parse(savedConfig);
