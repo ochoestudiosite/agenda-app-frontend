@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
+import { useTheme } from '../context/ThemeContext';
 import LandingNavbar from '../components/landing/LandingNavbar';
 import LandingHero from '../components/landing/LandingHero';
 import LandingServices from '../components/landing/LandingServices';
@@ -26,6 +27,7 @@ export default function Home() {
   });
 
   const [previewConfig, setPreviewConfig] = useState(null);
+  const { isDark, toggle } = useTheme();
 
   // Listen for live preview updates from admin dashboard
   useEffect(() => {
@@ -34,12 +36,9 @@ export default function Home() {
         setPreviewConfig(event.data.config);
       }
       if (event.data?.type === 'SET_THEME') {
-        const html = document.documentElement;
-        if (event.data.theme === 'dark') {
-          html.classList.add('dark');
-        } else {
-          html.classList.remove('dark');
-        }
+        const wantDark = event.data.theme === 'dark';
+        // Only toggle if the current state doesn't match
+        if (wantDark !== isDark) toggle();
       }
     };
     window.addEventListener('message', handleMessage);
@@ -50,7 +49,7 @@ export default function Home() {
     }
 
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [isDark, toggle]);
 
   const businessName = config?.business_name || 'Cita24';
   
@@ -64,7 +63,7 @@ export default function Home() {
   const services = servicesData?.services || servicesData?.data || [];
   const staff = staffData?.specialists || staffData?.data || [];
 
-  // Convert hex to RGB triplet for CSS variable system
+  // ── Utility: hex → RGB triplet ──
   const hexToRgb = (hex) => {
     if (!hex || hex.length < 7) return null;
     const r = parseInt(hex.slice(1, 3), 16);
@@ -73,7 +72,6 @@ export default function Home() {
     return `${r} ${g} ${b}`;
   };
 
-  // Lighten a hex color for hover states
   const lightenHex = (hex, amount = 30) => {
     if (!hex || hex.length < 7) return null;
     const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount);
@@ -82,41 +80,85 @@ export default function Home() {
     return `${r} ${g} ${b}`;
   };
 
-  const design = bc.design || {};
-
-  // Brand color (shared across themes) → --gold, --gold-light
-  const primary = design.primary || design.colors?.primary || null;
-  const primaryRgb = primary ? hexToRgb(primary) : null;
-  const primaryLightRgb = primary ? lightenHex(primary, 24) : null;
-
-  // Per-theme surface/text tokens
-  const lightTokens = design.light || {};
-  const darkTokens  = design.dark  || {};
-  // Backward compat: old flat colors structure
-  const oldColors = design.colors || {};
-
-  const buildTokenCSS = (tokens, fallbacks = {}) => {
-    const lines = [];
-    const map = [['surface','--surface'],['card','--card'],['ink','--ink'],['ink2','--ink-2'],['ink_secondary','--ink-2']];
-    map.forEach(([key, cssVar]) => {
-      const hex = tokens[key] || fallbacks[key];
-      if (hex) { const rgb = hexToRgb(hex); if (rgb) lines.push(`${cssVar}: ${rgb};`); }
-    });
-    return lines.join(' ');
+  const darkenHex = (hex, amount = 40) => {
+    if (!hex || hex.length < 7) return null;
+    const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amount);
+    const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amount);
+    const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount);
+    return `${r} ${g} ${b}`;
   };
 
-  const hasLight = Object.keys(lightTokens).length > 0;
-  const hasDark  = Object.keys(darkTokens).length > 0;
-  const hasOld   = oldColors.surface || oldColors.card || oldColors.ink;
+  const design = bc.design || {};
 
-  // Fonts
-  const headingFont = design.fonts?.heading;
-  const bodyFont = design.fonts?.body;
+  // ── Apply ALL design tokens via document.documentElement.style.setProperty ──
+  // This is the most reliable method — inline styles on <html> always win over stylesheets
+  useEffect(() => {
+    const root = document.documentElement;
 
-  // Border radius
-  const radius = design.border_radius;
+    // Brand color
+    const primary = design.primary || design.colors?.primary;
+    if (primary) {
+      const rgb = hexToRgb(primary);
+      if (rgb) {
+        root.style.setProperty('--gold', rgb);
+        root.style.setProperty('--gold-light', lightenHex(primary, 24));
+        root.style.setProperty('--gold-muted', isDark ? darkenHex(primary, 80) : lightenHex(primary, 100));
+      }
+    } else {
+      root.style.removeProperty('--gold');
+      root.style.removeProperty('--gold-light');
+      root.style.removeProperty('--gold-muted');
+    }
+
+    // Surface/text tokens — apply the correct set based on current theme
+    const modeTokens = isDark ? (design.dark || {}) : (design.light || {});
+    // Backward compat: old flat colors
+    const oldColors = design.colors || {};
+    const tokens = Object.keys(modeTokens).length > 0 ? modeTokens : oldColors;
+
+    const tokenMap = [
+      ['surface', '--surface'], ['card', '--card'],
+      ['ink', '--ink'], ['ink2', '--ink-2'], ['ink_secondary', '--ink-2'],
+    ];
+    tokenMap.forEach(([key, cssVar]) => {
+      const hex = tokens[key];
+      if (hex) {
+        const rgb = hexToRgb(hex);
+        if (rgb) root.style.setProperty(cssVar, rgb);
+      } else {
+        root.style.removeProperty(cssVar);
+      }
+    });
+
+    // Fonts
+    if (design.fonts?.heading) {
+      root.style.setProperty('--font-heading', `"${design.fonts.heading}", sans-serif`);
+    } else {
+      root.style.removeProperty('--font-heading');
+    }
+    if (design.fonts?.body) {
+      root.style.setProperty('--font-body', `"${design.fonts.body}", sans-serif`);
+    } else {
+      root.style.removeProperty('--font-body');
+    }
+
+    // Border radius
+    if (design.border_radius != null) {
+      root.style.setProperty('--radius', `${design.border_radius}px`);
+    } else {
+      root.style.removeProperty('--radius');
+    }
+
+    // Cleanup on unmount — remove all custom properties we set
+    return () => {
+      ['--gold', '--gold-light', '--gold-muted', '--surface', '--card', '--ink', '--ink-2',
+       '--font-heading', '--font-body', '--radius'].forEach(v => root.style.removeProperty(v));
+    };
+  }, [design, isDark]);
 
   // Dynamic Google Fonts loading
+  const headingFont = design.fonts?.heading;
+  const bodyFont = design.fonts?.body;
   useEffect(() => {
     const fonts = [headingFont, bodyFont].filter(Boolean);
     if (fonts.length === 0) return;
@@ -132,24 +174,13 @@ export default function Home() {
     link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
   }, [headingFont, bodyFont]);
 
-  // Build all :root overrides in one place
-  const rootOverrides = [
-    primaryRgb ? `--gold: ${primaryRgb};` : '',
-    primaryLightRgb ? `--gold-light: ${primaryLightRgb};` : '',
-    headingFont ? `--font-heading: "${headingFont}", sans-serif;` : '',
-    bodyFont ? `--font-body: "${bodyFont}", sans-serif;` : '',
-    radius != null ? `--radius: ${radius}px;` : '',
-  ].filter(Boolean).join(' ');
-
   return (
     <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink">
-      {/* Inject ALL design tokens at :root level so Tailwind utilities resolve correctly */}
+      {/* Font and button style overrides that need CSS selectors */}
       <style>{`
-        :root { ${rootOverrides} ${hasLight ? buildTokenCSS(lightTokens) : hasOld ? buildTokenCSS(oldColors) : ''} }
-        ${hasDark ? `.dark { ${primaryRgb ? `--gold: ${primaryRgb}; --gold-light: ${primaryLightRgb};` : ''} ${buildTokenCSS(darkTokens)} }` : ''}
         ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
         ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
-        ${radius != null ? `.card, .rounded-2xl, .rounded-3xl { border-radius: var(--radius) !important; }` : ''}
+        ${design.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl { border-radius: var(--radius) !important; }` : ''}
         ${design.button_style === 'pill' ? `button { border-radius: 9999px !important; }` : ''}
         ${design.button_style === 'sharp' ? `button { border-radius: 6px !important; }` : ''}
       `}</style>
