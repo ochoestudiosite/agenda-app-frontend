@@ -65,17 +65,35 @@ export default function Home() {
     return `${r} ${g} ${b}`;
   };
 
-  // Build design token style object
+  // Build design token style object — brand colors (shared across themes)
   const design = bc.design || {};
-  const colors = design.colors || {};
+  const brandColors = design.colors || {};
   const designStyle = {};
-  if (colors.primary)       { const rgb = hexToRgb(colors.primary);       if (rgb) { designStyle['--gold'] = rgb; designStyle['--gold-light'] = rgb; } }
-  if (colors.secondary)     { const rgb = hexToRgb(colors.secondary);     if (rgb) designStyle['--ink'] = rgb; }
-  if (colors.accent)        { const rgb = hexToRgb(colors.accent);        if (rgb) designStyle['--gold-muted'] = rgb; }
-  if (colors.surface)       { const rgb = hexToRgb(colors.surface);       if (rgb) designStyle['--surface'] = rgb; }
-  if (colors.card)          { const rgb = hexToRgb(colors.card);          if (rgb) designStyle['--card'] = rgb; }
-  if (colors.ink)           { const rgb = hexToRgb(colors.ink);           if (rgb) designStyle['--ink'] = rgb; }
-  if (colors.ink_secondary) { const rgb = hexToRgb(colors.ink_secondary); if (rgb) designStyle['--ink-2'] = rgb; }
+  if (brandColors.primary) { const rgb = hexToRgb(brandColors.primary); if (rgb) { designStyle['--gold'] = rgb; designStyle['--gold-light'] = rgb; } }
+  if (brandColors.accent)  { const rgb = hexToRgb(brandColors.accent);  if (rgb) designStyle['--gold-muted'] = rgb; }
+
+  // Build per-theme CSS for surface/text colors
+  const lightTokens = design.light || {};
+  const darkTokens  = design.dark  || {};
+  // Fallback: support old flat colors structure for backward compat
+  const oldColors = design.colors || {};
+
+  const buildTokenCSS = (tokens, fallbacks) => {
+    const lines = [];
+    const map = [
+      ['surface', '--surface'], ['card', '--card'],
+      ['ink', '--ink'], ['ink_secondary', '--ink-2'],
+    ];
+    map.forEach(([key, cssVar]) => {
+      const hex = tokens[key] || fallbacks[key];
+      if (hex) { const rgb = hexToRgb(hex); if (rgb) lines.push(`${cssVar}: ${rgb};`); }
+    });
+    return lines.join('\n      ');
+  };
+
+  const hasLightTokens = Object.keys(lightTokens).length > 0;
+  const hasDarkTokens  = Object.keys(darkTokens).length > 0;
+  const hasOldFlat     = oldColors.surface || oldColors.card || oldColors.ink;
 
   // Fonts
   const headingFont = design.fonts?.heading;
@@ -104,16 +122,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink" style={designStyle}>
-      {/* Apply custom fonts via inline style on headings and body */}
-      {(headingFont || bodyFont || design.border_radius != null) && (
-        <style>{`
-          ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
-          ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
-          ${design.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl, .rounded-\\[2rem\\], .rounded-\\[1\\.75rem\\] { border-radius: var(--radius) !important; }` : ''}
-          ${design.button_style === 'pill' ? `button { border-radius: 9999px !important; }` : ''}
-          ${design.button_style === 'sharp' ? `button { border-radius: 6px !important; }` : ''}
-        `}</style>
-      )}
+      {/* Inject per-theme design tokens + font/radius overrides */}
+      <style>{`
+        ${hasLightTokens ? `:root { ${buildTokenCSS(lightTokens, {})} }` : (hasOldFlat ? `:root { ${buildTokenCSS(oldColors, {})} }` : '')}
+        ${hasDarkTokens  ? `.dark { ${buildTokenCSS(darkTokens, {})} }` : ''}
+        ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
+        ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
+        ${design.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl, .rounded-\\[2rem\\], .rounded-\\[1\\.75rem\\] { border-radius: var(--radius) !important; }` : ''}
+        ${design.button_style === 'pill' ? `button { border-radius: 9999px !important; }` : ''}
+        ${design.button_style === 'sharp' ? `button { border-radius: 6px !important; }` : ''}
+      `}</style>
       <LandingNavbar 
         businessName={businessName} 
         config={bc} 
