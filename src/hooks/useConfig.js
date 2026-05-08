@@ -28,7 +28,7 @@ export function useConfig() {
     },
     initialData:          readCache,
     initialDataUpdatedAt: 0,
-    staleTime:            2 * 60 * 1000,
+    staleTime:            10 * 1000,
     refetchOnWindowFocus: true,
     // No point retrying — tenant deleted/suspended won't change in 2 seconds
     retry: (failureCount, err) => {

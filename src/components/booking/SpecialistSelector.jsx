@@ -28,11 +28,27 @@ export default function SpecialistSelector() {
     </div>
   );
 
-  // Only show specialists who have the selected service assigned
-  const selectedDbId = state.service?.dbId;
-  const specialists  = (data?.specialists ?? []).filter(
-    sp => !selectedDbId || sp.serviceIds?.includes(selectedDbId),
-  );
+  // Filter specialists by:
+  // 1. Service assignment (must have the selected service)
+  // 2. Branch assignment (must belong to selected branch OR work in all branches)
+  const selectedServiceDbId = Number(state.service?.dbId);
+  const selectedBranchDbId  = state.branch?.id ? Number(state.branch.id) : null;
+  
+  const specialists = (data?.specialists ?? []).filter(sp => {
+    // Service check
+    const hasService = !selectedServiceDbId || sp.serviceIds?.some(id => Number(id) === selectedServiceDbId);
+    if (!hasService) return false;
+
+    // Branch check (if multi-branch is active)
+    if (selectedBranchDbId) {
+      // If sp.branchIds is empty, they work in ALL branches
+      const worksInAllBranches = !sp.branchIds || sp.branchIds.length === 0;
+      const worksInThisBranch = sp.branchIds?.some(id => Number(id) === selectedBranchDbId);
+      return worksInAllBranches || worksInThisBranch;
+    }
+
+    return true;
+  });
 
   return (
     <div className="animate-fade-up">
