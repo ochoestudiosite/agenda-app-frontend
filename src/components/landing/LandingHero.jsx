@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Star, ShieldCheck, Clock } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { ArrowRight, Star, ShieldCheck, Clock, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function LandingHero({ title, subtitle, cta, secondaryCta, features = [] }) {
@@ -77,18 +78,19 @@ export default function LandingHero({ title, subtitle, cta, secondaryCta, featur
             transition={{ duration: 1, delay: 0.5 }}
             className="mt-20 grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-16 border-t border-edge/30 pt-10"
           >
-            <div className="flex flex-col items-center gap-2">
-              <ShieldCheck className="text-gold" size={24} />
-              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">{displayFeatures[0]}</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <Clock className="text-gold" size={24} />
-              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">{displayFeatures[1]}</span>
-            </div>
-            <div className="hidden md:flex flex-col items-center gap-2">
-              <Star className="text-gold" size={24} />
-              <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">{displayFeatures[2]}</span>
-            </div>
+            {displayFeatures.map((feat, idx) => {
+              const isObj = typeof feat === 'object';
+              const iconName = isObj ? feat.icon : (idx === 0 ? 'ShieldCheck' : idx === 1 ? 'Clock' : 'Star');
+              const text = isObj ? feat.text : feat;
+              const IconComp = LucideIcons[iconName] || HelpCircle;
+
+              return (
+                <div key={idx} className={`flex flex-col items-center gap-2 ${idx === 2 ? 'hidden md:flex' : ''}`}>
+                  <IconComp className="text-gold" size={24} />
+                  <span className="text-xs font-bold text-ink-3 uppercase tracking-wider">{text || (idx === 0 ? 'Pago Seguro' : idx === 1 ? 'Ahorra Tiempo' : 'Top Calidad')}</span>
+                </div>
+              );
+            })}
           </motion.div>
         </div>
       </div>
