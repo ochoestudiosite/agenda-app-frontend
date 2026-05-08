@@ -116,6 +116,7 @@ export default function Home() {
       <LandingContact 
         businessName={bc.navbar?.business_name || businessName} 
         socials={bc.contact_section}
+        config={bc}
       />
 
       <div className="fixed bottom-10 right-10 pointer-events-none opacity-20">

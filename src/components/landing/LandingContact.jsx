@@ -1,6 +1,5 @@
 import { Send, Instagram, Facebook, MessageSquare, Youtube, Linkedin } from 'lucide-react';
 
-// TikTok icon (not in lucide-react)
 function TikTokIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -18,7 +17,7 @@ const SOCIAL_CONFIG = [
   { key: 'linkedin',  Icon: Linkedin,       urlFn: v => `https://linkedin.com/in/${v}` },
 ];
 
-export default function LandingContact({ businessName, socials = {} }) {
+export default function LandingContact({ businessName, socials = {}, config = {} }) {
   const brandTitle     = socials.brand_title     || businessName || 'Cita24';
   const tagline        = socials.tagline         || 'Elevamos el estándar de la industria. Una experiencia diseñada para quienes valoran su tiempo y buscan solo lo mejor.';
   const newsletterText = socials.newsletter_text  || 'Recibe promociones y noticias exclusivas.';
@@ -28,25 +27,29 @@ export default function LandingContact({ businessName, socials = {} }) {
     .filter(s => socials[s.key])
     .map(s => ({ ...s, url: s.urlFn(socials[s.key]) }));
 
+  // Dynamic footer links based on section visibility
+  const footerLinks = [
+    { name: 'Servicios',     href: '#servicios',     key: 'services_section' },
+    { name: 'Equipo',        href: '#equipo',         key: 'staff_section' },
+    { name: 'Testimoniales', href: '#testimoniales',  key: 'testimonials_section' },
+    { name: 'Ubicación',     href: '#ubicacion',      key: 'location_section' },
+  ].filter(l => config[l.key]?.visible !== false);
+
   return (
-    <footer className="pt-24 pb-12 bg-surface border-t border-edge">
+    <footer className="pt-20 pb-10 bg-surface border-t border-edge/50">
       <div className="section-container">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-16 mb-16">
           
           {/* Brand Col */}
           <div className="lg:col-span-2">
-            <h3 className="font-display text-3xl font-bold text-ink mb-6">
-              {brandTitle}
-            </h3>
-            <p className="text-ink-2 max-w-sm mb-8 leading-relaxed">
-              {tagline}
-            </p>
+            <h3 className="font-display text-2xl font-bold text-ink mb-4">{brandTitle}</h3>
+            <p className="text-ink-2 text-sm max-w-sm mb-6 leading-relaxed">{tagline}</p>
             {socialLinks.length > 0 && (
-              <div className="flex gap-3 flex-wrap">
+              <div className="flex gap-2.5 flex-wrap">
                 {socialLinks.map(({ key, Icon, url }) => (
                   <a key={key} href={url} target="_blank" rel="noopener noreferrer"
-                    className="w-10 h-10 rounded-xl bg-ink/5 flex items-center justify-center text-ink hover:bg-gold hover:text-white transition-all cursor-pointer">
-                    <Icon size={18} />
+                    className="w-9 h-9 rounded-xl bg-ink/5 flex items-center justify-center text-ink/60 hover:bg-gold hover:text-white transition-all">
+                    <Icon size={16} />
                   </a>
                 ))}
               </div>
@@ -54,43 +57,44 @@ export default function LandingContact({ businessName, socials = {} }) {
           </div>
 
           {/* Links Col */}
-          <div>
-            <h4 className="text-xs font-bold text-ink uppercase tracking-widest mb-6">Explorar</h4>
-            <ul className="space-y-4">
-              {['Servicios', 'Equipo', 'Testimoniales', 'Ubicación'].map(l => (
-                <li key={l}>
-                  <a href={`#${l.toLowerCase()}`} className="text-sm font-medium text-ink-2 hover:text-gold transition-colors">{l}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {footerLinks.length > 0 && (
+            <div>
+              <h4 className="text-[11px] font-bold text-ink uppercase tracking-widest mb-5">Explorar</h4>
+              <ul className="space-y-3">
+                {footerLinks.map(l => (
+                  <li key={l.name}>
+                    <a href={l.href} className="text-sm font-medium text-ink/50 hover:text-gold transition-colors">{l.name}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Newsletter Col */}
           <div>
-            <h4 className="text-xs font-bold text-ink uppercase tracking-widest mb-6">Novedades</h4>
-            <p className="text-xs text-ink-3 mb-4">{newsletterText}</p>
+            <h4 className="text-[11px] font-bold text-ink uppercase tracking-widest mb-5">Novedades</h4>
+            <p className="text-xs text-ink-3 mb-3">{newsletterText}</p>
             <div className="relative">
               <input 
                 type="email" 
                 placeholder="tu@email.com"
-                className="w-full bg-raised/30 border border-edge/50 rounded-xl py-3 px-4 text-xs font-medium focus:outline-none focus:border-gold transition-all"
+                className="w-full bg-raised/30 border border-edge/50 rounded-xl py-2.5 px-4 text-xs font-medium focus:outline-none focus:border-gold transition-all"
               />
-              <button className="absolute right-2 top-2 w-8 h-8 rounded-lg bg-ink text-surface flex items-center justify-center hover:bg-gold transition-all">
-                <Send size={14} />
+              <button className="absolute right-1.5 top-1.5 w-7 h-7 rounded-lg bg-ink text-surface flex items-center justify-center hover:bg-gold transition-all">
+                <Send size={12} />
               </button>
             </div>
           </div>
-
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t border-edge flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-xs font-medium text-ink-3">
+        <div className="pt-6 border-t border-edge/30 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-[11px] font-medium text-ink/30">
             {copyrightText || `© ${new Date().getFullYear()} ${brandTitle}. Todos los derechos reservados.`}
           </p>
-          <div className="flex gap-8">
-            <a href="#" className="text-xs font-medium text-ink-3 hover:text-ink transition-colors">Privacidad</a>
-            <a href="#" className="text-xs font-medium text-ink-3 hover:text-ink transition-colors">Términos</a>
+          <div className="flex gap-6">
+            <a href="#" className="text-[11px] font-medium text-ink/30 hover:text-ink transition-colors">Privacidad</a>
+            <a href="#" className="text-[11px] font-medium text-ink/30 hover:text-ink transition-colors">Términos</a>
           </div>
         </div>
       </div>
