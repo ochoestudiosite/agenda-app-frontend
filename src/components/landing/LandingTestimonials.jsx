@@ -56,7 +56,7 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
               {title || 'Testimoniales'}
             </div>
             <h2 className="text-3xl md:text-5xl font-bold tracking-tightest leading-tight">
-              {subtitle ? subtitle : (<>Lo que dicen <br className="hidden md:block" /><span className="opacity-40">nuestros clientes.</span></>)}
+              {subtitle ? subtitle : (<>Lo que dicen <br className="hidden md:block" /><span className="text-surface/40">nuestros clientes.</span></>)}
             </h2>
           </div>
         </div>
@@ -83,17 +83,17 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
             <div className="flex items-center gap-1.5">
               {displayTestimonials.map((_, i) => (
                 <button key={i} onClick={() => scrollToSlide(i)}
-                  className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-2 bg-gold' : 'w-2 h-2 bg-white/20'}`} />
+                  className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-2 bg-gold' : 'w-2 h-2 bg-surface/20'}`} />
               ))}
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => scrollToSlide(Math.max(0, activeSlide - 1))} disabled={activeSlide === 0}
-                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 active:bg-white/10 transition-all disabled:opacity-20">
+                className="w-10 h-10 rounded-full border border-surface/10 flex items-center justify-center text-surface/50 active:bg-gold active:text-on-gold transition-all disabled:opacity-20">
                 <ChevronLeft size={18} />
               </button>
-              <span className="text-xs font-bold text-white/40 tabular-nums min-w-[3ch] text-center">{activeSlide + 1}/{displayTestimonials.length}</span>
+              <span className="text-xs font-bold text-surface/40 tabular-nums min-w-[3ch] text-center">{activeSlide + 1}/{displayTestimonials.length}</span>
               <button onClick={() => scrollToSlide(Math.min(displayTestimonials.length - 1, activeSlide + 1))} disabled={activeSlide >= displayTestimonials.length - 1}
-                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 active:bg-white/10 transition-all disabled:opacity-20">
+                className="w-10 h-10 rounded-full border border-surface/10 flex items-center justify-center text-surface/50 active:bg-gold active:text-on-gold transition-all disabled:opacity-20">
                 <ChevronRight size={18} />
               </button>
             </div>
@@ -111,7 +111,7 @@ function TestimonialCard({ t, i }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: i * 0.08, duration: 0.3 }}
-      className="relative p-8 rounded-[2rem] bg-white/[0.04] border border-white/[0.06] flex flex-col justify-between h-full"
+      className="relative p-8 rounded-[2rem] bg-card/10 border border-edge/20 flex flex-col justify-between h-full"
     >
       <div>
         <div className="flex gap-0.5 mb-5">
@@ -119,17 +119,17 @@ function TestimonialCard({ t, i }) {
             <Star key={idx} size={13} fill="currentColor" className="text-gold" />
           ))}
         </div>
-        <p className="text-[15px] leading-relaxed opacity-75 mb-6">
+        <p className="text-[15px] leading-relaxed text-surface/75 mb-6">
           "{t.text}"
         </p>
       </div>
-      <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
-        <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center font-bold text-gold text-sm">
+      <div className="flex items-center gap-3 pt-4 border-t border-edge/20">
+        <div className="w-9 h-9 rounded-full bg-card/10 flex items-center justify-center font-bold text-gold text-sm">
           {t.author?.[0] || '?'}
         </div>
         <div>
-          <div className="font-bold text-sm">{t.author}</div>
-          <div className="text-[10px] opacity-40 uppercase tracking-widest font-semibold">{t.role}</div>
+          <div className="font-bold text-sm text-surface">{t.author}</div>
+          <div className="text-[10px] text-surface/40 uppercase tracking-widest font-semibold">{t.role}</div>
         </div>
       </div>
     </motion.div>
