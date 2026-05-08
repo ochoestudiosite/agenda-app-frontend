@@ -89,6 +89,7 @@ export default function Home() {
   };
 
   const design = bc.design || {};
+  const designJSON = JSON.stringify(design);
 
   // ── Apply ALL design tokens via document.documentElement.style.setProperty ──
   // This is the most reliable method — inline styles on <html> always win over stylesheets
@@ -181,7 +182,7 @@ export default function Home() {
        '--ink', '--ink-2', '--ink-3',
        '--font-heading', '--font-body', '--radius'].forEach(v => root.style.removeProperty(v));
     };
-  }, [design, isDark]);
+  }, [designJSON, isDark]);
 
   // Dynamic Google Fonts loading
   const headingFont = design.fonts?.heading;
