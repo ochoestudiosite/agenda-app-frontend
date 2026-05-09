@@ -9,22 +9,25 @@ import LandingStaff from '../components/landing/LandingStaff';
 import LandingTestimonials from '../components/landing/LandingTestimonials';
 import LandingLocation from '../components/landing/LandingLocation';
 import LandingContact from '../components/landing/LandingContact';
+import LandingSkeleton from '../components/landing/LandingSkeleton';
 
 export default function Home() {
-  const { data: config } = useQuery({ 
+  const { data: config, isLoading: loadingConfig } = useQuery({ 
     queryKey: ['config'], 
     queryFn: api.getConfig 
   });
 
-  const { data: servicesData } = useQuery({ 
+  const { data: servicesData, isLoading: loadingServices } = useQuery({ 
     queryKey: ['services'], 
     queryFn: api.getServices 
   });
 
-  const { data: staffData } = useQuery({ 
+  const { data: staffData, isLoading: loadingStaff } = useQuery({ 
     queryKey: ['specialists'], 
     queryFn: api.getSpecialists 
   });
+
+  const isLoading = loadingConfig || loadingServices || loadingStaff;
 
   const [previewConfig, setPreviewConfig] = useState(null);
   const { isDark, toggle } = useTheme();
@@ -234,6 +237,18 @@ export default function Home() {
     }
     link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
   }, [headingFont, bodyFont]);
+
+  if (isLoading && !previewConfig) {
+    return (
+      <>
+        <style>{`
+          ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
+          ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
+        `}</style>
+        <LandingSkeleton />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink">
