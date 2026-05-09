@@ -92,11 +92,12 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
             {mapEmbed ? (
               <iframe
                 src={mapEmbed}
-                className="absolute inset-0 w-full h-full border-none"
+                className="absolute inset-0 w-full h-full border-none pointer-events-none select-none"
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="Ubicación del negocio"
+                tabIndex={-1}
               />
             ) : (
               <>
