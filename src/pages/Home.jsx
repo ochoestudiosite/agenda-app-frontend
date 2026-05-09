@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
@@ -31,6 +32,10 @@ export default function Home() {
 
   const [previewConfig, setPreviewConfig] = useState(null);
   const { isDark, toggle } = useTheme();
+
+  // SaaS Feature Flag: Verificar si el tenant tiene contratada la Landing Page
+  // (Por defecto es true para retrocompatibilidad, solo se desactiva si es explícitamente false)
+  const isLandingEnabled = config?.features?.landing_enabled !== false;
 
   // Listen for live preview updates from admin dashboard
   useEffect(() => {
@@ -237,6 +242,13 @@ export default function Home() {
     }
     link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
   }, [headingFont, bodyFont]);
+
+  // Si ya tenemos la config y la landing está desactivada por el plan (SaaS tiering),
+  // redirigimos inmediatamente de forma silenciosa y transparente a la vista de reservas.
+  // Ignoramos esta regla si estamos dentro del iframe del Admin (previewConfig activo).
+  if (config && !isLandingEnabled && !previewConfig) {
+    return <Navigate to="/agendar" replace />;
+  }
 
   if (isLoading && !previewConfig) {
     return (
