@@ -16,6 +16,14 @@ export default function LandingNavbar({ businessName, config = {} }) {
   const displayName = config.navbar?.business_name || businessName || 'Cita24';
   const LogoIcon    = LucideIcons[config.navbar?.logo_icon] || Calendar;
 
+  // Show the uploaded business logo unless the admin has *explicitly* chosen
+  // 'icon' as the type. This makes a logo uploaded from either Configuración
+  // (writes business_settings.logo_url) or Landing Editor (writes the same
+  // column via the server-side identity router) appear immediately, instead
+  // of requiring the admin to also toggle navbar.logo_type to 'image'.
+  const logoUrl  = config.navbar?.logo_url || null;
+  const useImage = config.navbar?.logo_type === 'icon' ? false : !!logoUrl;
+
   const [isScrolled, setIsScrolled]             = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -41,15 +49,25 @@ export default function LandingNavbar({ businessName, config = {} }) {
   ];
   const navLinks = allLinks.filter(l => config[l.configKey]?.visible !== false);
 
+  // Visual treatment mirrors Layout.jsx BizLogo so /agendar and / look like
+  // they belong to the same brand: rounded square, gold container when
+  // showing the icon, neutral raised container with a hairline border when
+  // showing an image, object-cover for crisp aspect-fill.
   const Logo = (
     <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-      <div className="w-9 h-9 rounded-xl bg-gold text-on-gold flex items-center justify-center transition-transform group-hover:scale-[1.04] active:scale-95 overflow-hidden">
-        {config.navbar?.logo_type === 'image' && config.navbar?.logo_url ? (
-          <img src={config.navbar.logo_url} alt={displayName} className="w-full h-full object-contain p-1.5" />
+      <span
+        className={`w-9 h-9 rounded-xl shrink-0 overflow-hidden flex items-center justify-center transition-transform group-hover:scale-[1.04] active:scale-95 ${
+          useImage
+            ? 'bg-raised border border-edge/50'
+            : 'bg-gold text-on-gold'
+        }`}
+      >
+        {useImage ? (
+          <img src={logoUrl} alt={displayName} className="w-full h-full object-cover" />
         ) : (
           <LogoIcon size={16} strokeWidth={2.4} />
         )}
-      </div>
+      </span>
       <span className="font-display text-[15px] sm:text-base font-semibold tracking-tight text-ink truncate">
         {displayName}
       </span>

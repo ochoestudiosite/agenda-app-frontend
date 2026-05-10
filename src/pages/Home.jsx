@@ -111,177 +111,12 @@ export default function Home() {
   const services = servicesData?.services || servicesData?.data || [];
   const staff = staffData?.specialists || staffData?.data || [];
 
-  // ── Utility: hex → RGB triplet ──
-  const hexToRgb = (hex) => {
-    if (!hex || hex.length < 7) return null;
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `${r} ${g} ${b}`;
-  };
-
-  const lightenHex = (hex, amount = 30) => {
-    if (!hex || hex.length < 7) return null;
-    const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount);
-    const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount);
-    const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount);
-    return `${r} ${g} ${b}`;
-  };
-
-  const darkenHex = (hex, amount = 40) => {
-    if (!hex || hex.length < 7) return null;
-    const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amount);
-    const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amount);
-    const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount);
-    return `${r} ${g} ${b}`;
-  };
-
+  // Note: brand token application (colour, surface, ink, fonts, radius, button
+  // shape) lives in components/BrandTokensApplier.jsx and is mounted once at
+  // the App level so /agendar and /gestionar inherit the same brand. This
+  // page-level effect is only for ad-hoc preview overrides via postMessage —
+  // see setPreviewConfig below.
   const design = bc.design || {};
-  const designJSON = JSON.stringify(design);
-
-  // ── Apply ALL design tokens via document.documentElement.style.setProperty ──
-  // This is the most reliable method — inline styles on <html> always win over stylesheets
-  useEffect(() => {
-    const root = document.documentElement;
-    // Parse inside the effect to avoid stale closure over `design` object
-    const d = JSON.parse(designJSON);
-
-    // Brand color
-    const primary = d.primary || d.colors?.primary;
-    if (primary) {
-      const rgb = hexToRgb(primary);
-      if (rgb) {
-        root.style.setProperty('--gold', rgb);
-        root.style.setProperty('--gold-light', lightenHex(primary, 24));
-        root.style.setProperty('--gold-muted', isDark ? darkenHex(primary, 80) : lightenHex(primary, 100));
-      }
-    } else {
-      root.style.removeProperty('--gold');
-      root.style.removeProperty('--gold-light');
-      root.style.removeProperty('--gold-muted');
-    }
-
-    // Surface/text tokens — apply the correct set based on current theme
-    const modeTokens = isDark ? (d.dark || {}) : (d.light || {});
-    // Backward compat: old flat colors
-    const oldColors = d.colors || {};
-    const tokens = Object.keys(modeTokens).length > 0 ? modeTokens : oldColors;
-
-    const tokenMap = [
-      ['surface', '--surface'], ['card', '--card'],
-      ['ink', '--ink'],
-    ];
-    tokenMap.forEach(([key, cssVar]) => {
-      const hex = tokens[key];
-      if (hex) {
-        const rgb = hexToRgb(hex);
-        if (rgb) root.style.setProperty(cssVar, rgb);
-      } else {
-        root.style.removeProperty(cssVar);
-      }
-    });
-
-    // ink2 with backward-compat fallback to ink_secondary (single lookup, no override conflict)
-    const ink2Val = tokens.ink2 || tokens.ink_secondary;
-    if (ink2Val) {
-      const rgb = hexToRgb(ink2Val);
-      if (rgb) root.style.setProperty('--ink-2', rgb);
-    } else {
-      root.style.removeProperty('--ink-2');
-    }
-
-    // Auto-derive --ink-3 from ink2 (lighter variant for tertiary text)
-    const ink2Hex = tokens.ink2 || tokens.ink_secondary;
-    if (ink2Hex) {
-      root.style.setProperty('--ink-3', isDark ? darkenHex(ink2Hex, 30) : lightenHex(ink2Hex, 40));
-    } else {
-      root.style.removeProperty('--ink-3');
-    }
-
-    // Auto-derive surface-adjacent tokens: --raised, --edge from surface
-    const surfaceHex = tokens.surface;
-    if (surfaceHex) {
-      root.style.setProperty('--raised', isDark ? lightenHex(surfaceHex, 20) : darkenHex(surfaceHex, 13));
-      root.style.setProperty('--edge', isDark ? lightenHex(surfaceHex, 35) : darkenHex(surfaceHex, 30));
-      root.style.setProperty('--edge-strong', isDark ? lightenHex(surfaceHex, 55) : darkenHex(surfaceHex, 55));
-    }
-
-    // Auto-derive --on-gold based on primary brightness
-    if (primary) {
-      const r = parseInt(primary.slice(1, 3), 16);
-      const g = parseInt(primary.slice(3, 5), 16);
-      const b = parseInt(primary.slice(5, 7), 16);
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      root.style.setProperty('--on-gold', luminance > 0.55 ? '28 28 30' : '255 255 255');
-    }
-
-    // Auto-derive --section-contrast for inverted sections (testimonials)
-    // This is NOT linked to --ink; it's a dark bg derived independently from --surface
-    const surfHex = tokens.surface || (isDark ? '#000000' : '#F2F2F7');
-    if (surfHex) {
-      const sr = parseInt(surfHex.slice(1, 3), 16);
-      const sg = parseInt(surfHex.slice(3, 5), 16);
-      const sb = parseInt(surfHex.slice(5, 7), 16);
-      const surfLum = (0.299 * sr + 0.587 * sg + 0.114 * sb) / 255;
-      if (surfLum > 0.5) {
-        // Light surface → dark contrast section
-        root.style.setProperty('--section-contrast', '15 15 15');
-        root.style.setProperty('--section-contrast-text', '245 245 247');
-        root.style.setProperty('--section-contrast-muted', '174 174 178');
-      } else {
-        // Dark surface → slightly elevated contrast section
-        root.style.setProperty('--section-contrast', lightenHex(surfHex, 18));
-        root.style.setProperty('--section-contrast-text', '245 245 247');
-        root.style.setProperty('--section-contrast-muted', '142 142 147');
-      }
-    }
-
-    // Fonts
-    if (d.fonts?.heading) {
-      root.style.setProperty('--font-heading', `"${d.fonts.heading}", sans-serif`);
-    } else {
-      root.style.removeProperty('--font-heading');
-    }
-    if (d.fonts?.body) {
-      root.style.setProperty('--font-body', `"${d.fonts.body}", sans-serif`);
-    } else {
-      root.style.removeProperty('--font-body');
-    }
-
-    // Border radius
-    if (d.border_radius != null) {
-      root.style.setProperty('--radius', `${d.border_radius}px`);
-    } else {
-      root.style.removeProperty('--radius');
-    }
-
-    // Cleanup on unmount — remove all custom properties we set
-    return () => {
-      ['--gold', '--gold-light', '--gold-muted', '--on-gold',
-       '--surface', '--card', '--raised', '--edge', '--edge-strong',
-       '--ink', '--ink-2', '--ink-3',
-       '--section-contrast', '--section-contrast-text', '--section-contrast-muted',
-       '--font-heading', '--font-body', '--radius'].forEach(v => root.style.removeProperty(v));
-    };
-  }, [designJSON, isDark]);
-
-  // Dynamic Google Fonts loading
-  const headingFont = design.fonts?.heading;
-  const bodyFont = design.fonts?.body;
-  useEffect(() => {
-    const fonts = [headingFont, bodyFont].filter(Boolean);
-    if (fonts.length === 0) return;
-    const families = [...new Set(fonts)].map(f => `family=${f.replace(/ /g, '+')}:wght@300;400;500;600;700;800`).join('&');
-    const id = 'dynamic-gfonts';
-    let link = document.getElementById(id);
-    if (!link) {
-      link = document.createElement('link');
-      link.id = id;
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-    }
-    link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
-  }, [headingFont, bodyFont]);
 
   // Si ya tenemos la config y la landing está desactivada por el plan (SaaS tiering),
   // redirigimos inmediatamente de forma silenciosa y transparente a la vista de reservas.
@@ -291,27 +126,11 @@ export default function Home() {
   }
 
   if (isLoading && !previewConfig) {
-    return (
-      <>
-        <style>{`
-          ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
-          ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
-        `}</style>
-        <LandingSkeleton />
-      </>
-    );
+    return <LandingSkeleton />;
   }
 
   return (
     <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink">
-      {/* Font and button style overrides that need CSS selectors */}
-      <style>{`
-        ${headingFont ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : ''}
-        ${bodyFont ? `body, p, span, a, button, input { font-family: var(--font-body); }` : ''}
-        ${design.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl { border-radius: var(--radius) !important; }` : ''}
-        ${design.button_style === 'pill' ? `button { border-radius: 9999px !important; }` : ''}
-        ${design.button_style === 'sharp' ? `button { border-radius: 6px !important; }` : ''}
-      `}</style>
       <LandingNavbar 
         businessName={businessName} 
         config={bc} 
