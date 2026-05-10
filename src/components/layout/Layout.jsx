@@ -10,7 +10,10 @@ export default function Layout({ children }) {
   const { pathname }                        = useLocation();
   const { data: config, isLoading, error } = useConfig();
 
-  if (error?.status === 404 || error?.status === 403) {
+  // 404 = tenant slug doesn't exist
+  // 403 = tenant exists but is suspended (is_active = false)
+  // 400 = no tenant could be identified for this request (host malformed)
+  if (error?.status === 404 || error?.status === 403 || error?.status === 400) {
     return <TenantNotFound suspended={error?.status === 403} />;
   }
   const bizName = config?.business_name;
