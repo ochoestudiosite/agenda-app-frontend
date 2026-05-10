@@ -1,13 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { useTheme } from './context/ThemeContext';
 import { useConfig } from './hooks/useConfig';
 import Layout from './components/layout/Layout';
 import Home from './pages/Home';
-import Booking from './pages/Booking';
-import Manage from './pages/Manage';
-import NotFound from './pages/NotFound';
+
+// Lazy: Booking and Manage are secondary flows. Keeping them out of the
+// initial payload makes the landing page load near-instant on mobile.
+const Booking  = lazy(() => import('./pages/Booking'));
+const Manage   = lazy(() => import('./pages/Manage'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Applies the business primary_color to CSS custom properties at runtime.
 // The CSS uses RGB channels (e.g. "146 104 10") so Tailwind opacity modifiers work.
@@ -47,12 +50,14 @@ export default function App() {
     <ThemeProvider>
       <ConfigApplier />
       <Layout>
-        <Routes>
-          <Route path="/"          element={<Home />} />
-          <Route path="/agendar"   element={<Booking />} />
-          <Route path="/gestionar" element={<Manage />} />
-          <Route path="*"          element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/"          element={<Home />} />
+            <Route path="/agendar"   element={<Booking />} />
+            <Route path="/gestionar" element={<Manage />} />
+            <Route path="*"          element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </Layout>
     </ThemeProvider>
   );
