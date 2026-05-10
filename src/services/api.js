@@ -1,8 +1,23 @@
 const BASE = `${import.meta.env.VITE_API_URL || ''}/api`;
 
+// Reserved labels that are never a tenant — must mirror backend tenantResolver.
+const RESERVED_SUBDOMAINS = new Set(['www', 'api', 'app', 'admin', 'mail', 'smtp', 'ftp', 'saas']);
+
+// Extract the tenant slug strictly from the configured PUBLIC_DOMAIN. Refuses
+// to guess from arbitrary hostnames — if the request is on the wrong host
+// (preview deploy, Railway URL, IP, localhost, etc.) we send no slug and let
+// the server's other resolution paths (subdomain on the API host, env var)
+// handle it. This prevents accidentally treating something like
+// "staging.barberpro.cita24.com" as tenant="staging".
 function getTenantSlug() {
-  const parts = window.location.hostname.split('.');
-  return parts.length >= 3 ? parts[0] : null;
+  const publicDomain = (import.meta.env.VITE_PUBLIC_DOMAIN || 'cita24.com').toLowerCase();
+  const host = window.location.hostname.toLowerCase();
+  if (!host.endsWith(`.${publicDomain}`)) return null;
+
+  const sub = host.slice(0, host.length - publicDomain.length - 1);
+  // Reject empty, deep subdomains (sub.sub.cita24.com) and reserved labels.
+  if (!sub || sub.includes('.') || RESERVED_SUBDOMAINS.has(sub)) return null;
+  return sub;
 }
 
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
