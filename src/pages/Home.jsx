@@ -12,6 +12,40 @@ import LandingLocation from '../components/landing/LandingLocation';
 import LandingContact from '../components/landing/LandingContact';
 import LandingSkeleton from '../components/landing/LandingSkeleton';
 
+// ── postMessage origin allowlist (mirrors backend CORS policy) ──────────────
+// Allows: localhost in dev, exact PUBLIC_DOMAIN, any single-level subdomain.
+function isAllowedAdminOrigin(origin) {
+  if (!origin || typeof origin !== 'string') return false;
+  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return true;
+
+  const publicDomain = (import.meta.env.VITE_PUBLIC_DOMAIN || 'cita24.com').toLowerCase();
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'https:') return false;
+    const host = url.hostname.toLowerCase();
+    if (host === publicDomain) return true;
+    if (!host.endsWith(`.${publicDomain}`)) return false;
+    // Reject deep subdomains (sub.sub.cita24.com) to match backend CORS rules
+    const sub = host.slice(0, -(publicDomain.length + 1));
+    return sub.length > 0 && !sub.includes('.');
+  } catch {
+    return false;
+  }
+}
+
+// Best-effort parent origin inference for the LANDING_READY signal.
+// Falls back to '*' when document.referrer is unavailable (cross-origin block).
+function inferParentOrigin() {
+  try {
+    if (document.referrer) {
+      const ref = new URL(document.referrer);
+      const refOrigin = `${ref.protocol}//${ref.host}`;
+      if (isAllowedAdminOrigin(refOrigin)) return refOrigin;
+    }
+  } catch {}
+  return '*';
+}
+
 export default function Home() {
   const { data: config, isLoading: loadingConfig } = useQuery({ 
     queryKey: ['config'], 
@@ -40,6 +74,10 @@ export default function Home() {
   // Listen for live preview updates from admin dashboard
   useEffect(() => {
     const handleMessage = (event) => {
+      // SECURITY: only accept messages from trusted admin origins.
+      // Dev: localhost (any port) — Prod: same registered public domain.
+      if (!isAllowedAdminOrigin(event.origin)) return;
+
       if (event.data?.type === 'LANDING_PREVIEW') {
         setPreviewConfig(event.data.config);
       }
@@ -50,10 +88,12 @@ export default function Home() {
       }
     };
     window.addEventListener('message', handleMessage);
-    
-    // Notify parent that we are ready to receive preview data
+
+    // Notify parent that we are ready to receive preview data.
+    // Carries no sensitive payload, but we still target the parent origin when known.
     if (window.parent !== window) {
-      window.parent.postMessage({ type: 'LANDING_READY' }, '*');
+      const targetOrigin = inferParentOrigin();
+      window.parent.postMessage({ type: 'LANDING_READY' }, targetOrigin);
     }
 
     return () => window.removeEventListener('message', handleMessage);
