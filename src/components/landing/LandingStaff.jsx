@@ -6,7 +6,7 @@ import { SectionHeader } from './LandingServices';
 
 const VISIBLE_DESKTOP = 6;
 
-export default function LandingStaff({ staff = [], customStaff, useCustom, title, subtitle }) {
+export default function LandingStaff({ staff = [], customStaff, useCustom, title, subtitle, subtitleAccent }) {
   const allStaff = (useCustom && customStaff?.length > 0)
     ? customStaff
     : staff.length > 0
@@ -68,6 +68,7 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
         <SectionHeader
           eyebrow={title || 'Nuestro equipo'}
           title={subtitle}
+          accent={subtitleAccent}
           fallback={<>En manos de <span className="text-ink-3">los mejores.</span></>}
           right={
             needsPagination && (

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 const VISIBLE_DESKTOP = 6;
 
-export default function LandingServices({ services = [], customServices, useCustom, title, subtitle, buttonText, linkText }) {
+export default function LandingServices({ services = [], customServices, useCustom, title, subtitle, subtitleAccent, buttonText, linkText }) {
   const allServices = (useCustom && customServices?.length > 0)
     ? customServices
     : services.length > 0 ? services : [
@@ -66,6 +66,7 @@ export default function LandingServices({ services = [], customServices, useCust
         <SectionHeader
           eyebrow={title || 'Nuestros servicios'}
           title={subtitle}
+          accent={subtitleAccent}
           fallback={<>Diseñados para superar<br /><span className="text-ink-3">tus expectativas.</span></>}
           right={
             <div className="flex items-center gap-2">
@@ -212,7 +213,14 @@ function ServiceCard({ service, i, buttonText }) {
 }
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────
-export function SectionHeader({ eyebrow, title, fallback, right }) {
+// title  = main headline (renders in full ink colour)
+// accent = optional secondary line rendered as a <span> below the title with
+//          the softer ink-3 colour. Mirrors the original "Diseñados para
+//          superar / tus expectativas." pattern so admins can recreate the
+//          two-tone headline from the Landing Editor instead of being stuck
+//          with a single flat line.
+// fallback runs when the admin has not provided a custom title at all.
+export function SectionHeader({ eyebrow, title, accent, fallback, right }) {
   return (
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div className="max-w-xl">
@@ -221,7 +229,12 @@ export function SectionHeader({ eyebrow, title, fallback, right }) {
           {eyebrow}
         </div>
         <h2 className="mt-3 font-display text-3xl sm:text-4xl lg:text-[44px] font-semibold text-ink tracking-[-0.025em] leading-[1.04] text-balance">
-          {title || fallback}
+          {title ? (
+            <>
+              {title}
+              {accent && <><br /><span className="text-ink-3">{accent}</span></>}
+            </>
+          ) : fallback}
         </h2>
       </div>
       {right}

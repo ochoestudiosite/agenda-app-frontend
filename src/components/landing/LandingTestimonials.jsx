@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Quote, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function LandingTestimonials({ items = [], title, subtitle }) {
+export default function LandingTestimonials({ items = [], title, subtitle, subtitleAccent }) {
   const displayTestimonials = items.length > 0 ? items : [
     { text: 'La atención al detalle es simplemente otro nivel. Mi experiencia superó todas las expectativas que tenía.', author: 'Juan Pérez',    role: 'Cliente desde 2023', rating: 5 },
     { text: 'El sistema de reserva es increíblemente fluido. Encontrar un espacio con mi barbero favorito nunca fue tan fácil.', author: 'Miguel Torres', role: 'Empresario',          rating: 5 },
@@ -63,7 +63,14 @@ export default function LandingTestimonials({ items = [], title, subtitle }) {
             {title || 'Testimoniales'}
           </div>
           <h2 className="mt-3 font-display text-3xl sm:text-4xl lg:text-[44px] font-semibold tracking-[-0.025em] leading-[1.04] text-balance">
-            {subtitle || <>Lo que dicen <span className="text-section-contrast-muted">nuestros clientes.</span></>}
+            {subtitle ? (
+              <>
+                {subtitle}
+                {subtitleAccent && <><br /><span className="text-section-contrast-muted">{subtitleAccent}</span></>}
+              </>
+            ) : (
+              <>Lo que dicen <span className="text-section-contrast-muted">nuestros clientes.</span></>
+            )}
           </h2>
         </div>
 

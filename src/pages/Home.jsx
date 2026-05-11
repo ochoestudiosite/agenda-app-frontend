@@ -137,8 +137,9 @@ export default function Home() {
       />
 
       <main>
-        <LandingHero 
+        <LandingHero
           title={bc.hero?.title}
+          titleAccent={bc.hero?.title_accent}
           subtitle={bc.hero?.subtitle}
           cta={bc.hero?.cta_text}
           secondaryCta={bc.hero?.secondary_cta_text}
@@ -147,41 +148,45 @@ export default function Home() {
         />
 
         {(bc.services_section?.visible !== false) && (
-          <LandingServices 
-            services={services} 
+          <LandingServices
+            services={services}
             customServices={bc.services_section?.custom_items}
             useCustom={bc.services_section?.use_custom === true}
             title={bc.services_section?.title}
             subtitle={bc.services_section?.subtitle}
+            subtitleAccent={bc.services_section?.subtitle_accent}
             buttonText={bc.services_section?.button_text}
             linkText={bc.services_section?.link_text}
           />
         )}
 
         {(bc.staff_section?.visible !== false) && (
-          <LandingStaff 
-            staff={staff} 
+          <LandingStaff
+            staff={staff}
             customStaff={bc.staff_section?.custom_items}
             useCustom={bc.staff_section?.use_custom === true}
             title={bc.staff_section?.title}
             subtitle={bc.staff_section?.subtitle}
+            subtitleAccent={bc.staff_section?.subtitle_accent}
           />
         )}
 
         {(bc.testimonials_section?.visible !== false) && (
-          <LandingTestimonials 
-            items={bc.testimonials} 
+          <LandingTestimonials
+            items={bc.testimonials}
             title={bc.testimonials_section?.title}
             subtitle={bc.testimonials_section?.subtitle}
+            subtitleAccent={bc.testimonials_section?.subtitle_accent}
           />
         )}
 
         {(bc.location_section?.visible !== false) && (
-          <LandingLocation 
-            config={config || {}} 
+          <LandingLocation
+            config={config || {}}
             locationConfig={bc.location_section || {}}
             title={bc.location_section?.title}
-            subtitle={bc.location_section?.subtitle} 
+            subtitle={bc.location_section?.subtitle}
+            subtitleAccent={bc.location_section?.subtitle_accent}
           />
         )}
       </main>

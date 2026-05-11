@@ -3,7 +3,7 @@ import { MapPin, Phone, Clock, Mail, ArrowUpRight, Navigation } from 'lucide-rea
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-export default function LandingLocation({ config = {}, locationConfig = {}, title, subtitle }) {
+export default function LandingLocation({ config = {}, locationConfig = {}, title, subtitle, subtitleAccent }) {
   const address       = locationConfig.address       || config.business_address || '';
   const phone         = locationConfig.phone         || config.business_phone   || '';
   const email         = locationConfig.email         || config.business_email   || '';
@@ -49,7 +49,14 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
               {title || 'Encuéntranos'}
             </div>
             <h2 className="mt-3 font-display text-3xl sm:text-4xl lg:text-[44px] font-semibold text-ink tracking-[-0.025em] leading-[1.04] text-balance">
-              {subtitle || <>Estamos donde <span className="text-ink-3">tú estás.</span></>}
+              {subtitle ? (
+                <>
+                  {subtitle}
+                  {subtitleAccent && <><br /><span className="text-ink-3">{subtitleAccent}</span></>}
+                </>
+              ) : (
+                <>Estamos donde <span className="text-ink-3">tú estás.</span></>
+              )}
             </h2>
 
             <div className="mt-10 lg:mt-12 flex flex-col">

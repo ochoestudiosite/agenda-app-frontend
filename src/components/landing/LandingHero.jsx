@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 //   - Background uses subtle radial gradient + a faint grid pattern so
 //     the canvas reads as crafted rather than empty.
 // All props are kept compatible with the existing landing editor.
-export default function LandingHero({ title, subtitle, cta, secondaryCta, features, showFeatures = true }) {
+export default function LandingHero({ title, titleAccent, subtitle, cta, secondaryCta, features, showFeatures = true }) {
   const defaults = [
     { icon: 'ShieldCheck', text: 'Pago Seguro' },
     { icon: 'Clock',       text: 'Ahorra Tiempo' },
@@ -17,10 +17,15 @@ export default function LandingHero({ title, subtitle, cta, secondaryCta, featur
   ];
   const displayFeatures = (features?.length === 3) ? features : defaults;
 
+  // Default headline mirrors the original frontend design: a main line plus a
+  // softer accent line below. The admin can recreate this pattern by filling
+  // in the "Título" (main) and "Título acento" (secondary) inputs in the
+  // Landing Editor.
   const headlineFallback = (
     <>
-      Tu tiempo es lo más <span className="italic font-medium text-ink-2">valioso</span>{' '}
-      que tienes.
+      Tu tiempo es lo más valioso
+      <br />
+      <span className="text-ink-3">que tienes.</span>
     </>
   );
 
@@ -52,7 +57,12 @@ export default function LandingHero({ title, subtitle, cta, secondaryCta, featur
             transition={{ duration: 0.65, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
             className="font-display text-[44px] sm:text-6xl lg:text-[88px] font-semibold text-ink leading-[1.02] tracking-[-0.03em] text-balance"
           >
-            {title || headlineFallback}
+            {title ? (
+              <>
+                {title}
+                {titleAccent && <><br /><span className="text-ink-3">{titleAccent}</span></>}
+              </>
+            ) : headlineFallback}
           </motion.h1>
 
           {/* Subtitle */}
