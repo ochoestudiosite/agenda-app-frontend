@@ -53,10 +53,13 @@ export default function LandingNavbar({ businessName, config = {} }) {
   // they belong to the same brand: rounded square, gold container when
   // showing the icon, neutral raised container with a hairline border when
   // showing an image, object-cover for crisp aspect-fill.
+  // Mobile size matches Layout.jsx BizLogo (w-7 h-7 rounded-lg) so the logo
+  // doesn't jump when navigating from / to /agendar or /gestionar.
+  // Desktop pill gets the slightly larger w-9 h-9 rounded-xl treatment.
   const Logo = (
     <Link to="/" className="flex items-center gap-2.5 group shrink-0">
       <span
-        className={`w-9 h-9 rounded-xl shrink-0 overflow-hidden flex items-center justify-center transition-transform group-hover:scale-[1.04] active:scale-95 ${
+        className={`w-7 h-7 md:w-9 md:h-9 rounded-lg md:rounded-xl shrink-0 overflow-hidden flex items-center justify-center transition-transform group-hover:scale-[1.04] active:scale-95 ${
           useImage
             ? 'bg-raised border border-edge/50'
             : 'bg-gold text-on-gold'
@@ -65,10 +68,11 @@ export default function LandingNavbar({ businessName, config = {} }) {
         {useImage ? (
           <img src={logoUrl} alt={displayName} className="w-full h-full object-cover" />
         ) : (
-          <LogoIcon size={16} strokeWidth={2.4} />
+          <LogoIcon size={14} strokeWidth={2.4} className="md:hidden" />
         )}
+        {!useImage && <LogoIcon size={16} strokeWidth={2.4} className="hidden md:block" />}
       </span>
-      <span className="font-display text-[15px] sm:text-base font-semibold tracking-tight text-ink truncate">
+      <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink truncate">
         {displayName}
       </span>
     </Link>
