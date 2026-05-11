@@ -28,7 +28,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
   const dateStr = newDate ? toDateStr(newDate) : null;
   const { data: availData, isFetching } = useAvailability(mode === 'reschedule' ? dateStr : null);
-  const busySlots = availData?.busySlots || [];
+  const appointmentIntervals = availData?.appointmentIntervals || [];
 
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
@@ -108,7 +108,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           viewMonth={viewMonth}      setViewMonth={setViewMonth}
           newDate={newDate}          setNewDate={d => { setNewDate(d); setNewTime(null); }}
           newTime={newTime}          setNewTime={setNewTime}
-          busySlots={busySlots}      isFetching={isFetching}
+          appointmentIntervals={appointmentIntervals} isFetching={isFetching}
           onConfirm={handleReschedule}
           onCancel={() => setMode('view')}
           isLoading={rescheduleMutation.isPending}
@@ -118,7 +118,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   );
 }
 
-function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNewDate, newTime, setNewTime, busySlots, isFetching, onConfirm, onCancel, isLoading }) {
+function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNewDate, newTime, setNewTime, appointmentIntervals, isFetching, onConfirm, onCancel, isLoading }) {
   const { data: config } = useConfig();
 
   const maxAdvance   = config?.max_advance_days   ?? 30;
@@ -223,13 +223,21 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
             {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
               const slots = grouped[key];
               if (!slots?.length) return null;
+              const [cH, cM] = closeTime.split(':').map(Number);
+              const closeMins = cH * 60 + cM;
               return (
                 <div key={key}>
                   <p className="label-section mb-2">{label}</p>
                   <div className="grid grid-cols-4 gap-1.5">
                     {slots.map(slot => {
-                      const busy = busySlots.includes(slot);
-                      const sel  = newTime === slot;
+                      const [sh, sm] = slot.split(':').map(Number);
+                      const slotStart = sh * 60 + sm;
+                      const slotEnd   = slotStart + appointment.serviceDuration;
+                      // Proper interval overlap: [slotStart,slotEnd) vs [apptStart,apptEnd)
+                      const busy = slotEnd > closeMins || appointmentIntervals.some(
+                        ({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin
+                      );
+                      const sel = newTime === slot;
                       return (
                         <button
                           key={slot}

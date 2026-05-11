@@ -25,18 +25,16 @@ function minutesToSlot(mins) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-function isSlotBusy(slot, duration, busySlots, interval, closeTimeMins) {
+// A slot is busy if [slotStart, slotStart+duration) overlaps any existing appointment
+// [apptStart, apptEnd) — standard interval overlap: s < e2 && s+d > s2.
+// appointmentIntervals = [{startMin, endMin}] from the API.
+function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins) {
   const start = slotToMinutes(slot);
-  const end = start + duration;
-  
-  // Rule 1: Cannot exceed business hours
+  const end   = start + duration;
   if (end > closeTimeMins) return true;
-
-  // Rule 2: Cannot overlap with existing busy slots
-  for (let t = start; t < end; t += interval) {
-    if (busySlots.includes(minutesToSlot(t))) return true;
-  }
-  return false;
+  return appointmentIntervals.some(({ startMin, endMin }) =>
+    start < endMin && end > startMin
+  );
 }
 
 export default function DateTimePicker() {
@@ -62,9 +60,9 @@ export default function DateTimePicker() {
   const { data: blockedData } = useBlockedDates(monthStr, state.specialist?.id);
   const blockedDates = blockedData?.blockedDates || [];
 
-  const liveConfig = availData?.config || {};
-  const busySlots  = availData?.busySlots || [];
-  const staffBlocked = availData?.staffBlocked;
+  const liveConfig          = availData?.config || {};
+  const appointmentIntervals = availData?.appointmentIntervals || [];
+  const staffBlocked         = availData?.staffBlocked;
 
   // ── Expert: Prioritize live config from avoid refresh issues ──────
   const intervalMins  = liveConfig.interval || config?.slot_interval_mins || 30;
@@ -100,7 +98,10 @@ export default function DateTimePicker() {
   function isSlotPast(slot) {
     return isSelectedToday && slotToMinutes(slot) <= cutoffMins;
   }
-  const allSlotsExhausted = isSelectedToday && allSlots.every(s => isSlotPast(s) || busySlots.includes(s));
+  const closeMinsForExhaust = slotToMinutes(closeTime);
+  const allSlotsExhausted = allSlots.length > 0 && allSlots.every(s =>
+    isSlotPast(s) || isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust)
+  );
 
   // ── Calendar helpers ──────────────────────────────────────────────────────
   const firstDay    = viewMonth.getDay();
@@ -227,21 +228,7 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && !isFetching && !staffBlocked && allSlotsExhausted && (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
-              <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-ink">Sin horarios disponibles</p>
-                <p className="text-xs text-ink-3 mt-1">Los horarios de hoy ya pasaron.<br/>Selecciona otra fecha para continuar.</p>
-              </div>
-            </div>
-          )}
-
-          {selectedDate && !isFetching && !allSlotsExhausted && (
+          {selectedDate && !isFetching && !staffBlocked && (
             <div className="space-y-4 flex-1">
               {isSelectedToday && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold/8 border border-gold/20">
@@ -254,49 +241,56 @@ export default function DateTimePicker() {
                 </div>
               )}
 
-              {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
-                const slots = grouped[key];
-                if (!slots?.length) return null;
-                const closeMins = slotToMinutes(closeTime);
-                const allGone = slots.every(s => isSlotPast(s) || isSlotBusy(s, duration, busySlots, intervalMins, closeMins));
-                if (allGone) return null;
-
-                return (
-                  <div key={key}>
-                    <p className="label-section mb-2.5">{label}</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {slots.map(slot => {
-                        const past = isSlotPast(slot);
-                        const closeMins = slotToMinutes(closeTime);
-                        const busy = isSlotBusy(slot, duration, busySlots, intervalMins, closeMins);
-                        const sel  = selectedTime === slot;
-                        const unavail = past || busy;
-                        return (
-                          <button
-                            key={slot}
-                            disabled={unavail}
-                            onClick={() => setSelectedTime(slot)}
-                            aria-label={
-                              past ? `${formatTime(slot, timeFmt)} — horario pasado` :
-                              busy ? `${formatTime(slot, timeFmt)} — no disponible` :
-                              formatTime(slot, timeFmt)
-                            }
-                            className={[
-                              'py-2.5 rounded-xl text-xs font-medium transition-all duration-160 relative',
-                              past && !busy ? 'text-ink-3/35 bg-raised/40 cursor-not-allowed' : '',
-                              busy          ? 'text-ink-3/40 line-through bg-raised/50 cursor-not-allowed' : '',
-                              sel && !unavail ? 'bg-gold text-on-gold shadow-xs' : '',
-                              !unavail && !sel ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97] cursor-pointer' : '',
-                            ].join(' ')}
-                          >
-                            {formatTime(slot, timeFmt)}
-                          </button>
-                        );
-                      })}
-                    </div>
+              {allSlots.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
+                  <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
                   </div>
-                );
-              })}
+                  <p className="text-sm text-ink-3">Sin horarios disponibles para este día</p>
+                </div>
+              ) : (
+                Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
+                  const slots = grouped[key];
+                  if (!slots?.length) return null;
+                  const closeMins = slotToMinutes(closeTime);
+                  return (
+                    <div key={key}>
+                      <p className="label-section mb-2.5">{label}</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {slots.map(slot => {
+                          const past    = isSlotPast(slot);
+                          const busy    = isSlotBusy(slot, duration, appointmentIntervals, closeMins);
+                          const sel     = selectedTime === slot;
+                          const unavail = past || busy;
+                          return (
+                            <button
+                              key={slot}
+                              disabled={unavail}
+                              onClick={() => setSelectedTime(slot)}
+                              aria-label={
+                                past ? `${formatTime(slot, timeFmt)} — horario pasado` :
+                                busy ? `${formatTime(slot, timeFmt)} — no disponible` :
+                                formatTime(slot, timeFmt)
+                              }
+                              className={[
+                                'py-2.5 rounded-xl text-xs font-medium transition-all duration-160',
+                                busy    ? 'text-ink-3/40 line-through bg-raised/50 cursor-not-allowed' : '',
+                                past && !busy ? 'text-ink-3/35 bg-raised/40 cursor-not-allowed' : '',
+                                sel && !unavail ? 'bg-gold text-on-gold shadow-xs' : '',
+                                !unavail && !sel ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97] cursor-pointer' : '',
+                              ].join(' ')}
+                            >
+                              {formatTime(slot, timeFmt)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           )}
         </div>
