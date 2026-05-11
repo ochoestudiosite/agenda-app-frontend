@@ -182,18 +182,27 @@ function ServiceCard({ service, i, buttonText }) {
         </div>
       </Link>
 
-      {/* Below-image content (only when no image) */}
-      {!service.image_url && (
+      {/* Below-image content. Title + duration only render when there is no
+          image (image-rich cards already show those over the image). The
+          description is always shown so admins can use the Studio Editor's
+          description field to add context on every card style. */}
+      {(!service.image_url || service.description) && (
         <div className="mt-5 px-1 flex-1 flex flex-col">
-          <h3 className="text-xl font-semibold text-ink tracking-tight">{service.name}</h3>
-          {duration && (
-            <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-3">
-              <Clock size={11} />
-              {duration} min
-            </span>
+          {!service.image_url && (
+            <>
+              <h3 className="text-xl font-semibold text-ink tracking-tight">{service.name}</h3>
+              {duration && (
+                <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-3">
+                  <Clock size={11} />
+                  {duration} min
+                </span>
+              )}
+            </>
           )}
           {service.description && (
-            <p className="mt-3 text-sm text-ink-2 leading-relaxed line-clamp-2">{service.description}</p>
+            <p className={`text-sm text-ink-2 leading-relaxed line-clamp-2 ${!service.image_url ? 'mt-3' : ''}`}>
+              {service.description}
+            </p>
           )}
         </div>
       )}
