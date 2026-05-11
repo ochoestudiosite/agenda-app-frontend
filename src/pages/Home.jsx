@@ -100,7 +100,22 @@ export default function Home() {
   }, [isDark, toggle]);
 
   const businessName = config?.business_name || 'Cita24';
-  
+
+  // Dynamic title + description: "Cita24 — [Business Name]" once config loads.
+  // Resets to default on unmount so other routes aren't affected.
+  useEffect(() => {
+    if (!config?.business_name) return;
+    const name = config.business_name;
+    document.title = `Cita24 — ${name}`;
+    const setMeta = (sel, val) => document.querySelector(sel)?.setAttribute('content', val);
+    setMeta('meta[name="description"]',         `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
+    setMeta('meta[property="og:title"]',        `Cita24 — ${name}`);
+    setMeta('meta[property="og:description"]',  `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
+    setMeta('meta[name="twitter:title"]',       `Cita24 — ${name}`);
+    setMeta('meta[name="twitter:description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
+    return () => { document.title = 'Cita24 — Agenda tu Cita'; };
+  }, [config?.business_name]);
+
   // Robust parsing of landing_config
   let savedConfig = config?.landing || config?.landing_config || {};
   if (typeof savedConfig === 'string') {
