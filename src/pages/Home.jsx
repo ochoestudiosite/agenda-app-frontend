@@ -186,7 +186,7 @@ export default function Home() {
           />
         )}
 
-        {(bc.testimonials_section?.visible !== false) && (
+        {(bc.testimonials_section?.visible === true) && (
           <LandingTestimonials
             items={bc.testimonials}
             title={bc.testimonials_section?.title}
