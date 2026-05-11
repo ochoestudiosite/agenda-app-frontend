@@ -7,10 +7,9 @@ const DEFAULTS = [
   { text: 'El sistema de reserva es increíblemente fluido. Encontrar un espacio con mi especialista favorito nunca fue tan fácil.', author: 'Miguel Torres', role: 'Empresario',          rating: 5 },
   { text: 'Ambiente impecable y resultados consistentes. Es el único lugar donde confío plenamente mi imagen.',         author: 'Daniel R.',     role: 'Diseñador',           rating: 5 },
   { text: 'Cada visita supera la anterior. El equipo es profesional, atento y el resultado es exactamente lo que buscaba.', author: 'Carlos M.',    role: 'Arquitecto',          rating: 5 },
-  { text: 'Reservar nunca había sido tan sencillo. La atención personalizada y la puntualidad marcan la diferencia.',   author: 'Roberto S.',   role: 'Fotógrafo',           rating: 5 },
+  { text: 'Reservar nunca había sido tan sencillo. La atención personalizada y la puntualidad marcan toda la diferencia.', author: 'Roberto S.',   role: 'Fotógrafo',           rating: 5 },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 function initials(name = '') {
   return name.trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
 }
@@ -19,7 +18,7 @@ function initials(name = '') {
 function Card({ t }) {
   return (
     <figure
-      className="lnd-card shrink-0 flex flex-col gap-4 p-6 rounded-[20px] border border-section-contrast-text/10 bg-section-contrast-text/[0.045]"
+      className="w-72 sm:w-80 shrink-0 flex flex-col gap-4 p-6 rounded-[20px] border border-section-contrast-text/10 bg-section-contrast-text/[0.05]"
     >
       {/* Stars */}
       <div className="flex gap-0.5">
@@ -36,7 +35,7 @@ function Card({ t }) {
       {/* Author */}
       <figcaption className="flex items-center gap-3 pt-4 border-t border-section-contrast-text/10">
         <div
-          className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[10px] font-extrabold text-on-gold select-none"
+          className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-[11px] font-extrabold text-on-gold select-none"
           style={{ background: 'linear-gradient(135deg, rgb(var(--gold-light)) 0%, rgb(var(--gold)) 100%)' }}
         >
           {initials(t.author)}
@@ -52,36 +51,15 @@ function Card({ t }) {
   );
 }
 
-// ─── MarqueeRow ───────────────────────────────────────────────────────────────
-// Each row duplicates items so translateX(-50%) creates a seamless loop.
-// Gradient overlay divs replace mask-image for full cross-browser support.
-function MarqueeRow({ items, animClass, delay }) {
-  const track = [...items, ...items];
-  return (
-    <div className="lnd-row-outer">
-      {/* fade left — matches section background color */}
-      <div className="lnd-fade lnd-fade-l" aria-hidden="true" />
-      {/* fade right */}
-      <div className="lnd-fade lnd-fade-r" aria-hidden="true" />
-
-      <div
-        className={`lnd-track ${animClass}`}
-        style={delay ? { animationDelay: delay } : undefined}
-        onMouseEnter={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
-        onMouseLeave={e => { e.currentTarget.style.animationPlayState = 'running'; }}
-      >
-        {track.map((t, i) => <Card key={i} t={t} />)}
-      </div>
-    </div>
-  );
-}
-
 // ─── Section ─────────────────────────────────────────────────────────────────
 export default function LandingTestimonials({ items = [], title, subtitle, subtitleAccent }) {
-  const base    = items.length > 0 ? items : DEFAULTS;
-  // Ensure enough cards to fill even a 4K screen before duplication
-  const padded  = base.length < 5 ? [...base, ...base].slice(0, base.length * 2) : base;
-  const row2    = [...padded].reverse();
+  const base = items.length > 0 ? items : DEFAULTS;
+
+  // Duplicate so translateX(-50%) lands at the exact start → seamless loop.
+  // If we have very few items, triple to guarantee the track is wider than
+  // even a 4K monitor before duplication.
+  const source = base.length < 4 ? [...base, ...base, ...base] : base;
+  const track  = [...source, ...source];
 
   return (
     <section
@@ -94,7 +72,10 @@ export default function LandingTestimonials({ items = [], title, subtitle, subti
         className="absolute -top-40 right-0 w-[560px] h-[560px] rounded-full opacity-[0.17] pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgb(var(--gold) / 0.7) 0%, transparent 65%)' }}
       />
-      <div aria-hidden="true" className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-section-contrast-text/10 to-transparent" />
+      <div
+        aria-hidden="true"
+        className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-section-contrast-text/10 to-transparent"
+      />
 
       {/* ── Header ── */}
       <div className="section-container relative mb-14 lg:mb-16">
@@ -106,77 +87,34 @@ export default function LandingTestimonials({ items = [], title, subtitle, subti
         />
       </div>
 
-      {/* ── Marquee rows (motion-safe) ── */}
-      <div className="lnd-rows">
-        <MarqueeRow items={padded} animClass="lnd-fwd" />
-        <MarqueeRow items={row2}   animClass="lnd-rev" delay="-20s" />
-      </div>
+      {/* ── Marquee — edge-to-edge, same pattern as cita24-landing ── */}
+      <div
+        className="relative overflow-hidden"
+        style={{ paddingBottom: 8 }}
+      >
+        {/* Left fade: covers first/last card edges cleanly */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 w-20 z-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to right, rgb(var(--section-contrast)), transparent)' }}
+        />
+        {/* Right fade */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 right-0 w-20 z-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to left, rgb(var(--section-contrast)), transparent)' }}
+        />
 
-      {/* ── Static fallback (prefers-reduced-motion) ── */}
-      <div className="lnd-fallback section-container">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-4">
-          {base.map((t, i) => <Card key={i} t={t} />)}
+        {/* Scrolling track */}
+        <div
+          className="flex gap-4 w-max py-2 animate-scroll-left"
+          style={{ willChange: 'transform' }}
+          onMouseEnter={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
+          onMouseLeave={e => { e.currentTarget.style.animationPlayState = 'running'; }}
+        >
+          {track.map((t, i) => <Card key={i} t={t} />)}
         </div>
       </div>
-
-      {/* ── Scoped styles ────────────────────────────────────────────────────
-           All animation CSS lives here so it works on every browser without
-           Tailwind JIT arbitrary-value limitations or missing vendor prefixes.
-           Gradient overlays replace mask-image for full Safari/iOS support.
-      ─────────────────────────────────────────────────────────────────────── */}
-      <style>{`
-        /* Card fixed width — set via CSS so the -50% transform is correct */
-        .lnd-card { width: 288px; }
-        @media (min-width: 640px) { .lnd-card { width: 320px; } }
-
-        /* Marquee container rows */
-        .lnd-rows    { display: flex; flex-direction: column; gap: 16px; }
-        .lnd-fallback { display: none; }
-
-        /* Row wrapper: clips the overflowing track */
-        .lnd-row-outer { position: relative; overflow: hidden; }
-
-        /* Animated track */
-        .lnd-track {
-          display: flex;
-          gap: 16px;
-          width: max-content;
-          padding: 4px 0;
-          will-change: transform;
-          animation-timing-function: linear;
-          animation-iteration-count: infinite;
-          animation-play-state: running;
-        }
-        .lnd-fwd { animation-name: lndMarquee;  animation-duration: 58s; }
-        .lnd-rev { animation-name: lndMarqueeR; animation-duration: 72s; }
-
-        /* Edge fade overlays — gradient matches section background token */
-        .lnd-fade {
-          position: absolute;
-          top: 0; bottom: 0;
-          width: 80px;
-          z-index: 10;
-          pointer-events: none;
-        }
-        .lnd-fade-l {
-          left: 0;
-          background: linear-gradient(to right, rgb(var(--section-contrast)) 0%, transparent 100%);
-        }
-        .lnd-fade-r {
-          right: 0;
-          background: linear-gradient(to left, rgb(var(--section-contrast)) 0%, transparent 100%);
-        }
-
-        /* Keyframes */
-        @keyframes lndMarquee  { from { transform: translateX(0);    } to { transform: translateX(-50%); } }
-        @keyframes lndMarqueeR { from { transform: translateX(-50%); } to { transform: translateX(0);    } }
-
-        /* Accessibility: swap marquee for static grid when motion is reduced */
-        @media (prefers-reduced-motion: reduce) {
-          .lnd-rows     { display: none; }
-          .lnd-fallback { display: block; }
-        }
-      `}</style>
     </section>
   );
 }
