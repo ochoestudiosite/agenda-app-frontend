@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
-import { formatTime, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
+import { formatTime, generateSlots, groupSlots, getBufferMarkers, toTitleCase } from '../../utils/formatters';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import { BackButton } from './SpecialistSelector';
@@ -25,10 +25,12 @@ function minutesToSlot(mins) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-// A slot is busy if [slotStart, slotStart+duration) overlaps any existing appointment
-// [apptStart, apptEnd) — standard interval overlap: s < e2 && s+d > s2.
-// appointmentIntervals = [{startMin, endMin}] from the API.
-function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins) {
+// A slot is busy if it is a buffer-zone marker OR [slotStart, slotStart+duration)
+// overlaps any existing appointment [apptStart, apptEnd) — standard interval overlap.
+// bufferMarkers: Set<string> of always-disabled buffer positions.
+// appointmentIntervals = [{startMin, endMin}] already extended by bufferMins on the API.
+function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins, bufferMarkers = new Set()) {
+  if (bufferMarkers.has(slot)) return true;
   const start = slotToMinutes(slot);
   const end   = start + duration;
   if (end > closeTimeMins) return true;
@@ -65,8 +67,9 @@ export default function DateTimePicker() {
   const staffBlocked         = availData?.staffBlocked;
 
   // ── Expert: Prioritize live config from avoid refresh issues ──────
-  const intervalMins  = liveConfig.interval || config?.slot_interval_mins || 30;
-  const leadMins      = liveConfig.leadMins || config?.booking_lead_mins || 60;
+  const intervalMins  = liveConfig.interval   || config?.slot_interval_mins || 30;
+  const leadMins      = liveConfig.leadMins   || config?.booking_lead_mins  || 60;
+  const bufferMins    = liveConfig.bufferMins || 0;
 
   // Days with is_open === false → disabled in calendar
   const daysClosed = bizHours.length > 0
@@ -86,8 +89,9 @@ export default function DateTimePicker() {
   const dayEntry  = getDayEntry(selectedDate);
   const openTime  = liveConfig.openTime  || dayEntry?.open_time  || '9:00';
   const closeTime = liveConfig.closeTime || dayEntry?.close_time || '19:00';
-  const allSlots  = selectedDate ? generateSlots(openTime, closeTime, duration, intervalMins) : [];
-  const grouped   = groupSlots(allSlots);
+  const allSlots     = selectedDate ? generateSlots(openTime, closeTime, duration, intervalMins, bufferMins) : [];
+  const bufferMarkers = selectedDate ? getBufferMarkers(openTime, closeTime, duration, bufferMins) : new Set();
+  const grouped      = groupSlots(allSlots);
 
   // ── Past-slot validation ──────────────────────────────────────────────────
   const now          = new Date();
@@ -100,7 +104,7 @@ export default function DateTimePicker() {
   }
   const closeMinsForExhaust = slotToMinutes(closeTime);
   const allSlotsExhausted = allSlots.length > 0 && allSlots.every(s =>
-    isSlotPast(s) || isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust)
+    isSlotPast(s) || isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust, bufferMarkers)
   );
 
   // ── Calendar helpers ──────────────────────────────────────────────────────
@@ -261,7 +265,7 @@ export default function DateTimePicker() {
                       <div className="grid grid-cols-3 gap-2">
                         {slots.map(slot => {
                           const past    = isSlotPast(slot);
-                          const busy    = isSlotBusy(slot, duration, appointmentIntervals, closeMins);
+                          const busy    = isSlotBusy(slot, duration, appointmentIntervals, closeMins, bufferMarkers);
                           const sel     = selectedTime === slot;
                           const unavail = past || busy;
                           return (

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, getBufferMarkers, toTitleCase } from '../../utils/formatters';
 import { useAvailability } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
@@ -29,6 +29,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const dateStr = newDate ? toDateStr(newDate) : null;
   const { data: availData, isFetching } = useAvailability(mode === 'reschedule' ? dateStr : null);
   const appointmentIntervals = availData?.appointmentIntervals || [];
+  const bufferMins = availData?.config?.bufferMins || 0;
 
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
@@ -108,7 +109,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           viewMonth={viewMonth}      setViewMonth={setViewMonth}
           newDate={newDate}          setNewDate={d => { setNewDate(d); setNewTime(null); }}
           newTime={newTime}          setNewTime={setNewTime}
-          appointmentIntervals={appointmentIntervals} isFetching={isFetching}
+          appointmentIntervals={appointmentIntervals} bufferMins={bufferMins} isFetching={isFetching}
           onConfirm={handleReschedule}
           onCancel={() => setMode('view')}
           isLoading={rescheduleMutation.isPending}
@@ -118,7 +119,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   );
 }
 
-function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNewDate, newTime, setNewTime, appointmentIntervals, isFetching, onConfirm, onCancel, isLoading }) {
+function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNewDate, newTime, setNewTime, appointmentIntervals, bufferMins = 0, isFetching, onConfirm, onCancel, isLoading }) {
   const { data: config } = useConfig();
 
   const maxAdvance   = config?.max_advance_days   ?? 30;
@@ -146,8 +147,9 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
   const dayEntry  = getDayEntry(newDate);
   const openTime  = dayEntry?.open_time  ?? '9:00';
   const closeTime = dayEntry?.close_time ?? '19:00';
-  const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins) : [];
-  const grouped   = groupSlots(allSlots);
+  const allSlots     = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
+  const bufferMarkers = newDate ? getBufferMarkers(openTime, closeTime, appointment.serviceDuration, bufferMins) : new Set();
+  const grouped      = groupSlots(allSlots);
 
   return (
     <div className="mt-5 border-t border-edge pt-5 space-y-4 animate-fade-in">
@@ -233,10 +235,11 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
                       const [sh, sm] = slot.split(':').map(Number);
                       const slotStart = sh * 60 + sm;
                       const slotEnd   = slotStart + appointment.serviceDuration;
-                      // Proper interval overlap: [slotStart,slotEnd) vs [apptStart,apptEnd)
-                      const busy = slotEnd > closeMins || appointmentIntervals.some(
-                        ({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin
-                      );
+                      const busy = bufferMarkers.has(slot)
+                        || slotEnd > closeMins
+                        || appointmentIntervals.some(
+                          ({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin
+                        );
                       const sel = newTime === slot;
                       return (
                         <button

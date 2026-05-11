@@ -47,18 +47,50 @@ function toMins(t) {
   return h * 60 + (m || 0);
 }
 
+function minToStr(m) {
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+}
+
 // Generate time slots between openTime and closeTime.
 // openTime / closeTime: "HH:MM" string OR integer hour (backward-compat).
-// intervalMins: slot interval (default 30).
-// serviceDuration: service length in minutes — last slot must finish by closeTime.
-export function generateSlots(openTime, closeTime, serviceDuration = 30, intervalMins = 30) {
+// intervalMins: slot interval (default 30) — used as step when bufferMins = 0.
+// serviceDuration: service length in minutes.
+// bufferMins: rest/cleaning time after each appointment.
+//   When > 0: step = serviceDuration + bufferMins. Buffer-zone markers are
+//   interleaved into the returned array so the UI can show them as disabled.
+//   Markers are always at slot_start + serviceDuration.
+export function generateSlots(openTime, closeTime, serviceDuration = 30, intervalMins = 30, bufferMins = 0) {
   const start = toMins(openTime);
   const end   = toMins(closeTime);
   const slots = [];
-  for (let m = start; m < end; m += intervalMins) {
-    slots.push(`${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`);
+  if (bufferMins > 0) {
+    const step = serviceDuration + bufferMins;
+    for (let m = start; m + serviceDuration <= end; m += step) {
+      slots.push(minToStr(m));
+      const bm = m + serviceDuration;
+      if (bm < end) slots.push(minToStr(bm)); // buffer-zone marker
+    }
+  } else {
+    for (let m = start; m < end; m += intervalMins) {
+      slots.push(minToStr(m));
+    }
   }
   return slots;
+}
+
+// Returns a Set of slot strings that are buffer-zone markers (always disabled).
+// Matches the markers interleaved by generateSlots when bufferMins > 0.
+export function getBufferMarkers(openTime, closeTime, serviceDuration, bufferMins) {
+  if (!bufferMins) return new Set();
+  const start = toMins(openTime);
+  const end   = toMins(closeTime);
+  const step  = serviceDuration + bufferMins;
+  const markers = new Set();
+  for (let m = start; m + serviceDuration <= end; m += step) {
+    const bm = m + serviceDuration;
+    if (bm < end) markers.add(minToStr(bm));
+  }
+  return markers;
 }
 
 // Group slots into morning / afternoon / evening
