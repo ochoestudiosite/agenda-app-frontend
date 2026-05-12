@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, getBufferMarkers, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { useAvailability } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
@@ -147,9 +147,8 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
   const dayEntry  = getDayEntry(newDate);
   const openTime  = dayEntry?.open_time  ?? '9:00';
   const closeTime = dayEntry?.close_time ?? '19:00';
-  const allSlots     = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
-  const bufferMarkers = newDate ? getBufferMarkers(openTime, closeTime, appointment.serviceDuration, bufferMins) : new Set();
-  const grouped      = groupSlots(allSlots);
+  const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
+  const grouped   = groupSlots(allSlots);
 
   return (
     <div className="mt-5 border-t border-edge pt-5 space-y-4 animate-fade-in">
@@ -235,8 +234,7 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
                       const [sh, sm] = slot.split(':').map(Number);
                       const slotStart = sh * 60 + sm;
                       const slotEnd   = slotStart + appointment.serviceDuration;
-                      const busy = bufferMarkers.has(slot)
-                        || slotEnd > closeMins
+                      const busy = slotEnd > closeMins
                         || appointmentIntervals.some(
                           ({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin
                         );
