@@ -17,7 +17,10 @@ const SOCIAL_CONFIG = [
   { key: 'linkedin',  label: 'LinkedIn',  Icon: Linkedin,       urlFn: v => `https://linkedin.com/in/${v}` },
 ];
 
-export default function LandingContact({ businessName, socials = {}, config = {} }) {
+// linkBase: prefix for section anchor links.
+//   ''  — same-page hash (landing page, smooth scroll works)
+//   '/' — navigates to home then scrolls (sub-pages like /agendar, /gestionar)
+export default function LandingContact({ businessName, socials = {}, config = {}, linkBase = '' }) {
   const brandTitle     = socials.brand_title     || businessName || 'Cita24';
   const tagline        = socials.tagline         || 'Elevamos el estándar de la industria. Una experiencia diseñada para quienes valoran su tiempo y buscan sólo lo mejor.';
   const newsletterText = socials.newsletter_text || 'Recibe novedades y promociones exclusivas, sin spam.';
@@ -28,10 +31,10 @@ export default function LandingContact({ businessName, socials = {}, config = {}
     .map(s => ({ ...s, url: s.urlFn(socials[s.key]) }));
 
   const footerLinks = [
-    { name: 'Servicios',     href: '#servicios',     key: 'services_section' },
-    { name: 'Equipo',        href: '#equipo',        key: 'staff_section' },
-    { name: 'Testimoniales', href: '#testimoniales', key: 'testimonials_section' },
-    { name: 'Ubicación',     href: '#ubicacion',     key: 'location_section' },
+    { name: 'Servicios',     href: `${linkBase}#servicios`,     key: 'services_section' },
+    { name: 'Equipo',        href: `${linkBase}#equipo`,        key: 'staff_section' },
+    { name: 'Testimoniales', href: `${linkBase}#testimoniales`, key: 'testimonials_section' },
+    { name: 'Ubicación',     href: `${linkBase}#ubicacion`,     key: 'location_section' },
   ].filter(l => config[l.key]?.visible !== false);
 
   return (

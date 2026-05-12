@@ -5,6 +5,7 @@ import { useConfig } from '../../hooks/useConfig';
 import { ToastProvider } from '../ui/Toast';
 import TenantNotFound from '../../pages/TenantNotFound';
 import ThemeToggle from '../ui/ThemeToggle';
+import LandingContact from '../landing/LandingContact';
 
 export default function Layout({ children }) {
   const { pathname }                        = useLocation();
@@ -18,6 +19,12 @@ export default function Layout({ children }) {
   }
   const bizName = config?.business_name;
   const logoUrl = config?.logo_url ?? null;
+
+  let landingConfig = config?.landing || config?.landing_config || {};
+  if (typeof landingConfig === 'string') {
+    try { landingConfig = JSON.parse(landingConfig); } catch { landingConfig = {}; }
+  }
+  const footerBizName = landingConfig?.navbar?.business_name || bizName;
 
   const isHome = pathname === '/';
 
@@ -70,20 +77,12 @@ export default function Layout({ children }) {
           {children}
         </main>
 
-        <footer className="border-t border-edge/60 py-8 safe-area-bottom">
-          <div className="max-w-3xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <BizLogo url={logoUrl} size="footer" />
-              {isLoading
-                ? <span className="h-3 w-20 skeleton rounded-md" />
-                : <span className="text-xs font-medium text-ink-3">{bizName || 'Cita24'}</span>
-              }
-            </div>
-            <p className="text-xs text-ink-3">
-              © {new Date().getFullYear()} {bizName || 'Cita24'} · Todos los derechos reservados
-            </p>
-          </div>
-        </footer>
+        <LandingContact
+          businessName={footerBizName}
+          socials={landingConfig?.contact_section}
+          config={landingConfig}
+          linkBase="/"
+        />
 
       </div>
     </ToastProvider>
