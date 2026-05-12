@@ -11,6 +11,7 @@ import LandingTestimonials from '../components/landing/LandingTestimonials';
 import LandingLocation from '../components/landing/LandingLocation';
 import LandingContact from '../components/landing/LandingContact';
 import LandingSkeleton from '../components/landing/LandingSkeleton';
+import LandingBottomBar from '../components/landing/LandingBottomBar';
 
 // ── postMessage origin allowlist (mirrors backend CORS policy) ──────────────
 // Allows: localhost in dev, exact PUBLIC_DOMAIN, any single-level subdomain.
@@ -42,24 +43,24 @@ function inferParentOrigin() {
       const refOrigin = `${ref.protocol}//${ref.host}`;
       if (isAllowedAdminOrigin(refOrigin)) return refOrigin;
     }
-  } catch {}
+  } catch { }
   return '*';
 }
 
 export default function Home() {
-  const { data: config, isLoading: loadingConfig } = useQuery({ 
-    queryKey: ['config'], 
-    queryFn: api.getConfig 
+  const { data: config, isLoading: loadingConfig } = useQuery({
+    queryKey: ['config'],
+    queryFn: api.getConfig
   });
 
-  const { data: servicesData, isLoading: loadingServices } = useQuery({ 
-    queryKey: ['services'], 
-    queryFn: api.getServices 
+  const { data: servicesData, isLoading: loadingServices } = useQuery({
+    queryKey: ['services'],
+    queryFn: api.getServices
   });
 
-  const { data: staffData, isLoading: loadingStaff } = useQuery({ 
-    queryKey: ['specialists'], 
-    queryFn: api.getSpecialists 
+  const { data: staffData, isLoading: loadingStaff } = useQuery({
+    queryKey: ['specialists'],
+    queryFn: api.getSpecialists
   });
 
   const isLoading = loadingConfig || loadingServices || loadingStaff;
@@ -108,10 +109,10 @@ export default function Home() {
     const name = config.business_name;
     document.title = `Cita24 — ${name}`;
     const setMeta = (sel, val) => document.querySelector(sel)?.setAttribute('content', val);
-    setMeta('meta[name="description"]',         `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
-    setMeta('meta[property="og:title"]',        `Cita24 — ${name}`);
-    setMeta('meta[property="og:description"]',  `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
-    setMeta('meta[name="twitter:title"]',       `Cita24 — ${name}`);
+    setMeta('meta[name="description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
+    setMeta('meta[property="og:title"]', `Cita24 — ${name}`);
+    setMeta('meta[property="og:description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
+    setMeta('meta[name="twitter:title"]', `Cita24 — ${name}`);
     setMeta('meta[name="twitter:description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
     return () => { document.title = 'Cita24 — Agenda tu Cita'; };
   }, [config?.business_name]);
@@ -146,9 +147,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-surface selection:bg-gold/30 selection:text-ink">
-      <LandingNavbar 
-        businessName={businessName} 
-        config={bc} 
+      <LandingNavbar
+        businessName={businessName}
+        config={bc}
       />
 
       <main>
@@ -206,11 +207,19 @@ export default function Home() {
         )}
       </main>
 
-      <LandingContact 
-        businessName={bc.navbar?.business_name || businessName} 
-        socials={bc.contact_section}
-        config={bc}
-      />
+      <footer className="relative bg-card/40 border-t border-edge/40 overflow-hidden">
+        <LandingContact
+          businessName={bc.navbar?.business_name || businessName}
+          socials={bc.contact_section}
+          config={bc}
+        />
+
+        <LandingBottomBar
+          businessName={bc.navbar?.business_name || businessName}
+          socials={bc.contact_section}
+          config={bc}
+        />
+      </footer>
 
       <div className="fixed bottom-10 right-10 pointer-events-none opacity-20">
         <div className="w-px h-24 bg-gradient-to-b from-transparent via-gold to-transparent" />

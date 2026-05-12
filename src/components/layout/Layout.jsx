@@ -5,10 +5,10 @@ import { useConfig } from '../../hooks/useConfig';
 import { ToastProvider } from '../ui/Toast';
 import TenantNotFound from '../../pages/TenantNotFound';
 import ThemeToggle from '../ui/ThemeToggle';
-import LandingContact from '../landing/LandingContact';
+import LandingBottomBar from '../landing/LandingBottomBar';
 
 export default function Layout({ children }) {
-  const { pathname }                        = useLocation();
+  const { pathname } = useLocation();
   const { data: config, isLoading, error } = useConfig();
 
   // 404 = tenant slug doesn't exist
@@ -25,6 +25,7 @@ export default function Layout({ children }) {
     try { landingConfig = JSON.parse(landingConfig); } catch { landingConfig = {}; }
   }
   const footerBizName = landingConfig?.navbar?.business_name || bizName;
+  const copyrightText = landingConfig?.contact_section?.copyright_text || '';
 
   const isHome = pathname === '/';
 
@@ -51,20 +52,20 @@ export default function Layout({ children }) {
               {isLoading
                 ? <span className="h-4 w-28 skeleton rounded-md" />
                 : <span className="font-display text-[1.0625rem] font-semibold tracking-tight text-ink">
-                    {bizName || 'Cita24'}
-                  </span>
+                  {bizName || 'Cita24'}
+                </span>
               }
             </Link>
 
             <div className="flex items-center gap-1">
               <nav className="hidden sm:flex items-center">
-                <NavLink to="/"          active={pathname === '/'}>Inicio</NavLink>
-                <NavLink to="/agendar"   active={pathname.startsWith('/agendar')}>Agendar</NavLink>
+                <NavLink to="/" active={pathname === '/'}>Inicio</NavLink>
+                <NavLink to="/agendar" active={pathname.startsWith('/agendar')}>Agendar</NavLink>
                 <NavLink to="/gestionar" active={pathname.startsWith('/gestionar')}>Mis Citas</NavLink>
               </nav>
 
               <nav className="flex sm:hidden items-center gap-0.5 mr-1">
-                <MobileNavLink to="/agendar"   active={pathname.startsWith('/agendar')}>Agendar</MobileNavLink>
+                <MobileNavLink to="/agendar" active={pathname.startsWith('/agendar')}>Agendar</MobileNavLink>
                 <MobileNavLink to="/gestionar" active={pathname.startsWith('/gestionar')}>Mis Citas</MobileNavLink>
               </nav>
 
@@ -77,13 +78,14 @@ export default function Layout({ children }) {
           {children}
         </main>
 
-        <LandingContact
-          businessName={footerBizName}
-          socials={landingConfig?.contact_section}
-          config={landingConfig}
-          linkBase="/"
-        />
-
+        {/* Bottom bar */}
+        <footer className="relative bg-card/40 border-t border-edge/40 overflow-hidden">
+          <LandingBottomBar
+            businessName={footerBizName}
+            socials={landingConfig?.contact_section}
+            config={landingConfig}
+            linkBase="/" />
+        </footer>
       </div>
     </ToastProvider>
   );
@@ -138,7 +140,7 @@ function BizLogo({ url, size = 'nav' }) {
     return safe ? (
       <span className="w-7 h-7 rounded-lg shrink-0 overflow-hidden bg-raised border border-edge/50">
         <img src={url} alt="" onError={() => setFailed(true)}
-             className="w-full h-full object-cover" loading="lazy" />
+          className="w-full h-full object-cover" loading="lazy" />
       </span>
     ) : (
       <span className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center shrink-0">
@@ -150,7 +152,7 @@ function BizLogo({ url, size = 'nav' }) {
   return safe ? (
     <span className="w-5 h-5 rounded-md shrink-0 overflow-hidden bg-raised border border-edge/40">
       <img src={url} alt="" onError={() => setFailed(true)}
-           className="w-full h-full object-cover" loading="lazy" />
+        className="w-full h-full object-cover" loading="lazy" />
     </span>
   ) : (
     <span className="w-5 h-5 rounded-md bg-gold/10 flex items-center justify-center">

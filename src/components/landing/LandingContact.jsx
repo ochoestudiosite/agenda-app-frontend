@@ -9,36 +9,33 @@ function TikTokIcon({ size = 18 }) {
 }
 
 const SOCIAL_CONFIG = [
-  { key: 'instagram', label: 'Instagram', Icon: Instagram,      urlFn: v => `https://instagram.com/${v}` },
-  { key: 'facebook',  label: 'Facebook',  Icon: Facebook,       urlFn: v => `https://facebook.com/${v}` },
-  { key: 'whatsapp',  label: 'WhatsApp',  Icon: MessageSquare,  urlFn: v => `https://wa.me/${v}` },
-  { key: 'tiktok',    label: 'TikTok',    Icon: TikTokIcon,     urlFn: v => `https://tiktok.com/@${v}` },
-  { key: 'youtube',   label: 'YouTube',   Icon: Youtube,        urlFn: v => `https://youtube.com/@${v}` },
-  { key: 'linkedin',  label: 'LinkedIn',  Icon: Linkedin,       urlFn: v => `https://linkedin.com/in/${v}` },
+  { key: 'instagram', label: 'Instagram', Icon: Instagram, urlFn: v => `https://instagram.com/${v}` },
+  { key: 'facebook', label: 'Facebook', Icon: Facebook, urlFn: v => `https://facebook.com/${v}` },
+  { key: 'whatsapp', label: 'WhatsApp', Icon: MessageSquare, urlFn: v => `https://wa.me/${v}` },
+  { key: 'tiktok', label: 'TikTok', Icon: TikTokIcon, urlFn: v => `https://tiktok.com/@${v}` },
+  { key: 'youtube', label: 'YouTube', Icon: Youtube, urlFn: v => `https://youtube.com/@${v}` },
+  { key: 'linkedin', label: 'LinkedIn', Icon: Linkedin, urlFn: v => `https://linkedin.com/in/${v}` },
 ];
 
-// linkBase: prefix for section anchor links.
-//   ''  — same-page hash (landing page, smooth scroll works)
-//   '/' — navigates to home then scrolls (sub-pages like /agendar, /gestionar)
-export default function LandingContact({ businessName, socials = {}, config = {}, linkBase = '' }) {
-  const brandTitle     = socials.brand_title     || businessName || 'Cita24';
-  const tagline        = socials.tagline         || 'Elevamos el estándar de la industria. Una experiencia diseñada para quienes valoran su tiempo y buscan sólo lo mejor.';
+export default function LandingContact({ businessName, socials = {}, config = {} }) {
+  const brandTitle = socials.brand_title || businessName || 'Cita24';
+  const tagline = socials.tagline || 'Elevamos el estándar de la industria. Una experiencia diseñada para quienes valoran su tiempo y buscan sólo lo mejor.';
   const newsletterText = socials.newsletter_text || 'Recibe novedades y promociones exclusivas, sin spam.';
-  const copyrightText  = socials.copyright_text  || '';
+  const copyrightText = socials.copyright_text || '';
 
   const socialLinks = SOCIAL_CONFIG
     .filter(s => socials[s.key])
     .map(s => ({ ...s, url: s.urlFn(socials[s.key]) }));
 
   const footerLinks = [
-    { name: 'Servicios',     href: `${linkBase}#servicios`,     key: 'services_section' },
-    { name: 'Equipo',        href: `${linkBase}#equipo`,        key: 'staff_section' },
-    { name: 'Testimoniales', href: `${linkBase}#testimoniales`, key: 'testimonials_section' },
-    { name: 'Ubicación',     href: `${linkBase}#ubicacion`,     key: 'location_section' },
+    { name: 'Servicios', href: '#servicios', key: 'services_section' },
+    { name: 'Equipo', href: '#equipo', key: 'staff_section' },
+    { name: 'Testimoniales', href: '#testimoniales', key: 'testimonials_section' },
+    { name: 'Ubicación', href: '#ubicacion', key: 'location_section' },
   ].filter(l => config[l.key]?.visible !== false);
 
   return (
-    <footer className="relative pt-20 lg:pt-28 pb-8 bg-card/40 border-t border-edge/40 overflow-hidden">
+    <div className="relative pt-20 lg:pt-28 pb-20 bg-card/40 border-t border-edge/40 overflow-hidden">
       {/* Subtle accent ribbon */}
       <div aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
 
@@ -115,30 +112,7 @@ export default function LandingContact({ businessName, socials = {}, config = {}
             </form>
           </div>
         </div>
-
-        {/* Bottom bar */}
-        <div className="mt-16 lg:mt-20 pt-6 border-t border-edge/40 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[11px] font-medium text-ink-3">
-            {copyrightText || `© ${new Date().getFullYear()} ${brandTitle}. Todos los derechos reservados.`}
-          </p>
-          <div className="flex items-center gap-5">
-            <a href="#" className="text-[11px] font-medium text-ink-3 hover:text-ink transition-colors">Privacidad</a>
-            <a href="#" className="text-[11px] font-medium text-ink-3 hover:text-ink transition-colors">Términos</a>
-            <a
-              href="https://cita24.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Desarrollado con Cita24"
-              className="hidden sm:inline-flex items-center gap-2 opacity-40 hover:opacity-70 transition-opacity duration-200 group"
-            >
-              <span className="text-[9.5px] font-medium text-ink-3 tracking-wide">Impulsado por</span>
-              <span className="text-[11.5px] font-black tracking-tight leading-none text-ink-3 group-hover:text-ink transition-colors">
-                Cita<span className="text-gold">24</span>
-              </span>
-            </a>
-          </div>
-        </div>
       </div>
-    </footer>
+    </div>
   );
 }
