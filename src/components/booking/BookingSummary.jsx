@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
 import { toTitleCase, formatPrice, formatTime } from '../../utils/formatters';
@@ -11,127 +12,104 @@ function shortDate(dateStr) {
 }
 
 export default function BookingSummary() {
-  const { state } = useBooking();
+  const { state }        = useBooking();
   const { data: config } = useConfig();
-  const timeFmt = config?.time_format ?? '12h';
+  const timeFmt          = config?.time_format ?? '12h';
 
-  const pills = [];
+  const items = [];
 
   if (state.branch) {
-    pills.push({
-      id: 'branch',
-      icon: <PinIcon />,
+    items.push({
+      id:    'branch',
+      icon:  <PinIcon />,
       label: toTitleCase(state.branch.name),
-      sub: null,
+      sub:   null,
     });
   }
 
   if (state.service) {
-    pills.push({
-      id: 'service',
-      icon: <ScissorsIcon />,
+    items.push({
+      id:    'service',
+      icon:  <ScissorsIcon />,
       label: toTitleCase(state.service.name),
-      sub: `${state.service.duration} min · ${formatPrice(state.service.price)}`,
+      sub:   `${state.service.duration} min · ${formatPrice(state.service.price)}`,
     });
   }
 
   if (state.specialist) {
-    pills.push({
-      id: 'specialist',
-      icon: <SpecialistAvatar specialist={state.specialist} />,
-      label: toTitleCase(state.specialist.name),
-      sub: state.specialist.specialty || null,
+    items.push({
+      id:         'specialist',
+      isAvatar:   true,
+      avatarUrl:  state.specialist.avatarUrl,
+      initials:   state.specialist.initials,
+      label:      toTitleCase(state.specialist.name),
+      sub:        state.specialist.specialty || null,
     });
   }
 
   if (state.date && state.time) {
-    pills.push({
-      id: 'datetime',
-      icon: <CalendarIcon />,
+    items.push({
+      id:    'datetime',
+      icon:  <CalendarIcon />,
       label: shortDate(state.date),
-      sub: formatTime(state.time, timeFmt),
+      sub:   formatTime(state.time, timeFmt),
     });
   }
 
-  if (pills.length === 0) return null;
+  if (items.length === 0) return null;
 
   return (
-    <div className="mb-8 animate-fade-in">
-      {/* Gradient fade hint on right edge for mobile scroll */}
-      <div className="relative">
-        <div
-          className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {pills.map((pill, i) => (
-            <div key={pill.id} className="flex items-center gap-2 shrink-0">
-              <Pill pill={pill} delay={i * 70} />
-              {i < pills.length - 1 && (
-                <svg
-                  className="w-3 h-3 text-ink-3/30 shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
+    <div className="mb-8 animate-fade-in" role="status" aria-label="Resumen de tu selección">
+      <div className="relative bg-card border border-edge/60 rounded-2xl shadow-xs overflow-hidden">
+
+        {/* Gold accent — top ribbon */}
+        <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" aria-hidden />
+
+        {/* Scrollable items */}
+        <div className="flex items-stretch overflow-x-auto scrollbar-hide">
+          {items.map((item, i) => (
+            <Fragment key={item.id}>
+              <SummaryItem item={item} />
+              {i < items.length - 1 && (
+                <div className="self-stretch flex items-center shrink-0" aria-hidden>
+                  <div className="w-px h-6 bg-edge/50" />
+                </div>
               )}
-            </div>
+            </Fragment>
           ))}
-          {/* spacer so last pill clears the right gradient */}
-          <div className="shrink-0 w-4" aria-hidden />
         </div>
-        {/* Right fade gradient */}
-        <div
-          className="absolute right-0 top-0 bottom-0 w-10 pointer-events-none"
-          style={{ background: 'linear-gradient(to right, transparent, var(--color-surface, #fff))' }}
-          aria-hidden
-        />
+
       </div>
     </div>
   );
 }
 
-function Pill({ pill, delay }) {
+function SummaryItem({ item }) {
   return (
-    <div
-      className="flex items-center gap-2.5 pl-2 pr-3.5 py-2 bg-card border border-edge rounded-xl
-                 shadow-[0_1px_3px_0_rgb(0,0,0,0.04)] hover:border-gold/40 hover:shadow-[0_2px_8px_0_rgb(0,0,0,0.07)]
-                 transition-all duration-200 animate-fade-up"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
-    >
-      <div className="w-7 h-7 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 text-gold overflow-hidden">
-        {pill.icon}
+    <div className="flex items-center gap-2.5 px-4 py-3 shrink-0">
+      {/* Icon / Avatar bubble */}
+      <div className="w-7 h-7 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 text-gold overflow-hidden">
+        {item.isAvatar ? (
+          item.avatarUrl
+            ? <img src={item.avatarUrl} alt="" className="w-full h-full object-cover" />
+            : <span className="text-[9px] font-bold leading-none">{item.initials || '?'}</span>
+        ) : (
+          item.icon
+        )}
       </div>
-      <div className="min-w-0">
-        <p className="text-[12px] font-semibold text-ink leading-snug truncate max-w-[110px]">
-          {pill.label}
+
+      {/* Text */}
+      <div>
+        <p className="text-[12.5px] font-semibold text-ink leading-snug whitespace-nowrap">
+          {item.label}
         </p>
-        {pill.sub && (
-          <p className="text-[10px] text-ink-3 leading-none mt-0.5 truncate max-w-[110px]">
-            {pill.sub}
+        {item.sub && (
+          <p className="text-[10.5px] text-ink-3 leading-none mt-0.5 whitespace-nowrap">
+            {item.sub}
           </p>
         )}
       </div>
     </div>
-  );
-}
-
-function SpecialistAvatar({ specialist }) {
-  if (specialist?.avatarUrl) {
-    return (
-      <img
-        src={specialist.avatarUrl}
-        alt={specialist.name}
-        className="w-full h-full object-cover rounded-lg"
-      />
-    );
-  }
-  return (
-    <span className="text-[10px] font-bold leading-none">
-      {specialist?.initials || '?'}
-    </span>
   );
 }
 
@@ -140,7 +118,9 @@ function ScissorsIcon() {
     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <circle cx="6" cy="6" r="3" />
       <circle cx="6" cy="18" r="3" />
-      <path strokeLinecap="round" d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12" />
+      <line x1="20" y1="4" x2="8.12" y2="15.88" />
+      <line x1="14.47" y1="14.48" x2="20" y2="20" />
+      <line x1="8.12" y1="8.12" x2="12" y2="12" />
     </svg>
   );
 }
