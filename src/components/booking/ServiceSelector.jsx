@@ -1,11 +1,11 @@
 import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
 import { formatPrice, toTitleCase } from '../../utils/formatters';
-import Spinner from '../ui/Spinner';
+import { BackButton } from './SpecialistSelector';
 
 export default function ServiceSelector() {
   const { data, isLoading, isError } = useServices();
-  const { dispatch } = useBooking();
+  const { state, dispatch } = useBooking();
 
   if (isLoading) return (
     <div className="space-y-2.5">
@@ -34,6 +34,7 @@ export default function ServiceSelector() {
 
   return (
     <div className="animate-fade-up">
+      {state.branch && <BackButton onClick={() => dispatch({ type: 'GO_BACK' })} />}
       <PageTitle title="Elige tu servicio" subtitle="¿Qué te gustaría hoy?" />
       <div className="space-y-2.5">
         {data.services.map((service, i) => (

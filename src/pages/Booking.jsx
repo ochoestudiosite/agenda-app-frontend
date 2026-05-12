@@ -29,7 +29,7 @@ function BookingFlow() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       {state.step < 5 && <StepIndicator currentStep={indicatorStep} hasBranch={multiBranch} />}
-      {!isBranchStep && state.step >= 2 && state.step <= 4 && <BookingSummary />}
+      {!isBranchStep && state.step >= 1 && state.step <= 4 && (state.branch || state.service) && <BookingSummary />}
       {isBranchStep                     && <BranchSelector branches={branches} />}
       {!isBranchStep && state.step === 1 && <ServiceSelector />}
       {!isBranchStep && state.step === 2 && <SpecialistSelector />}

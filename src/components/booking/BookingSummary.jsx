@@ -20,39 +20,43 @@ export default function BookingSummary() {
 
   if (state.branch) {
     items.push({
-      id:    'branch',
-      icon:  <PinIcon />,
-      label: toTitleCase(state.branch.name),
-      sub:   null,
+      id:      'branch',
+      category: 'sucursal',
+      icon:    <PinIcon />,
+      label:   toTitleCase(state.branch.name),
+      sub:     null,
     });
   }
 
   if (state.service) {
     items.push({
-      id:    'service',
-      icon:  <ScissorsIcon />,
-      label: toTitleCase(state.service.name),
-      sub:   `${state.service.duration} min · ${formatPrice(state.service.price)}`,
+      id:       'service',
+      category: 'servicio',
+      icon:     <ScissorsIcon />,
+      label:    toTitleCase(state.service.name),
+      sub:      `${state.service.duration} min · ${formatPrice(state.service.price)}`,
     });
   }
 
   if (state.specialist) {
     items.push({
-      id:         'specialist',
-      isAvatar:   true,
-      avatarUrl:  state.specialist.avatarUrl,
-      initials:   state.specialist.initials,
-      label:      toTitleCase(state.specialist.name),
-      sub:        state.specialist.specialty || null,
+      id:        'specialist',
+      category:  'especialista',
+      isAvatar:  true,
+      avatarUrl: state.specialist.avatarUrl,
+      initials:  state.specialist.initials,
+      label:     toTitleCase(state.specialist.name),
+      sub:       state.specialist.specialty || null,
     });
   }
 
   if (state.date && state.time) {
     items.push({
-      id:    'datetime',
-      icon:  <CalendarIcon />,
-      label: shortDate(state.date),
-      sub:   formatTime(state.time, timeFmt),
+      id:       'datetime',
+      category: 'horario',
+      icon:     <CalendarIcon />,
+      label:    shortDate(state.date),
+      sub:      formatTime(state.time, timeFmt),
     });
   }
 
@@ -60,10 +64,7 @@ export default function BookingSummary() {
 
   return (
     <div className="mb-8 animate-fade-in" role="status" aria-label="Resumen de tu selección">
-      <div className="relative bg-card border border-edge/60 rounded-2xl shadow-xs overflow-hidden">
-
-        {/* Gold accent — top ribbon */}
-        <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-gold/40 to-transparent pointer-events-none" aria-hidden />
+      <div className="relative bg-card border border-edge/60 rounded-2xl shadow-xs overflow-hidden border-l-4 border-l-gold">
 
         {/* Scrollable items */}
         <div className="flex items-stretch overflow-x-auto scrollbar-hide">
@@ -71,8 +72,8 @@ export default function BookingSummary() {
             <Fragment key={item.id}>
               <SummaryItem item={item} />
               {i < items.length - 1 && (
-                <div className="self-stretch flex items-center shrink-0" aria-hidden>
-                  <div className="w-px h-6 bg-edge/50" />
+                <div className="self-stretch flex items-center shrink-0 py-3" aria-hidden>
+                  <div className="w-px h-full bg-edge/40" />
                 </div>
               )}
             </Fragment>
@@ -86,9 +87,9 @@ export default function BookingSummary() {
 
 function SummaryItem({ item }) {
   return (
-    <div className="flex items-center gap-2.5 px-4 py-3 shrink-0">
+    <div className="flex items-center gap-3 px-4 py-3 shrink-0">
       {/* Icon / Avatar bubble */}
-      <div className="w-7 h-7 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 text-gold overflow-hidden">
+      <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 text-gold overflow-hidden">
         {item.isAvatar ? (
           item.avatarUrl
             ? <img src={item.avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -100,6 +101,9 @@ function SummaryItem({ item }) {
 
       {/* Text */}
       <div>
+        <p className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-gold/70 leading-none mb-1">
+          {item.category}
+        </p>
         <p className="text-[12.5px] font-semibold text-ink leading-snug whitespace-nowrap">
           {item.label}
         </p>
