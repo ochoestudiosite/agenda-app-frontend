@@ -7,6 +7,7 @@ import SpecialistSelector from '../components/booking/SpecialistSelector';
 import DateTimePicker from '../components/booking/DateTimePicker';
 import ClientForm from '../components/booking/ClientForm';
 import BookingConfirmation from '../components/booking/BookingConfirmation';
+import BookingSummary from '../components/booking/BookingSummary';
 
 export default function Booking() {
   return (
@@ -28,6 +29,7 @@ function BookingFlow() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       {state.step < 5 && <StepIndicator currentStep={indicatorStep} hasBranch={multiBranch} />}
+      {!isBranchStep && state.step >= 2 && state.step <= 4 && <BookingSummary />}
       {isBranchStep                     && <BranchSelector branches={branches} />}
       {!isBranchStep && state.step === 1 && <ServiceSelector />}
       {!isBranchStep && state.step === 2 && <SpecialistSelector />}

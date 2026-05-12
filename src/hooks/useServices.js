@@ -8,7 +8,8 @@ export function useServices() {
       const [s, sp] = await Promise.all([api.getServices(), api.getSpecialists()]);
       return { services: s.services, specialists: sp.specialists };
     },
-    staleTime: 10 * 1000, // 10 seconds - keep it fresh for the booking flow
+    staleTime: 0,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
   });
 }
