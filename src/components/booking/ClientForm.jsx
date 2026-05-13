@@ -19,17 +19,21 @@ export default function ClientForm() {
 
   const [name,   setName]   = useState(state.clientName);
   const [phone,  setPhone]  = useState(state.clientPhone);
+  const [email,  setEmail]  = useState('');
   const [errors, setErrors] = useState({});
 
   function validate() {
     const errs = {};
     if (!name.trim() || name.trim().length < 2) errs.name = 'Ingresa tu nombre completo (mínimo 2 caracteres).';
-    
+
     const COUNTRIES = ['+52', '+1', '+57', '+54', '+34', '+56', '+51'];
     const code = COUNTRIES.find(c => phone.startsWith(c)) || '';
     const rawNumber = phone.slice(code.length).replace(/\D/g, '');
-    
     if (rawNumber.length !== 10) errs.phone = 'El teléfono debe tener 10 dígitos.';
+
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      errs.email = 'Ingresa un correo electrónico válido.';
+    }
     return errs;
   }
 
@@ -47,6 +51,7 @@ export default function ClientForm() {
         time:         state.time,
         clientName:   name.trim(),
         clientPhone:  phone.trim(),
+        clientEmail:  email.trim() || undefined,
         branchId:     state.branch?.id ?? (configBranches.length === 1 ? configBranches[0].id : null),
       });
       dispatch({ type: 'SET_CONFIRMATION', payload: result });
@@ -84,6 +89,10 @@ export default function ClientForm() {
           onChange={e => setPhone(e.target.value)}
           error={errors.phone} required autoComplete="tel"
           helper="10 dígitos (asegúrate de incluir la lada)" />
+        <Input label="Correo electrónico" placeholder="tu@correo.com" value={email}
+          onChange={e => setEmail(e.target.value)} error={errors.email}
+          autoComplete="email" type="email" maxLength={120}
+          helper="Opcional · Recibirás confirmación y recordatorios" />
         <Button type="submit" size="lg" className="w-full mt-2" loading={createMutation.isPending}>
           Confirmar reservación
         </Button>
