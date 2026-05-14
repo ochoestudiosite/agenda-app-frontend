@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+/* Fonts loaded via index.html */
 
 @tailwind base;
 @tailwind components;
@@ -23,13 +23,13 @@
   /* secondaryLabel           #636366 */
   --ink-3: 174 174 178;
   /* tertiaryLabel            #AEAEB2 */
-  --gold: 146 104 10;
-  /* premium warm gold — AA on white ✓ */
-  --gold-light: 170 126 36;
-  /* hover                              */
-  --gold-muted: 255 249 232;
-  /* subtle gold tint                   */
-  --on-gold: 255 255 255;
+  --gold: 0 184 122;
+  /* brand teal #00B87A */
+  --gold-light: 0 210 142;
+  /* teal light variant */
+  --gold-muted: 212 245 233;
+  /* teal tint #D4F5E9   */
+  --on-gold: 13 13 13;
   --section-contrast: 15 15 15;
   --section-contrast-text: 245 245 247;
   --section-contrast-muted: 174 174 178;
@@ -52,14 +52,14 @@
   /* systemGray2 dark         #AEAEB2  */
   --ink-3: 99 99 102;
   /* systemGray dark          #636366  */
-  --gold: 214 172 72;
-  /* warm gold on black       #D6AC48  */
-  --gold-light: 228 190 95;
-  /* hover                              */
-  --gold-muted: 52 38 6;
-  /* deep gold bg                       */
-  --on-gold: 28 28 30;
-  /* dark text on bright gold           */
+  --gold: 0 184 122;
+  /* brand teal — works on dark bg     */
+  --gold-light: 0 210 142;
+  /* teal light                         */
+  --gold-muted: 10 60 40;
+  /* deep teal bg                       */
+  --on-gold: 13 13 13;
+  /* dark text on teal                  */
   --section-contrast: 28 28 30;
   --section-contrast-text: 245 245 247;
   --section-contrast-muted: 142 142 147;
@@ -90,7 +90,8 @@
   h3,
   h4,
   .font-display {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 
   * {

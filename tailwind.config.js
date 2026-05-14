@@ -24,10 +24,9 @@ export default {
         'section-contrast-muted':'rgb(var(--section-contrast-muted) / <alpha-value>)',
       },
       fontFamily: {
-        // Plus Jakarta Sans — geometric humanist sans-serif, very Apple/SF Pro-like
-        display: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        // System stack: SF Pro on Apple devices, Inter on everything else
-        sans:    ['-apple-system', 'BlinkMacSystemFont', '"Inter"', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
+        display: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans:    ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        mono:    ['"DM Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '1rem' }],
