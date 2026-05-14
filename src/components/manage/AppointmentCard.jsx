@@ -124,6 +124,7 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
 
   const maxAdvance   = config?.max_advance_days   ?? 30;
   const intervalMins = config?.slot_interval_mins ?? 30;
+  const timeFmt      = config?.time_format        ?? '12h';
   const bizHours     = config?.hours ?? [];
   const daysClosed   = bizHours.length > 0
     ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
