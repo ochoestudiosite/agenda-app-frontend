@@ -24,14 +24,20 @@ export default function ClientForm() {
 
   function validate() {
     const errs = {};
-    if (!name.trim() || name.trim().length < 2) errs.name = 'Ingresa tu nombre completo (mínimo 2 caracteres).';
+    const trimName = name.trim();
+    if (!trimName || trimName.length < 2) {
+      errs.name = 'Ingresa tu nombre completo (mínimo 2 caracteres).';
+    } else if (/^\d+$/.test(trimName)) {
+      errs.name = 'El nombre no puede ser solo números.';
+    }
 
-    const COUNTRIES = ['+52', '+1', '+57', '+54', '+34', '+56', '+51'];
-    const code = COUNTRIES.find(c => phone.startsWith(c)) || '';
-    const rawNumber = phone.slice(code.length).replace(/\D/g, '');
-    if (rawNumber.length !== 10) errs.phone = 'El teléfono debe tener 10 dígitos.';
+    // Accept any international phone: strip formatting and require 7–15 digits
+    const digits = phone.replace(/\D/g, '');
+    if (!digits || digits.length < 7 || digits.length > 15) {
+      errs.phone = 'Teléfono inválido. Ingresa entre 7 y 15 dígitos.';
+    }
 
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
       errs.email = 'Ingresa un correo electrónico válido.';
     }
     return errs;
