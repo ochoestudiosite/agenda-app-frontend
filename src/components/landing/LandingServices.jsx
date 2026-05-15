@@ -238,7 +238,7 @@ export function SectionHeader({ eyebrow, title, accent, fallback, right }) {
           {eyebrow}
         </div>
         <h2 className="mt-3 font-display text-3xl sm:text-4xl lg:text-[44px] font-semibold text-ink tracking-[-0.025em] leading-[1.04] text-balance">
-          {title ? (
+          {(title || accent) ? (
             <>
               {title}
               {accent && <><br /><span className="text-ink-3">{accent}</span></>}
