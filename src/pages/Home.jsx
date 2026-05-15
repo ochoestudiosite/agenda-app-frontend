@@ -48,19 +48,22 @@ function inferParentOrigin() {
 }
 
 export default function Home() {
-  const { data: config, isLoading: loadingConfig } = useQuery({
+  const { data: config, isLoading: loadingConfig, isError: configError } = useQuery({
     queryKey: ['config'],
-    queryFn: api.getConfig
+    queryFn: api.getConfig,
+    retry: 2,
   });
 
   const { data: servicesData, isLoading: loadingServices } = useQuery({
     queryKey: ['services'],
-    queryFn: api.getServices
+    queryFn: api.getServices,
+    retry: 2,
   });
 
   const { data: staffData, isLoading: loadingStaff } = useQuery({
     queryKey: ['specialists'],
-    queryFn: api.getSpecialists
+    queryFn: api.getSpecialists,
+    retry: 2,
   });
 
   const isLoading = loadingConfig || loadingServices || loadingStaff;
@@ -143,6 +146,26 @@ export default function Home() {
 
   if (isLoading && !previewConfig) {
     return <LandingSkeleton />;
+  }
+
+  // If config failed to load (network error, server down) and we're not in
+  // preview mode, show a minimal error state instead of the skeleton forever.
+  if (configError && !previewConfig) {
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '2rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>⚠️</div>
+        <div>
+          <p style={{ fontWeight: 700, fontSize: 16, color: '#111', margin: '0 0 4px' }}>No se pudo cargar la página</p>
+          <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>Verifica tu conexión e intenta de nuevo.</p>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ padding: '10px 24px', borderRadius: 10, background: '#00B87A', color: '#fff', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+        >
+          Reintentar
+        </button>
+      </div>
+    );
   }
 
   return (
