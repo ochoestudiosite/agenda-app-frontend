@@ -57,7 +57,7 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
             transition={{ duration: 0.65, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
             className="font-display text-[44px] sm:text-6xl lg:text-[88px] font-semibold text-ink leading-[1.02] tracking-[-0.03em] text-balance"
           >
-            {title ? (
+            {(title || titleAccent) ? (
               <>
                 {title}
                 {titleAccent && <><br /><span className="text-ink-3">{titleAccent}</span></>}
