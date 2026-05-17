@@ -11,6 +11,20 @@ import { useToast } from '../ui/Toast';
 import { BackButton } from './SpecialistSelector';
 import BookingUnavailable from './BookingUnavailable';
 
+const PERSON_WORD_RE = /^[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+$/;
+
+function personNameErr(v) {
+  const s = (v || '').trim();
+  if (!s) return 'Ingresa tu nombre completo.';
+  const words = s.split(/\s+/).filter(w => w.length > 0);
+  if (words.length < 2) return 'Ingresa al menos un nombre y un apellido.';
+  for (const w of words) {
+    if (!PERSON_WORD_RE.test(w)) return 'Solo letras y espacios, sin números ni símbolos.';
+    if (w.length < 2) return 'Cada palabra debe tener al menos 2 letras.';
+  }
+  return null;
+}
+
 export default function ClientForm() {
   const { state, dispatch } = useBooking();
   const { data: config }   = useConfig();
@@ -28,12 +42,8 @@ export default function ClientForm() {
 
   function validate() {
     const errs = {};
-    const trimName = name.trim();
-    if (!trimName || trimName.length < 2) {
-      errs.name = 'Ingresa tu nombre completo (mínimo 2 caracteres).';
-    } else if (/^\d+$/.test(trimName)) {
-      errs.name = 'El nombre no puede ser solo números.';
-    }
+    const nameErr = personNameErr(name);
+    if (nameErr) errs.name = nameErr;
 
     // Accept any international phone: strip formatting and require 7–15 digits
     const digits = phone.replace(/\D/g, '');
@@ -103,8 +113,10 @@ export default function ClientForm() {
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <Input label="Nombre completo" placeholder="Juan García" value={name}
-          onChange={e => setName(e.target.value)} error={errors.name} required autoComplete="name" maxLength={60} />
+        <Input label="Nombre completo" placeholder="Ej. Juan García López" value={name}
+          onChange={e => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: null })); }}
+          onBlur={e => { const err = personNameErr(e.target.value); if (err) setErrors(p => ({ ...p, name: err })); }}
+          error={errors.name} required autoComplete="name" maxLength={100} />
         <PhoneInput label="Teléfono" placeholder="55 1234 5678" value={phone}
           onChange={e => setPhone(e.target.value)}
           error={errors.phone} required autoComplete="tel"
