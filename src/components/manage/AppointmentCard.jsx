@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
-import { useAvailability } from '../../hooks/useAvailability';
+import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
 import { useToast } from '../ui/Toast';
@@ -27,9 +27,13 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   });
 
   const dateStr = newDate ? toDateStr(newDate) : null;
-  const { data: availData, isFetching } = useAvailability(mode === 'reschedule' ? dateStr : null);
+  const { data: availData, isFetching } = useAvailability(
+    mode === 'reschedule' ? dateStr : null,
+    appointment.specialistId,
+  );
   const appointmentIntervals = availData?.appointmentIntervals || [];
-  const bufferMins = availData?.config?.bufferMins || 0;
+  const bufferMins  = availData?.config?.bufferMins || 0;
+  const staffBlocked = availData?.staffBlocked ?? null;
 
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
@@ -106,6 +110,8 @@ export default function AppointmentCard({ appointment, onUpdated }) {
       {mode === 'reschedule' && (
         <ReschedulePanel
           appointment={appointment}
+          specialistId={appointment.specialistId}
+          staffBlocked={staffBlocked}
           viewMonth={viewMonth}      setViewMonth={setViewMonth}
           newDate={newDate}          setNewDate={d => { setNewDate(d); setNewTime(null); }}
           newTime={newTime}          setNewTime={setNewTime}
@@ -119,7 +125,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   );
 }
 
-function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNewDate, newTime, setNewTime, appointmentIntervals, bufferMins = 0, isFetching, onConfirm, onCancel, isLoading }) {
+function ReschedulePanel({ appointment, specialistId, staffBlocked, viewMonth, setViewMonth, newDate, setNewDate, newTime, setNewTime, appointmentIntervals, bufferMins = 0, isFetching, onConfirm, onCancel, isLoading }) {
   const { data: config } = useConfig();
 
   const maxAdvance   = config?.max_advance_days   ?? 30;
@@ -130,6 +136,10 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
     ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
     : [0];
 
+  const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
+  const { data: blockedData } = useBlockedDates(monthStr, specialistId);
+  const blockedDates = blockedData?.blockedDates ?? [];
+
   function getDayEntry(date) {
     if (!date || !bizHours.length) return null;
     return bizHours.find(h => h.day_of_week === date.getDay()) ?? null;
@@ -137,7 +147,14 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
 
   const today   = new Date(); today.setHours(0, 0, 0, 0);
   const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
-  const isDisabled = d => d < today || d > maxDate || daysClosed.includes(d.getDay());
+  function isDisabled(d) {
+    if (d < today || d > maxDate) return true;
+    if (daysClosed.includes(d.getDay())) return true;
+    const ds = toDateStr(d);
+    if (blockedDates.includes(ds)) return true;
+    if (blockedDates.includes(`recurring:${d.getDay()}`)) return true;
+    return false;
+  }
 
   const firstDay    = viewMonth.getDay();
   const daysInMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
@@ -220,6 +237,18 @@ function ReschedulePanel({ appointment, viewMonth, setViewMonth, newDate, setNew
       {newDate && (
         isFetching ? (
           <div className="flex justify-center py-6"><Spinner size="sm" /></div>
+        ) : staffBlocked ? (
+          <div className="flex flex-col items-center gap-2 py-5 text-center rounded-xl bg-raised border border-edge">
+            <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-ink">Día no disponible</p>
+              <p className="text-xs text-ink-3 mt-0.5">
+                {staffBlocked.reason || 'El especialista no estará disponible este día.'}
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="space-y-3">
             {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
