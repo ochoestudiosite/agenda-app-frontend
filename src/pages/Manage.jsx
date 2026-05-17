@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AppointmentLookup from '../components/manage/AppointmentLookup';
 import AppointmentCard from '../components/manage/AppointmentCard';
 import { useAppointmentLookup } from '../hooks/useAppointment';
 
 export default function Manage() {
+  const [searchParams]          = useSearchParams();
   const [activeCode, setActiveCode] = useState('');
   const [localAppt,  setLocalAppt]  = useState(null);
 
   const { data, isLoading, isError, error } = useAppointmentLookup(activeCode);
 
   const appointment = localAppt || data;
+
+  // Auto-search when opened via WhatsApp button link (?code=ABC123)
+  useEffect(() => {
+    const code = (searchParams.get('code') || '').toUpperCase().trim();
+    if (code.length === 6) setActiveCode(code);
+  }, []);
 
   function handleSearch(code) {
     setLocalAppt(null);
