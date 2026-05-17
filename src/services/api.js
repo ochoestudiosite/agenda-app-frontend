@@ -37,27 +37,21 @@ async function request(method, path, body, retryCount = 0) {
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    // Handle 429 Too Many Requests with Exponential Backoff
-    if (res.status === 429 && retryCount < MAX_RETRIES) {
-      const retryAfter = res.headers.get('Retry-After') || 2;
-      const delay = (parseInt(retryAfter) * 1000) + (Math.random() * 1000); // Add jitter
-      console.warn(`[API] Rate limited (429). Retrying in ${delay}ms... (Attempt ${retryCount + 1})`);
-      await sleep(delay);
-      return request(method, path, body, retryCount + 1);
-    }
-
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
       const err = new Error(data.message || data.error || `HTTP ${res.status}`);
       err.status = res.status;
+      err.code   = data.error; // preserve server error code for specific handling
       throw err;
     }
 
     return data;
   } catch (error) {
-    if (error.status === 429) throw error;
-    // For network errors, try one retry
+    // Never retry HTTP error responses — the server already processed the request
+    // deterministically. Retrying would just repeat the same result.
+    // Only retry genuine network failures (no .status property).
+    if (error.status) throw error;
     if (retryCount < MAX_RETRIES) {
       await sleep(1000 * (retryCount + 1));
       return request(method, path, body, retryCount + 1);

@@ -8,6 +8,7 @@ import DateTimePicker from '../components/booking/DateTimePicker';
 import ClientForm from '../components/booking/ClientForm';
 import BookingConfirmation from '../components/booking/BookingConfirmation';
 import BookingSummary from '../components/booking/BookingSummary';
+import BookingUnavailable from '../components/booking/BookingUnavailable';
 
 export default function Booking() {
   return (
@@ -19,12 +20,23 @@ export default function Booking() {
 
 function BookingFlow() {
   const { state } = useBooking();
-  const { data: config } = useConfig();
+  const { data: config, isLoading: configLoading } = useConfig();
   const branches    = config?.branches ?? [];
   const multiBranch = branches.length > 1;
   const isBranchStep = multiBranch && !state.branch;
 
   const indicatorStep = isBranchStep ? 0 : state.step;
+
+  // Block the entire booking flow when the business has no monthly quota left.
+  // Only activates once we have a definitive server response (not during loading),
+  // so a stale localStorage cache showing true won't lock users out prematurely.
+  if (!configLoading && config?.booking_available === false) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-10">
+        <BookingUnavailable />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">

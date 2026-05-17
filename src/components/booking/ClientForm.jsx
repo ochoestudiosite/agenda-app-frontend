@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useBooking } from '../../context/BookingContext';
 import { useCreateAppointment } from '../../hooks/useAppointment';
 import { useConfig } from '../../hooks/useConfig';
@@ -8,19 +9,22 @@ import PhoneInput from '../ui/PhoneInput';
 import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { BackButton } from './SpecialistSelector';
+import BookingUnavailable from './BookingUnavailable';
 
 export default function ClientForm() {
   const { state, dispatch } = useBooking();
   const { data: config }   = useConfig();
+  const qc             = useQueryClient();
   const timeFmt        = config?.time_format ?? '12h';
   const configBranches = config?.branches ?? [];
   const toast          = useToast();
   const createMutation = useCreateAppointment();
 
-  const [name,   setName]   = useState(state.clientName);
-  const [phone,  setPhone]  = useState(state.clientPhone);
-  const [email,  setEmail]  = useState('');
-  const [errors, setErrors] = useState({});
+  const [name,          setName]          = useState(state.clientName);
+  const [phone,         setPhone]         = useState(state.clientPhone);
+  const [email,         setEmail]         = useState('');
+  const [errors,        setErrors]        = useState({});
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
 
   function validate() {
     const errs = {};
@@ -65,10 +69,20 @@ export default function ClientForm() {
       if (err.status === 409) {
         toast('El horario ya no está disponible. Por favor elige otro.', 'error');
         dispatch({ type: 'GO_BACK' });
+      } else if (err.code === 'BOOKING_QUOTA_EXCEEDED' || err.status === 503) {
+        // Quota filled up between page load and submission (race condition).
+        // Invalidate config so the gate in Booking.jsx picks up the new state
+        // and the BookingUnavailable component reflects current contact info.
+        qc.invalidateQueries({ queryKey: ['config'] });
+        setQuotaExceeded(true);
       } else {
         toast(err.message || 'Error al crear la cita.', 'error');
       }
     }
+  }
+
+  if (quotaExceeded) {
+    return <BookingUnavailable />;
   }
 
   return (
