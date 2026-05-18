@@ -50,8 +50,7 @@ export default function DateTimePicker() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
 
-  const timeFmt  = config?.time_format   ?? '12h';
-  const timezone = liveConfig.timezone  || config?.business_timezone || null;
+  const timeFmt  = config?.time_format ?? '12h';
 
   // config.hours is now { [branchId]: [...7 rows] } — extract for the selected branch
   const branchId = state.branch?.id;
@@ -68,6 +67,7 @@ export default function DateTimePicker() {
   const blockedDates = blockedData?.blockedDates || [];
 
   const liveConfig          = availData?.config || {};
+  const timezone            = liveConfig.timezone || config?.business_timezone || null;
   const appointmentIntervals = availData?.appointmentIntervals || [];
   const staffBlocked         = availData?.staffBlocked;
 
