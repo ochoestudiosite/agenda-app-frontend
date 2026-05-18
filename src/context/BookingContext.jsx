@@ -1,6 +1,7 @@
-import { createContext, useContext, useReducer } from 'react';
+import { createContext, useContext, useReducer, useEffect } from 'react';
 
 const BookingContext = createContext(null);
+const SESSION_KEY = 'cita24_booking';
 
 const initialState = {
   step: 1,
@@ -13,6 +14,19 @@ const initialState = {
   clientPhone: '',
   confirmation: null,
 };
+
+function loadFromSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return initialState;
+    const saved = JSON.parse(raw);
+    // Never restore a completed booking — always start fresh after confirmation.
+    if (saved.step === 5 || saved.confirmation) return initialState;
+    return { ...initialState, ...saved };
+  } catch {
+    return initialState;
+  }
+}
 
 function reducer(state, action) {
   switch (action.type) {
@@ -27,6 +41,8 @@ function reducer(state, action) {
     case 'SET_CLIENT':
       return { ...state, clientName: action.payload.name, clientPhone: action.payload.phone };
     case 'SET_CONFIRMATION':
+      // Guard: only transition to confirmation if all prior steps are complete.
+      if (!state.service || !state.specialist || !state.date || !state.time) return state;
       return { ...state, confirmation: action.payload, step: 5 };
     case 'GO_BACK':
       if (state.step === 1 && state.branch) return { ...state, branch: null };
@@ -39,7 +55,18 @@ function reducer(state, action) {
 }
 
 export function BookingProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, undefined, loadFromSession);
+
+  useEffect(() => {
+    if (state.step === 5 || state.confirmation) {
+      sessionStorage.removeItem(SESSION_KEY);
+    } else {
+      try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+      } catch { /* quota exceeded or SSR — ignore */ }
+    }
+  }, [state]);
+
   return (
     <BookingContext.Provider value={{ state, dispatch }}>
       {children}

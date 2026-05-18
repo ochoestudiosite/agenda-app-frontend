@@ -96,7 +96,7 @@ export default function LandingServices({ services = [], customServices, useCust
         {/* Desktop grid */}
         <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 mt-14 lg:mt-16">
           {displayServices.map((service, i) => (
-            <ServiceCard key={(service.name || '') + i + page} service={service} i={i} buttonText={buttonText} />
+            <ServiceCard key={page * VISIBLE_DESKTOP + i} service={service} i={i} buttonText={buttonText} />
           ))}
         </div>
 

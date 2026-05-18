@@ -22,6 +22,8 @@ function getTenantSlug() {
 
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
+const TIMEOUT_MS = 15_000;
+
 async function request(method, path, body, retryCount = 0) {
   const slug = getTenantSlug();
   const headers = {};
@@ -30,12 +32,17 @@ async function request(method, path, body, retryCount = 0) {
   if (body) headers['Content-Type'] = 'application/json';
   if (slug) headers['X-Tenant-Slug'] = slug;
 
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
   try {
     const res = await fetch(`${BASE}${path}`, {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body:   body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await res.json().catch(() => ({}));
 
@@ -48,10 +55,16 @@ async function request(method, path, body, retryCount = 0) {
 
     return data;
   } catch (error) {
+    clearTimeout(timeoutId);
     // Never retry HTTP error responses — the server already processed the request
     // deterministically. Retrying would just repeat the same result.
     // Only retry genuine network failures (no .status property).
     if (error.status) throw error;
+    if (error.name === 'AbortError') {
+      const timeoutErr = new Error('La solicitud tardó demasiado. Verifica tu conexión.');
+      timeoutErr.code = 'TIMEOUT';
+      throw timeoutErr;
+    }
     if (retryCount < MAX_RETRIES) {
       await sleep(1000 * (retryCount + 1));
       return request(method, path, body, retryCount + 1);

@@ -50,7 +50,8 @@ export default function DateTimePicker() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
 
-  const timeFmt  = config?.time_format ?? '12h';
+  const timeFmt  = config?.time_format   ?? '12h';
+  const timezone = liveConfig.timezone  || config?.business_timezone || null;
 
   // config.hours is now { [branchId]: [...7 rows] } — extract for the selected branch
   const branchId = state.branch?.id;
@@ -60,7 +61,7 @@ export default function DateTimePicker() {
     : (Array.isArray(hoursMap) ? hoursMap : Object.values(hoursMap)[0] ?? []);
 
   const dateStr = selectedDate ? toDateStr(selectedDate) : null;
-  const { data: availData, isFetching } = useAvailability(dateStr, state.specialist?.id, branchId);
+  const { data: availData, isFetching, isError: availError } = useAvailability(dateStr, state.specialist?.id, branchId);
 
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
   const { data: blockedData } = useBlockedDates(monthStr, state.specialist?.id);
@@ -137,9 +138,19 @@ export default function DateTimePicker() {
       <BackButton onClick={() => dispatch({ type: 'GO_BACK' })} />
       <div className="mb-7">
         <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige fecha y hora</h2>
-        <p className="text-ink-3 text-sm mt-1">
-          Con <span className="text-ink font-medium">{toTitleCase(state.specialist?.name)}</span>
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+          <p className="text-ink-3 text-sm">
+            Con <span className="text-ink font-medium">{toTitleCase(state.specialist?.name)}</span>
+          </p>
+          {timezone && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              {timezone.replace('America/', '').replace('_', ' ')}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
@@ -219,7 +230,21 @@ export default function DateTimePicker() {
             <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
           )}
 
-          {selectedDate && !isFetching && staffBlocked && (
+          {selectedDate && !isFetching && availError && (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
+              <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-ink">Error al cargar horarios</p>
+                <p className="text-xs text-ink-3 mt-1">Verifica tu conexión y elige otro día para reintentar.</p>
+              </div>
+            </div>
+          )}
+
+          {selectedDate && !isFetching && !availError && staffBlocked && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                 <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -235,7 +260,7 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && !isFetching && !staffBlocked && (
+          {selectedDate && !isFetching && !availError && !staffBlocked && (
             <div className="space-y-4 flex-1">
               {isSelectedToday && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold/8 border border-gold/20">
@@ -256,6 +281,18 @@ export default function DateTimePicker() {
                     </svg>
                   </div>
                   <p className="text-sm text-ink-3">Sin horarios disponibles para este día</p>
+                </div>
+              ) : allSlotsExhausted ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
+                  <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
+                    <p className="text-xs text-ink-3 mt-1">Todos los horarios de este día están ocupados. Elige otra fecha.</p>
+                  </div>
                 </div>
               ) : (
                 Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {

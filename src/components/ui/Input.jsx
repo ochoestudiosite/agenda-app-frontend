@@ -1,13 +1,14 @@
-export default function Input({ label, error, helper, className = '', ...props }) {
+export default function Input({ label, error, helper, className = '', id, ...props }) {
   return (
     <div className="flex flex-col gap-2">
       {label && (
-        <label className="text-sm font-medium text-ink leading-none">
+        <label htmlFor={id} className="text-sm font-medium text-ink leading-none">
           {label}
           {props.required && <span className="text-gold/70 ml-1 text-xs" aria-hidden="true">*</span>}
         </label>
       )}
       <input
+        id={id}
         className={[
           'w-full bg-card border rounded-xl px-4 text-[0.9375rem] text-ink',
           'placeholder:text-ink-3 min-h-[52px]',

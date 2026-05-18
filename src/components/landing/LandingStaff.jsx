@@ -90,7 +90,7 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
         {/* Desktop grid */}
         <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mt-14 lg:mt-16">
           {displayStaff.map((member, i) => (
-            <StaffCard key={(member.name || '') + i + page} member={member} i={i} />
+            <StaffCard key={page * VISIBLE_DESKTOP + i} member={member} i={i} />
           ))}
         </div>
 

@@ -112,7 +112,7 @@ export default function LandingTestimonials({ items = [], title, subtitle, subti
           onMouseEnter={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
           onMouseLeave={e => { e.currentTarget.style.animationPlayState = 'running'; }}
         >
-          {track.map((t, i) => <Card key={i} t={t} />)}
+          {track.map((t, i) => <Card key={`${t.author}-${i}`} t={t} />)}
         </div>
       </div>
     </section>
