@@ -8,7 +8,7 @@ export default function BookingUnavailable() {
   const name  = config?.business_name  || 'Este negocio';
   const phone = config?.business_phone || null;
   const email = config?.business_email || null;
-  const whatsapp = config?.whatsapp_enabled && phone ? phone : null;
+  const whatsapp = phone ?? null;
 
   async function handleRetry() {
     await qc.invalidateQueries({ queryKey: ['config'] });
