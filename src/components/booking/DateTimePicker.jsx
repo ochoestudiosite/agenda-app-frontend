@@ -50,11 +50,17 @@ export default function DateTimePicker() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
 
-  const bizHours      = config?.hours              ?? [];
-  const timeFmt       = config?.time_format        ?? '12h';
+  const timeFmt  = config?.time_format ?? '12h';
+
+  // config.hours is now { [branchId]: [...7 rows] } — extract for the selected branch
+  const branchId = state.branch?.id;
+  const hoursMap = config?.hours ?? {};
+  const bizHours = branchId && hoursMap[String(branchId)]
+    ? hoursMap[String(branchId)]
+    : (Array.isArray(hoursMap) ? hoursMap : Object.values(hoursMap)[0] ?? []);
 
   const dateStr = selectedDate ? toDateStr(selectedDate) : null;
-  const { data: availData, isFetching } = useAvailability(dateStr, state.specialist?.id);
+  const { data: availData, isFetching } = useAvailability(dateStr, state.specialist?.id, branchId);
 
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
   const { data: blockedData } = useBlockedDates(monthStr, state.specialist?.id);

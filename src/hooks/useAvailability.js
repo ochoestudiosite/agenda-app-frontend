@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 
-export function useAvailability(date, specialistId) {
+export function useAvailability(date, specialistId, branchId) {
   return useQuery({
-    queryKey: ['availability', date, specialistId],
-    queryFn: () => api.getAvailability(date, specialistId),
+    queryKey: ['availability', date, specialistId, branchId],
+    queryFn: () => api.getAvailability(date, specialistId, branchId),
     enabled: !!date,
     staleTime: 30_000, // 30 s — revalidate often since slots change
   });

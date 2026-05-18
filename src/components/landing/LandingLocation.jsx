@@ -13,7 +13,13 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
   const directionsTxt = locationConfig.directions_text || 'Cómo llegar';
   const directionsUrl = locationConfig.directions_url  || '';
 
-  const hours = config.hours || [];
+  // config.hours is now { [branchId]: [...7 rows] } — extract default branch hours for display
+  const hoursRaw = config.hours || {};
+  const defaultBranchId = config.branches?.[0]?.id;
+  const hours = defaultBranchId && hoursRaw[String(defaultBranchId)]
+    ? hoursRaw[String(defaultBranchId)]
+    : (Array.isArray(hoursRaw) ? hoursRaw : Object.values(hoursRaw)[0] || []);
+
   let hoursDisplay = hoursText;
   if (!hoursDisplay && hours.length > 0) {
     const openDays = hours.filter(h => h.is_open);
