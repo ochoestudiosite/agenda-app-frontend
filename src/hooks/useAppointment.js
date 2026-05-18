@@ -23,7 +23,7 @@ export function useCreateAppointment() {
 export function useRescheduleAppointment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ code, date, time }) => api.rescheduleAppointment(code, { date, time }),
+    mutationFn: ({ code, date, time, branchId, specialistId }) => api.rescheduleAppointment(code, { date, time, branchId, specialistId }),
     onSuccess: (data) => {
       queryClient.setQueryData(['appointment', data.code], data);
       queryClient.invalidateQueries({ queryKey: ['availability'] });

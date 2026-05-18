@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
+import { api } from '../../services/api';
 import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
@@ -17,8 +19,14 @@ function toDateStr(d) {
 export default function AppointmentCard({ appointment, onUpdated }) {
   const toast = useToast();
   const { data: config } = useConfig();
-  const timeFmt = config?.time_format ?? '12h';
+  const timeFmt    = config?.time_format ?? '12h';
+  const branches   = config?.branches   ?? [];
+  const isMulti    = branches.length > 1;
+
   const [mode,      setMode]      = useState('view');
+  const [reschedStep, setReschedStep] = useState('branch'); // 'branch' | 'specialist' | 'datetime'
+  const [reBranch,  setReBranch]  = useState(null);  // selected branch object
+  const [reSpecialist, setReSpecialist] = useState(null); // selected specialist object
   const [newDate,   setNewDate]   = useState(null);
   const [newTime,   setNewTime]   = useState(null);
   const [viewMonth, setViewMonth] = useState(() => {
@@ -26,26 +34,43 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
 
+  const effectiveSpecialistId = reSpecialist?.id  || appointment.specialistId;
+  const effectiveBranchId     = reBranch?.id      || appointment.branchId;
   const dateStr = newDate ? toDateStr(newDate) : null;
+
   const { data: availData, isFetching } = useAvailability(
-    mode === 'reschedule' ? dateStr : null,
-    appointment.specialistId,
+    mode === 'reschedule' && reschedStep === 'datetime' ? dateStr : null,
+    effectiveSpecialistId,
+    effectiveBranchId,
   );
   const appointmentIntervals = availData?.appointmentIntervals || [];
-  const bufferMins  = availData?.config?.bufferMins || 0;
+  const bufferMins   = availData?.config?.bufferMins || 0;
   const staffBlocked = availData?.staffBlocked ?? null;
 
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
   const isCancelled        = appointment.status === 'cancelled';
 
+  function openReschedule() {
+    const initBranch = branches.find(b => b.id === appointment.branchId) || null;
+    setReBranch(initBranch);
+    setReSpecialist(null);
+    setNewDate(null);
+    setNewTime(null);
+    setViewMonth(() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), 1); });
+    setReschedStep(isMulti ? 'branch' : 'specialist');
+    setMode('reschedule');
+  }
+
   async function handleReschedule() {
     if (!newDate || !newTime) return;
     try {
       const updated = await rescheduleMutation.mutateAsync({
-        code: appointment.code,
-        date: toDateStr(newDate),
-        time: newTime,
+        code:        appointment.code,
+        date:        toDateStr(newDate),
+        time:        newTime,
+        branchId:    reBranch?.id     ?? undefined,
+        specialistId: reSpecialist?.id ?? undefined,
       });
       toast('Cita reagendada correctamente.', 'success');
       setMode('view');
@@ -81,17 +106,18 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
       {/* Details */}
       <div className="space-y-2.5 mb-6">
-        <DetailRow label="Servicio" value={`${toTitleCase(appointment.serviceName)} (${appointment.serviceDuration} min)`} />
-        <DetailRow label="Precio"   value={formatPrice(appointment.servicePrice)} gold />
+        <DetailRow label="Servicio"     value={`${toTitleCase(appointment.serviceName)} (${appointment.serviceDuration} min)`} />
+        <DetailRow label="Precio"       value={formatPrice(appointment.servicePrice)} gold />
         <DetailRow label="Especialista" value={toTitleCase(appointment.specialistName)} />
-        <DetailRow label="Fecha"    value={formatDate(appointment.date)} />
-        <DetailRow label="Hora"     value={formatTime(appointment.time, timeFmt)} />
+        {appointment.branchName && <DetailRow label="Sucursal" value={appointment.branchName} />}
+        <DetailRow label="Fecha"        value={formatDate(appointment.date)} />
+        <DetailRow label="Hora"         value={formatTime(appointment.time, timeFmt)} />
       </div>
 
       {/* Actions */}
       {!isCancelled && mode === 'view' && (
         <div className="flex gap-3 flex-wrap">
-          <Button variant="outline" onClick={() => setMode('reschedule')}>Reagendar</Button>
+          <Button variant="outline" onClick={openReschedule}>Reagendar</Button>
           <Button variant="danger"  onClick={() => setMode('cancel-confirm')}>Cancelar cita</Button>
         </div>
       )}
@@ -110,12 +136,21 @@ export default function AppointmentCard({ appointment, onUpdated }) {
       {mode === 'reschedule' && (
         <ReschedulePanel
           appointment={appointment}
-          specialistId={appointment.specialistId}
+          config={config}
+          branches={branches}
+          isMulti={isMulti}
+          reschedStep={reschedStep}
+          setReschedStep={setReschedStep}
+          reBranch={reBranch}     setReBranch={setReBranch}
+          reSpecialist={reSpecialist} setReSpecialist={setReSpecialist}
+          effectiveSpecialistId={effectiveSpecialistId}
+          effectiveBranchId={effectiveBranchId}
           staffBlocked={staffBlocked}
-          viewMonth={viewMonth}      setViewMonth={setViewMonth}
-          newDate={newDate}          setNewDate={d => { setNewDate(d); setNewTime(null); }}
-          newTime={newTime}          setNewTime={setNewTime}
-          appointmentIntervals={appointmentIntervals} bufferMins={bufferMins} isFetching={isFetching}
+          viewMonth={viewMonth}   setViewMonth={setViewMonth}
+          newDate={newDate}       setNewDate={d => { setNewDate(d); setNewTime(null); }}
+          newTime={newTime}       setNewTime={setNewTime}
+          appointmentIntervals={appointmentIntervals}
+          bufferMins={bufferMins} isFetching={isFetching}
           onConfirm={handleReschedule}
           onCancel={() => setMode('view')}
           isLoading={rescheduleMutation.isPending}
@@ -125,28 +160,47 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   );
 }
 
-function ReschedulePanel({ appointment, specialistId, staffBlocked, viewMonth, setViewMonth, newDate, setNewDate, newTime, setNewTime, appointmentIntervals, bufferMins = 0, isFetching, onConfirm, onCancel, isLoading }) {
-  const { data: config } = useConfig();
-
+function ReschedulePanel({
+  appointment, config, branches, isMulti,
+  reschedStep, setReschedStep,
+  reBranch, setReBranch, reSpecialist, setReSpecialist,
+  effectiveSpecialistId, effectiveBranchId,
+  staffBlocked, viewMonth, setViewMonth,
+  newDate, setNewDate, newTime, setNewTime,
+  appointmentIntervals, bufferMins = 0, isFetching,
+  onConfirm, onCancel, isLoading,
+}) {
   const maxAdvance   = config?.max_advance_days   ?? 30;
   const intervalMins = config?.slot_interval_mins ?? 30;
   const timeFmt      = config?.time_format        ?? '12h';
-  const bizHours     = config?.hours ?? [];
-  const daysClosed   = bizHours.length > 0
-    ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
-    : [0];
+
+  const { data: specialistsData } = useQuery({
+    queryKey: ['specialists'],
+    queryFn:  () => api.getSpecialists(),
+    staleTime: 300_000,
+  });
+  const allSpecialists = specialistsData?.specialists ?? [];
+
+  // Filter specialists by selected branch (branchIds empty = available everywhere)
+  const filteredSpecialists = effectiveBranchId
+    ? allSpecialists.filter(s => !s.branchIds?.length || s.branchIds.includes(effectiveBranchId))
+    : allSpecialists;
+
+  // Hours for the effective branch
+  const hoursByBranch = config?.hours ?? {};
+  const bizHoursRaw   = effectiveBranchId
+    ? (hoursByBranch[String(effectiveBranchId)] ?? Object.values(hoursByBranch)[0] ?? [])
+    : (Array.isArray(hoursByBranch) ? hoursByBranch : Object.values(hoursByBranch)[0] ?? []);
+  const bizHours    = bizHoursRaw;
+  const daysClosed  = bizHours.filter(h => !h.is_open).map(h => h.day_of_week);
 
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
-  const { data: blockedData } = useBlockedDates(monthStr, specialistId);
+  const { data: blockedData } = useBlockedDates(monthStr, effectiveSpecialistId);
   const blockedDates = blockedData?.blockedDates ?? [];
-
-  function getDayEntry(date) {
-    if (!date || !bizHours.length) return null;
-    return bizHours.find(h => h.day_of_week === date.getDay()) ?? null;
-  }
 
   const today   = new Date(); today.setHours(0, 0, 0, 0);
   const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
+
   function isDisabled(d) {
     if (d < today || d > maxDate) return true;
     if (daysClosed.includes(d.getDay())) return true;
@@ -162,143 +216,288 @@ function ReschedulePanel({ appointment, specialistId, staffBlocked, viewMonth, s
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d));
 
-  const dayEntry  = getDayEntry(newDate);
+  const dayEntry  = newDate ? (bizHours.find(h => h.day_of_week === newDate.getDay()) ?? null) : null;
   const openTime  = dayEntry?.open_time  ?? '9:00';
   const closeTime = dayEntry?.close_time ?? '19:00';
   const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
   const grouped   = groupSlots(allSlots);
 
+  // Stepper labels
+  const steps = [
+    ...(isMulti ? [{ key: 'branch', label: 'Sucursal' }] : []),
+    { key: 'specialist', label: 'Especialista' },
+    { key: 'datetime', label: 'Fecha y hora' },
+  ];
+
   return (
-    <div className="mt-5 border-t border-edge pt-5 space-y-4 animate-fade-in">
-      <p className="text-sm font-medium text-ink">Selecciona nueva fecha y hora</p>
-
-      {/* Mini calendar */}
-      <div className="card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <button
-            onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1))}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
-            aria-label="Mes anterior"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <span className="text-xs font-semibold text-ink capitalize">
-            {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
-          </span>
-          <button
-            onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1))}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
-            aria-label="Mes siguiente"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 mb-1.5">
-          {DAYS_ES.map(d => (
-            <div key={d} className="text-center text-[0.625rem] font-medium text-ink-3 py-0.5">{d}</div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-y-0.5">
-          {cells.map((date, i) => {
-            if (!date) return <div key={`e-${i}`} />;
-            const disabled = isDisabled(date);
-            const isToday  = toDateStr(date) === toDateStr(today);
-            const isSel    = newDate && toDateStr(date) === toDateStr(newDate);
-            return (
+    <div className="mt-5 border-t border-edge pt-5 animate-fade-in">
+      {/* Step indicator */}
+      <div className="flex items-center gap-2 mb-5">
+        {steps.map((s, i) => {
+          const idx     = steps.findIndex(x => x.key === reschedStep);
+          const stepIdx = i;
+          const done    = stepIdx < idx;
+          const active  = s.key === reschedStep;
+          return (
+            <div key={s.key} className="flex items-center gap-2">
+              {i > 0 && <div className="w-5 h-px bg-edge" />}
               <button
-                key={toDateStr(date)}
-                disabled={disabled}
-                onClick={() => setNewDate(date)}
+                onClick={() => done && setReschedStep(s.key)}
                 className={[
-                  'relative h-8 text-xs rounded-lg font-medium transition-all duration-160',
-                  disabled  ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
-                  isSel     ? 'bg-gold text-on-gold shadow-xs' : '',
-                  !isSel && isToday && !disabled ? 'text-gold font-semibold' : '',
-                  !isSel && !disabled ? 'hover:bg-raised text-ink' : '',
+                  'flex items-center gap-1.5 text-[11px] font-semibold transition-colors',
+                  active ? 'text-ink' : done ? 'text-gold cursor-pointer' : 'text-ink-3 cursor-default',
                 ].join(' ')}
               >
-                {date.getDate()}
-                {isToday && !isSel && (
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold" />
-                )}
+                <span className={[
+                  'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
+                  active ? 'bg-ink text-card' : done ? 'bg-gold text-on-gold' : 'bg-raised text-ink-3 border border-edge',
+                ].join(' ')}>
+                  {done ? '✓' : i + 1}
+                </span>
+                {s.label}
               </button>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Time slots */}
-      {newDate && (
-        isFetching ? (
-          <div className="flex justify-center py-6"><Spinner size="sm" /></div>
-        ) : staffBlocked ? (
-          <div className="flex flex-col items-center gap-2 py-5 text-center rounded-xl bg-raised border border-edge">
-            <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-            </svg>
-            <div>
-              <p className="text-sm font-medium text-ink">Día no disponible</p>
-              <p className="text-xs text-ink-3 mt-0.5">
-                {staffBlocked.reason || 'El especialista no estará disponible este día.'}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
-              const slots = grouped[key];
-              if (!slots?.length) return null;
-              const [cH, cM] = closeTime.split(':').map(Number);
-              const closeMins = cH * 60 + cM;
-              return (
-                <div key={key}>
-                  <p className="label-section mb-2">{label}</p>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {slots.map(slot => {
-                      const [sh, sm] = slot.split(':').map(Number);
-                      const slotStart = sh * 60 + sm;
-                      const slotEnd   = slotStart + appointment.serviceDuration;
-                      const busy = slotEnd > closeMins
-                        || appointmentIntervals.some(
-                          ({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin
-                        );
-                      const sel = newTime === slot;
-                      return (
-                        <button
-                          key={slot}
-                          disabled={busy}
-                          onClick={() => setNewTime(slot)}
-                          className={[
-                            'py-2 rounded-xl text-xs font-medium transition-all duration-160',
-                            busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : 'cursor-pointer',
-                            sel  ? 'bg-gold text-on-gold shadow-xs'
-                                 : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]' : '',
-                          ].join(' ')}
-                        >
-                          {formatTime(slot, timeFmt)}
-                        </button>
-                      );
-                    })}
-                  </div>
+      {/* Step: Branch */}
+      {reschedStep === 'branch' && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-ink">¿En qué sucursal deseas tu cita?</p>
+          <div className="grid grid-cols-1 gap-2">
+            {branches.map(b => (
+              <button
+                key={b.id}
+                onClick={() => {
+                  setReBranch(b);
+                  setReSpecialist(null);
+                  setNewDate(null); setNewTime(null);
+                  setReschedStep('specialist');
+                }}
+                className={[
+                  'flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
+                  reBranch?.id === b.id
+                    ? 'border-gold bg-gold/6 shadow-xs'
+                    : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
+                ].join(' ')}
+              >
+                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
+                  <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
                 </div>
-              );
-            })}
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink truncate">{b.name}</p>
+                  {b.address && <p className="text-xs text-ink-3 truncate">{b.address}</p>}
+                </div>
+              </button>
+            ))}
           </div>
-        )
+          <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
+        </div>
       )}
 
-      <div className="flex gap-3 pt-1">
-        <Button onClick={onConfirm} disabled={!newDate || !newTime} loading={isLoading}>
-          Confirmar reagendo
-        </Button>
-        <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
-      </div>
+      {/* Step: Specialist */}
+      {reschedStep === 'specialist' && (
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-ink">¿Con quién deseas tu cita?</p>
+          <div className="grid grid-cols-1 gap-2">
+            {filteredSpecialists.map(s => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setReSpecialist(s);
+                  setNewDate(null); setNewTime(null);
+                  setReschedStep('datetime');
+                }}
+                className={[
+                  'flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
+                  reSpecialist?.id === s.id
+                    ? 'border-gold bg-gold/6 shadow-xs'
+                    : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
+                ].join(' ')}
+              >
+                <div className="w-9 h-9 rounded-full bg-raised border border-edge flex items-center justify-center shrink-0">
+                  {s.avatarUrl
+                    ? <img src={s.avatarUrl} alt={s.name} className="w-9 h-9 rounded-full object-cover" />
+                    : <span className="text-xs font-bold text-ink-3">{s.initials}</span>
+                  }
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-ink truncate">{toTitleCase(s.name)}</p>
+                  {s.specialty && <p className="text-xs text-ink-3 truncate">{s.specialty}</p>}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {isMulti && (
+              <Button variant="ghost" onClick={() => setReschedStep('branch')}>Atrás</Button>
+            )}
+            <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step: Date + Time */}
+      {reschedStep === 'datetime' && (
+        <div className="space-y-4">
+          <p className="text-sm font-medium text-ink">Selecciona nueva fecha y hora</p>
+
+          {/* Summary pills */}
+          {(reBranch || reSpecialist) && (
+            <div className="flex flex-wrap gap-2">
+              {reBranch && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2.5 py-1 rounded-full">
+                  <svg className="w-3 h-3 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  {reBranch.name}
+                </span>
+              )}
+              {reSpecialist && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2.5 py-1 rounded-full">
+                  <svg className="w-3 h-3 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  {toTitleCase(reSpecialist.name)}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Mini calendar */}
+          <div className="card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <button
+                onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1))}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
+                aria-label="Mes anterior"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <span className="text-xs font-semibold text-ink capitalize">
+                {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
+              </span>
+              <button
+                onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1))}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
+                aria-label="Mes siguiente"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 mb-1.5">
+              {DAYS_ES.map(d => (
+                <div key={d} className="text-center text-[0.625rem] font-medium text-ink-3 py-0.5">{d}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-y-0.5">
+              {cells.map((date, i) => {
+                if (!date) return <div key={`e-${i}`} />;
+                const disabled = isDisabled(date);
+                const isToday  = toDateStr(date) === toDateStr(today);
+                const isSel    = newDate && toDateStr(date) === toDateStr(newDate);
+                return (
+                  <button
+                    key={toDateStr(date)}
+                    disabled={disabled}
+                    onClick={() => setNewDate(date)}
+                    className={[
+                      'relative h-8 text-xs rounded-lg font-medium transition-all duration-160',
+                      disabled  ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
+                      isSel     ? 'bg-gold text-on-gold shadow-xs' : '',
+                      !isSel && isToday && !disabled ? 'text-gold font-semibold' : '',
+                      !isSel && !disabled ? 'hover:bg-raised text-ink' : '',
+                    ].join(' ')}
+                  >
+                    {date.getDate()}
+                    {isToday && !isSel && (
+                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Time slots */}
+          {newDate && (
+            isFetching ? (
+              <div className="flex justify-center py-6"><Spinner size="sm" /></div>
+            ) : staffBlocked ? (
+              <div className="flex flex-col items-center gap-2 py-5 text-center rounded-xl bg-raised border border-edge">
+                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-ink">Día no disponible</p>
+                  <p className="text-xs text-ink-3 mt-0.5">
+                    {staffBlocked.reason || 'El especialista no estará disponible este día.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
+                  const slots = grouped[key];
+                  if (!slots?.length) return null;
+                  const [cH, cM] = closeTime.split(':').map(Number);
+                  const closeMins = cH * 60 + cM;
+                  return (
+                    <div key={key}>
+                      <p className="label-section mb-2">{label}</p>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {slots.map(slot => {
+                          const [sh, sm] = slot.split(':').map(Number);
+                          const slotStart = sh * 60 + sm;
+                          const slotEnd   = slotStart + appointment.serviceDuration;
+                          const busy = slotEnd > closeMins
+                            || appointmentIntervals.some(
+                              ({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin
+                            );
+                          const sel = newTime === slot;
+                          return (
+                            <button
+                              key={slot}
+                              disabled={busy}
+                              onClick={() => setNewTime(slot)}
+                              className={[
+                                'py-2 rounded-xl text-xs font-medium transition-all duration-160',
+                                busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : 'cursor-pointer',
+                                sel  ? 'bg-gold text-on-gold shadow-xs'
+                                     : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]' : '',
+                              ].join(' ')}
+                            >
+                              {formatTime(slot, timeFmt)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <Button onClick={onConfirm} disabled={!newDate || !newTime} loading={isLoading}>
+              Confirmar reagendo
+            </Button>
+            <Button variant="ghost" onClick={() => setReschedStep('specialist')}>Atrás</Button>
+            <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
