@@ -2,8 +2,8 @@ import { useState } from 'react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 
-export default function AppointmentLookup({ onSearch, loading }) {
-  const [code, setCode]   = useState('');
+export default function AppointmentLookup({ onSearch, loading, initialCode = '' }) {
+  const [code, setCode]   = useState(initialCode);
   const [error, setError] = useState('');
 
   function handleSubmit(e) {
@@ -27,7 +27,7 @@ export default function AppointmentLookup({ onSearch, loading }) {
           className="tracking-[0.35em] text-center text-xl font-display font-bold text-gold"
           autoCapitalize="characters"
           maxLength={6}
-          autoFocus
+          autoFocus={!initialCode}
         />
         <p className="text-ink-3 text-xs text-center mt-2">6 caracteres — letras y números</p>
       </div>

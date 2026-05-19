@@ -1,27 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppointmentLookup from '../components/manage/AppointmentLookup';
 import AppointmentCard from '../components/manage/AppointmentCard';
 import { useAppointmentLookup } from '../hooks/useAppointment';
 
 export default function Manage() {
-  const [searchParams]          = useSearchParams();
-  const [activeCode, setActiveCode] = useState('');
-  const [localAppt,  setLocalAppt]  = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [localAppt, setLocalAppt]       = useState(null);
+
+  // URL is the source of truth for the active code.
+  // Sanitise here so the query key and the input always receive clean data.
+  const codeParam  = (searchParams.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  const activeCode = codeParam.length === 6 ? codeParam : '';
 
   const { data, isLoading, isError, error } = useAppointmentLookup(activeCode);
-
   const appointment = localAppt || data;
-
-  // Auto-search when opened via WhatsApp button link (?code=ABC123)
-  useEffect(() => {
-    const code = (searchParams.get('code') || '').toUpperCase().trim();
-    if (code.length === 6) setActiveCode(code);
-  }, []);
 
   function handleSearch(code) {
     setLocalAppt(null);
-    setActiveCode(code);
+    setSearchParams(code ? { code } : {}, { replace: true });
   }
 
   return (
@@ -37,7 +34,13 @@ export default function Manage() {
       </div>
 
       <div className="animate-fade-up" style={{ animationDelay: '60ms', animationFillMode: 'both' }}>
-        <AppointmentLookup onSearch={handleSearch} loading={isLoading} />
+        {/* key forces remount when code changes so input state is always in sync */}
+        <AppointmentLookup
+          key={activeCode}
+          initialCode={activeCode}
+          onSearch={handleSearch}
+          loading={isLoading}
+        />
       </div>
 
       <div className="mt-8">
