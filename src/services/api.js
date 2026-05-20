@@ -77,7 +77,7 @@ export const api = {
   getConfig:   () => request('GET', '/config'),
   getServices: () => request('GET', '/services'),
   getSpecialists: () => request('GET', '/services/specialists'),
-  getAvailability: (date, specialistId, branchId, serviceId) => request('GET', `/availability?date=${date}${specialistId ? `&specialistId=${specialistId}` : ''}${branchId ? `&branchId=${branchId}` : ''}${serviceId ? `&serviceId=${serviceId}` : ''}`),
+  getAvailability: (date, specialistId, branchId, serviceId, excludeCode) => request('GET', `/availability?date=${date}${specialistId ? `&specialistId=${specialistId}` : ''}${branchId ? `&branchId=${branchId}` : ''}${serviceId ? `&serviceId=${serviceId}` : ''}${excludeCode ? `&excludeCode=${excludeCode}` : ''}`),
   getBlockedDates: (month, specialistId) => request('GET', `/availability/blocked-dates?month=${month}${specialistId ? `&specialistId=${specialistId}` : ''}`),
   createAppointment: (body) => request('POST', '/appointments', body),
   getAppointment: (code) => request('GET', `/appointments/${code}`),

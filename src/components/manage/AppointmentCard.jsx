@@ -42,7 +42,8 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     mode === 'reschedule' && reschedStep === 'datetime' ? dateStr : null,
     effectiveSpecialistId,
     effectiveBranchId,
-    appointment.serviceId,  // pass actual serviceId so backend uses real duration
+    appointment.serviceId,
+    mode === 'reschedule' ? appointment.code : null,
   );
   const appointmentIntervals = availData?.appointmentIntervals || [];
   const bufferMins    = availData?.config?.bufferMins    || 0;
