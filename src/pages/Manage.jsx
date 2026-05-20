@@ -1,23 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppointmentLookup from '../components/manage/AppointmentLookup';
 import AppointmentCard from '../components/manage/AppointmentCard';
 import { useAppointmentLookup } from '../hooks/useAppointment';
+import { useToast } from '../components/ui/Toast';
 
 export default function Manage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [localAppt, setLocalAppt]       = useState(null);
+  const toast                            = useToast();
+  const prevData                         = useRef(null);
 
-  // URL is the source of truth for the active code.
-  // Sanitise here so the query key and the input always receive clean data.
   const codeParam  = (searchParams.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
   const activeCode = codeParam.length === 6 ? codeParam : '';
 
   const { data, isLoading, isError, error } = useAppointmentLookup(activeCode);
   const appointment = localAppt || data;
 
+  // Show toast when appointment is found (query goes from undefined → data)
+  useEffect(() => {
+    if (data && !prevData.current) toast('Cita encontrada', 'success');
+    prevData.current = data;
+  }, [data]);
+
   function handleSearch(code) {
     setLocalAppt(null);
+    prevData.current = null;
     setSearchParams(code ? { code } : {}, { replace: true });
   }
 
