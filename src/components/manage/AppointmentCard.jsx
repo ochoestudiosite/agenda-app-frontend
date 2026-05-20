@@ -161,6 +161,8 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           newTime={newTime}       setNewTime={setNewTime}
           appointmentIntervals={appointmentIntervals}
           bufferMins={bufferMins} isFetching={isFetching}
+          isToday={isToday}
+          cutoffMins={cutoffMins}
           onConfirm={handleReschedule}
           onCancel={() => setMode('view')}
           isLoading={rescheduleMutation.isPending}
@@ -178,6 +180,7 @@ function ReschedulePanel({
   staffBlocked, viewMonth, setViewMonth,
   newDate, setNewDate, newTime, setNewTime,
   appointmentIntervals, bufferMins = 0, isFetching,
+  isToday = false, cutoffMins = 0,
   onConfirm, onCancel, isLoading,
 }) {
   const maxAdvance   = config?.max_advance_days   ?? 30;
