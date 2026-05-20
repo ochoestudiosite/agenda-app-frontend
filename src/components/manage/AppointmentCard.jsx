@@ -42,10 +42,19 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     mode === 'reschedule' && reschedStep === 'datetime' ? dateStr : null,
     effectiveSpecialistId,
     effectiveBranchId,
+    appointment.serviceId,  // pass actual serviceId so backend uses real duration
   );
   const appointmentIntervals = availData?.appointmentIntervals || [];
-  const bufferMins   = availData?.config?.bufferMins || 0;
-  const staffBlocked = availData?.staffBlocked ?? null;
+  const bufferMins    = availData?.config?.bufferMins    || 0;
+  const leadMins      = availData?.config?.leadMins      || 0;
+  const closeTime     = availData?.config?.closeTime     || '19:00';
+  const staffBlocked  = availData?.staffBlocked ?? null;
+
+  // Lead-time cutoff for today's reschedule slots
+  const todayStr  = toDateStr(new Date());
+  const isToday   = dateStr === todayStr;
+  const nowMins   = new Date().getHours() * 60 + new Date().getMinutes();
+  const cutoffMins = isToday ? nowMins + leadMins : 0;
 
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
@@ -460,7 +469,10 @@ function ReschedulePanel({
                           const [sh, sm] = slot.split(':').map(Number);
                           const slotStart = sh * 60 + sm;
                           const slotEnd   = slotStart + appointment.serviceDuration;
-                          const busy = slotEnd > closeMins
+                          // Lead-time: disable slots too close to now when rescheduling today
+                          const isPast = isToday && slotStart <= cutoffMins;
+                          const busy = isPast
+                            || slotEnd > closeMins
                             || appointmentIntervals.some(
                               ({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin
                             );
