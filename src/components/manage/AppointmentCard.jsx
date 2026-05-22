@@ -60,6 +60,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
   const isCancelled        = appointment.status === 'cancelled';
+  const isPastAppt         = appointment.date < toDateStr(new Date());
 
   function openReschedule() {
     const initBranch = branches.find(b => b.id === appointment.branchId) || null;
@@ -140,10 +141,20 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
       {/* Actions */}
       {!isCancelled && mode === 'view' && (
-        <div className="flex gap-3 flex-wrap">
-          <Button variant="outline" onClick={openReschedule}>Reagendar</Button>
-          <Button variant="danger"  onClick={() => setMode('cancel-confirm')}>Cancelar cita</Button>
-        </div>
+        <>
+          {isPastAppt && (
+            <div className="flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-ink/4 border border-edge text-sm text-ink-3">
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Esta cita ya ocurrió. Solo puedes cancelarla.
+            </div>
+          )}
+          <div className="flex gap-3 flex-wrap">
+            <Button variant="outline" onClick={openReschedule} disabled={isPastAppt}>Reagendar</Button>
+            <Button variant="danger"  onClick={() => setMode('cancel-confirm')}>Cancelar cita</Button>
+          </div>
+        </>
       )}
 
       {mode === 'cancel-confirm' && (
