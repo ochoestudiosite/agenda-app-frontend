@@ -47,20 +47,23 @@ export default function LandingNavbar({ businessName, config = {} }) {
 
   const LogoEl = (
     <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-      <span
-        className={`w-[30px] h-[30px] rounded-lg shrink-0 flex items-center justify-center transition-transform duration-150 group-hover:scale-[1.04] active:scale-95 ${
-          useImage ? 'bg-raised border border-edge/50 overflow-hidden' : ''
-        }`}
-        style={!useImage ? {
-          background: 'linear-gradient(135deg, rgb(var(--gold-light)), rgb(var(--gold)))',
-          color: 'rgb(var(--on-gold))',
-        } : {}}
-      >
-        {useImage
-          ? <img src={logoUrl} alt={displayName} className="w-full h-full object-cover" />
-          : <LogoIcon size={15} strokeWidth={2.4} />
-        }
-      </span>
+      {useImage ? (
+        <img
+          src={logoUrl}
+          alt={displayName}
+          className="h-[30px] w-auto max-w-[110px] object-contain transition-transform duration-150 group-hover:scale-[1.04] active:scale-95"
+        />
+      ) : (
+        <span
+          className="w-[30px] h-[30px] rounded-lg shrink-0 flex items-center justify-center transition-transform duration-150 group-hover:scale-[1.04] active:scale-95"
+          style={{
+            background: 'linear-gradient(135deg, rgb(var(--gold-light)), rgb(var(--gold)))',
+            color: 'rgb(var(--on-gold))',
+          }}
+        >
+          <LogoIcon size={15} strokeWidth={2.4} />
+        </span>
+      )}
       <span className="font-display text-[1.0625rem] font-bold tracking-tight text-ink leading-none">
         {displayName}
       </span>
