@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
+import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
 import { api } from '../../services/api';
@@ -10,33 +11,38 @@ import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DAYS_ES   = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DAYS_ES     = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
 
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 export default function AppointmentCard({ appointment, onUpdated }) {
-  const toast = useToast();
-  const { data: config } = useConfig();
-  const timeFmt    = config?.time_format ?? '12h';
-  const branches   = config?.branches   ?? [];
-  const isMulti    = branches.length > 1;
+  const toast             = useToast();
+  const { data: config }  = useConfig();
+  const { data: svcData } = useServices();
+  const timeFmt   = config?.time_format ?? '12h';
+  const branches  = config?.branches   ?? [];
+  const isMulti   = branches.length > 1;
 
-  const [mode,      setMode]      = useState('view');
-  const [reschedStep, setReschedStep] = useState('branch'); // 'branch' | 'specialist' | 'datetime'
-  const [reBranch,  setReBranch]  = useState(null);  // selected branch object
-  const [reSpecialist, setReSpecialist] = useState(null); // selected specialist object
-  const [newDate,   setNewDate]   = useState(null);
-  const [newTime,   setNewTime]   = useState(null);
-  const [viewMonth, setViewMonth] = useState(() => {
+  // Look up service DB id for specialist filtering
+  const serviceDbId = svcData?.services?.find(s => s.id === appointment.serviceId)?.dbId ?? null;
+
+  const [mode,         setMode]         = useState('view');
+  const [reschedStep,  setReschedStep]  = useState('branch');
+  const [reBranch,     setReBranch]     = useState(null);
+  const [reSpecialist, setReSpecialist] = useState(null);
+  const [newDate,      setNewDate]      = useState(null);
+  const [newTime,      setNewTime]      = useState(null);
+  const [viewMonth,    setViewMonth]    = useState(() => {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
 
-  const effectiveSpecialistId = reSpecialist?.id  || appointment.specialistId;
-  const effectiveBranchId     = reBranch?.id      || appointment.branchId;
-  const dateStr = newDate ? toDateStr(newDate) : null;
+  const effectiveSpecialistId = reSpecialist?.id || appointment.specialistId;
+  const effectiveBranchId     = reBranch?.id     || appointment.branchId;
+  const dateStr               = newDate ? toDateStr(newDate) : null;
 
   const { data: availData, isFetching } = useAvailability(
     mode === 'reschedule' && reschedStep === 'datetime' ? dateStr : null,
@@ -46,15 +52,14 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     mode === 'reschedule' ? appointment.code : null,
   );
   const appointmentIntervals = availData?.appointmentIntervals || [];
-  const bufferMins    = availData?.config?.bufferMins    || 0;
-  const leadMins      = availData?.config?.leadMins      || 0;
-  const closeTime     = availData?.config?.closeTime     || '19:00';
-  const staffBlocked  = availData?.staffBlocked ?? null;
+  const bufferMins   = availData?.config?.bufferMins   || 0;
+  const leadMins     = availData?.config?.leadMins     || 0;
+  const closeTime    = availData?.config?.closeTime    || '19:00';
+  const staffBlocked = availData?.staffBlocked ?? null;
 
-  // Lead-time cutoff for today's reschedule slots
-  const todayStr  = toDateStr(new Date());
-  const isToday   = dateStr === todayStr;
-  const nowMins   = new Date().getHours() * 60 + new Date().getMinutes();
+  const todayStr   = toDateStr(new Date());
+  const isToday    = dateStr === todayStr;
+  const nowMins    = new Date().getHours() * 60 + new Date().getMinutes();
   const cutoffMins = isToday ? nowMins + leadMins : 0;
 
   const rescheduleMutation = useRescheduleAppointment();
@@ -62,12 +67,15 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const isCancelled        = appointment.status === 'cancelled';
   const isPastAppt         = appointment.date < toDateStr(new Date());
 
+  const apptDate   = new Date(appointment.date + 'T12:00:00');
+  const monthAbbr  = MONTH_SHORT[apptDate.getMonth()];
+  const dayNum     = appointment.date.split('-')[2];
+
   function openReschedule() {
     const initBranch = branches.find(b => b.id === appointment.branchId) || null;
     setReBranch(initBranch);
     setReSpecialist(null);
-    setNewDate(null);
-    setNewTime(null);
+    setNewDate(null); setNewTime(null);
     setViewMonth(() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), 1); });
     setReschedStep(isMulti ? 'branch' : 'specialist');
     setMode('reschedule');
@@ -77,10 +85,10 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     if (!newDate || !newTime) return;
     try {
       const updated = await rescheduleMutation.mutateAsync({
-        code:        appointment.code,
-        date:        toDateStr(newDate),
-        time:        newTime,
-        branchId:    reBranch?.id     ?? undefined,
+        code:         appointment.code,
+        date:         toDateStr(newDate),
+        time:         newTime,
+        branchId:     reBranch?.id     ?? undefined,
         specialistId: reSpecialist?.id ?? undefined,
       });
       toast('Cita reagendada correctamente.', 'success');
@@ -103,81 +111,165 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   }
 
   return (
-    <div className="card p-6 max-w-xl mx-auto animate-fade-up">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-5">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="font-display text-xl font-bold text-gold tracking-wider">{appointment.code}</span>
-            <StatusBadge status={appointment.status} />
+    <div className="max-w-xl mx-auto animate-fade-up space-y-3">
+
+      {/* ── Main card ───────────────────────────────────────────────────────── */}
+      <div className="card overflow-hidden">
+
+        {/* Status accent line */}
+        <div className={`h-[3px] ${
+          appointment.status === 'cancelled'   ? 'bg-red-500/80' :
+          appointment.status === 'rescheduled' ? 'bg-amber-500/80' :
+          'bg-gold'
+        }`} />
+
+        {/* Code + status + client */}
+        <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-3 border-b border-edge">
+          <div className="min-w-0">
+            <p className="font-mono text-[22px] font-bold text-gold tracking-[0.18em] leading-tight">
+              {appointment.code}
+            </p>
+            <p className="text-xs text-ink-3 mt-0.5 truncate">
+              {toTitleCase(appointment.clientName)} · {appointment.clientPhone}
+            </p>
           </div>
-          <p className="text-ink-3 text-sm">{toTitleCase(appointment.clientName)} · {appointment.clientPhone}</p>
+          <StatusBadge status={appointment.status} />
         </div>
-      </div>
 
-      {/* Details */}
-      <div className="space-y-2.5 mb-6">
-        <DetailRow label="Servicio"     value={`${toTitleCase(appointment.serviceName)} (${appointment.serviceDuration} min)`} />
-        <DetailRow label="Precio"       value={formatPrice(appointment.servicePrice)} gold />
-        <DetailRow label="Especialista" value={toTitleCase(appointment.specialistName)} />
-        {appointment.branchName && <DetailRow label="Sucursal" value={appointment.branchName} />}
-        <DetailRow label="Fecha"        value={formatDate(appointment.date)} />
-        <DetailRow label="Hora"         value={formatTime(appointment.time, timeFmt)} />
-      </div>
-
-      {/* Reschedule history banner */}
-      {appointment.status === 'rescheduled' && appointment.previousDate && appointment.previousTime && (
-        <div className="flex items-start gap-3 px-4 py-3 mb-5 rounded-xl bg-amber-500/6 border border-amber-500/20">
-          <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <div className="text-sm leading-relaxed">
-            <span className="font-semibold text-amber-700">Cita reagendada.</span>
-            <span className="text-amber-700/80"> Fecha original: </span>
-            <span className="font-semibold text-amber-700 line-through">{formatDate(appointment.previousDate)} {formatTime(appointment.previousTime, timeFmt)}</span>
+        {/* Date + Time */}
+        <div className="px-6 py-4 flex items-center gap-4 border-b border-edge">
+          <div className="w-12 h-12 rounded-2xl bg-gold/8 border border-gold/20 flex flex-col items-center justify-center shrink-0">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
+            <span className="text-[22px] font-bold text-gold leading-tight tabular-nums">{dayNum}</span>
+          </div>
+          <div>
+            <p className="text-[14px] font-semibold text-ink leading-snug">{formatDate(appointment.date)}</p>
+            <p className="text-[22px] font-bold text-gold tabular-nums leading-tight">
+              {formatTime(appointment.time, timeFmt)}
+            </p>
           </div>
         </div>
-      )}
 
-      {/* Actions */}
-      {!isCancelled && mode === 'view' && (
-        <>
-          {isPastAppt && (
-            <div className="flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-ink/4 border border-edge text-sm text-ink-3">
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Esta cita ya ocurrió. Solo puedes cancelarla.
+        {/* Service */}
+        <div className="px-6 py-4 border-b border-edge">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-2">Servicio</p>
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-[15px] font-semibold text-ink leading-snug">
+              {toTitleCase(appointment.serviceName)}
+            </p>
+            <div className="text-right shrink-0">
+              <p className="text-[19px] font-bold text-gold tabular-nums">{formatPrice(appointment.servicePrice)}</p>
+              <p className="text-[11px] text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Specialist + Branch */}
+        <div className="px-6 py-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-gold/8 border border-gold/20 flex items-center justify-center shrink-0">
+              <span className="text-[13px] font-bold text-gold">
+                {appointment.specialistName?.charAt(0)?.toUpperCase() || '?'}
+              </span>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Especialista</p>
+              <p className="text-[14px] font-semibold text-ink">{toTitleCase(appointment.specialistName)}</p>
+            </div>
+          </div>
+
+          {appointment.branchName && (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-raised border border-edge flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
+                <p className="text-[14px] font-semibold text-ink">{appointment.branchName}</p>
+              </div>
             </div>
           )}
-          <div className="flex gap-3 flex-wrap">
-            <Button variant="outline" onClick={openReschedule} disabled={isPastAppt}>Reagendar</Button>
-            <Button variant="danger"  onClick={() => setMode('cancel-confirm')}>Cancelar cita</Button>
-          </div>
-        </>
-      )}
-
-      {mode === 'cancel-confirm' && (
-        <div className="mt-4 p-4 bg-red-500/6 border border-red-500/25 rounded-xl animate-fade-in">
-          <p className="text-sm text-ink mb-1 font-medium">¿Cancelar esta cita?</p>
-          <p className="text-xs text-ink-3 mb-4">Esta acción no se puede deshacer.</p>
-          <div className="flex gap-3">
-            <Button variant="danger" loading={cancelMutation.isPending} onClick={handleCancel}>Sí, cancelar</Button>
-            <Button variant="ghost" onClick={() => setMode('view')}>Volver</Button>
-          </div>
         </div>
-      )}
 
+        {/* Reagendada banner */}
+        {appointment.status === 'rescheduled' && appointment.previousDate && appointment.previousTime && (
+          <div className="mx-4 mb-4 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/6 border border-amber-500/20">
+            <svg className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+              <span className="font-semibold">Reagendada.</span>{' '}
+              Antes:{' '}
+              <span className="line-through">
+                {formatDate(appointment.previousDate)} · {formatTime(appointment.previousTime, timeFmt)}
+              </span>
+            </p>
+          </div>
+        )}
+
+        {/* Cancelled notice */}
+        {isCancelled && (
+          <div className="mx-4 mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/6 border border-red-500/20 text-xs text-red-500">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Esta cita fue cancelada.
+          </div>
+        )}
+
+        {/* Actions — view mode */}
+        {!isCancelled && mode === 'view' && (
+          <div className="px-6 pb-6">
+            {isPastAppt && (
+              <div className="flex items-center gap-2 px-3.5 py-2.5 mb-3 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Esta cita ya ocurrió. Solo puedes cancelarla.
+              </div>
+            )}
+            <div className="flex gap-2.5">
+              <Button variant="outline" onClick={openReschedule} disabled={isPastAppt} className="flex-1">
+                Reagendar
+              </Button>
+              <Button variant="danger" onClick={() => setMode('cancel-confirm')} className="flex-1">
+                Cancelar cita
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel confirm */}
+        {mode === 'cancel-confirm' && (
+          <div className="px-6 pb-6">
+            <div className="p-4 bg-red-500/6 border border-red-500/20 rounded-2xl animate-fade-in">
+              <p className="text-[14px] font-semibold text-ink mb-0.5">¿Cancelar esta cita?</p>
+              <p className="text-xs text-ink-3 mb-4">Esta acción no se puede deshacer.</p>
+              <div className="flex gap-2.5">
+                <Button variant="danger" loading={cancelMutation.isPending} onClick={handleCancel}>
+                  Sí, cancelar
+                </Button>
+                <Button variant="ghost" onClick={() => setMode('view')}>Volver</Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Reschedule panel ──────────────────────────────────────────────────── */}
       {mode === 'reschedule' && (
         <ReschedulePanel
           appointment={appointment}
           config={config}
           branches={branches}
           isMulti={isMulti}
-          reschedStep={reschedStep}
-          setReschedStep={setReschedStep}
-          reBranch={reBranch}     setReBranch={setReBranch}
-          reSpecialist={reSpecialist} setReSpecialist={setReSpecialist}
+          serviceDbId={serviceDbId}
+          reschedStep={reschedStep}    setReschedStep={setReschedStep}
+          reBranch={reBranch}          setReBranch={setReBranch}
+          reSpecialist={reSpecialist}  setReSpecialist={setReSpecialist}
           effectiveSpecialistId={effectiveSpecialistId}
           effectiveBranchId={effectiveBranchId}
           staffBlocked={staffBlocked}
@@ -185,7 +277,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           newDate={newDate}       setNewDate={d => { setNewDate(d); setNewTime(null); }}
           newTime={newTime}       setNewTime={setNewTime}
           appointmentIntervals={appointmentIntervals}
-          bufferMins={bufferMins} isFetching={isFetching}
+          bufferMins={bufferMins}  isFetching={isFetching}
           isToday={isToday}
           cutoffMins={cutoffMins}
           onConfirm={handleReschedule}
@@ -197,8 +289,10 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   );
 }
 
+// ── ReschedulePanel ────────────────────────────────────────────────────────────
+
 function ReschedulePanel({
-  appointment, config, branches, isMulti,
+  appointment, config, branches, isMulti, serviceDbId,
   reschedStep, setReschedStep,
   reBranch, setReBranch, reSpecialist, setReSpecialist,
   effectiveSpecialistId, effectiveBranchId,
@@ -219,18 +313,20 @@ function ReschedulePanel({
   });
   const allSpecialists = specialistsData?.specialists ?? [];
 
-  // Filter specialists by selected branch (branchIds empty = available everywhere)
-  const filteredSpecialists = effectiveBranchId
-    ? allSpecialists.filter(s => !s.branchIds?.length || s.branchIds.includes(effectiveBranchId))
-    : allSpecialists;
+  // Filter by branch + by service capability when serviceDbId is known
+  const filteredSpecialists = allSpecialists.filter(s => {
+    if (effectiveBranchId && s.branchIds?.length && !s.branchIds.includes(effectiveBranchId)) return false;
+    if (serviceDbId && s.serviceIds?.length) {
+      return s.serviceIds.some(id => Number(id) === Number(serviceDbId));
+    }
+    return true;
+  });
 
-  // Hours for the effective branch
   const hoursByBranch = config?.hours ?? {};
   const bizHoursRaw   = effectiveBranchId
     ? (hoursByBranch[String(effectiveBranchId)] ?? Object.values(hoursByBranch)[0] ?? [])
     : (Array.isArray(hoursByBranch) ? hoursByBranch : Object.values(hoursByBranch)[0] ?? []);
-  const bizHours    = bizHoursRaw;
-  const daysClosed  = bizHours.filter(h => !h.is_open).map(h => h.day_of_week);
+  const daysClosed = bizHoursRaw.filter(h => !h.is_open).map(h => h.day_of_week);
 
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
   const { data: blockedData } = useBlockedDates(monthStr, effectiveSpecialistId);
@@ -238,6 +334,7 @@ function ReschedulePanel({
 
   const today   = new Date(); today.setHours(0, 0, 0, 0);
   const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
+  const todayStr = toDateStr(today);
 
   function isDisabled(d) {
     if (d < today || d > maxDate) return true;
@@ -254,143 +351,141 @@ function ReschedulePanel({
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d));
 
-  const dayEntry  = newDate ? (bizHours.find(h => h.day_of_week === newDate.getDay()) ?? null) : null;
+  const dayEntry  = newDate ? (bizHoursRaw.find(h => h.day_of_week === newDate.getDay()) ?? null) : null;
   const openTime  = dayEntry?.open_time  ?? '9:00';
   const closeTime = dayEntry?.close_time ?? '19:00';
   const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
   const grouped   = groupSlots(allSlots);
 
-  // Stepper labels
   const steps = [
     ...(isMulti ? [{ key: 'branch', label: 'Sucursal' }] : []),
     { key: 'specialist', label: 'Especialista' },
-    { key: 'datetime', label: 'Fecha y hora' },
+    { key: 'datetime',   label: 'Fecha y hora' },
   ];
 
   return (
-    <div className="mt-5 border-t border-edge pt-5 animate-fade-in">
+    <div className="card p-5 animate-fade-in">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[15px] font-semibold text-ink">Reagendar cita</h3>
+        <button
+          onClick={onCancel}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
+          aria-label="Cerrar"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
       {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-1.5 mb-6">
         {steps.map((s, i) => {
-          const idx     = steps.findIndex(x => x.key === reschedStep);
-          const stepIdx = i;
-          const done    = stepIdx < idx;
-          const active  = s.key === reschedStep;
+          const currentIdx = steps.findIndex(x => x.key === reschedStep);
+          const done       = i < currentIdx;
+          const active     = s.key === reschedStep;
           return (
-            <div key={s.key} className="flex items-center gap-2">
-              {i > 0 && <div className="w-5 h-px bg-edge" />}
+            <div key={s.key} className="flex items-center gap-1.5">
+              {i > 0 && <div className={`h-px w-4 transition-colors ${done ? 'bg-gold' : 'bg-edge'}`} />}
               <button
                 onClick={() => done && setReschedStep(s.key)}
+                disabled={!done}
                 className={[
                   'flex items-center gap-1.5 text-[11px] font-semibold transition-colors',
                   active ? 'text-ink' : done ? 'text-gold cursor-pointer' : 'text-ink-3 cursor-default',
                 ].join(' ')}
               >
                 <span className={[
-                  'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
+                  'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors',
                   active ? 'bg-ink text-card' : done ? 'bg-gold text-on-gold' : 'bg-raised text-ink-3 border border-edge',
                 ].join(' ')}>
                   {done ? '✓' : i + 1}
                 </span>
-                {s.label}
+                <span className="hidden sm:inline">{s.label}</span>
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* Step: Branch */}
+      {/* ── Step: Branch ── */}
       {reschedStep === 'branch' && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-ink">¿En qué sucursal deseas tu cita?</p>
-          <div className="grid grid-cols-1 gap-2">
-            {branches.map(b => (
-              <button
-                key={b.id}
-                onClick={() => {
-                  setReBranch(b);
-                  setReSpecialist(null);
-                  setNewDate(null); setNewTime(null);
-                  setReschedStep('specialist');
-                }}
-                className={[
-                  'flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
-                  reBranch?.id === b.id
-                    ? 'border-gold bg-gold/6 shadow-xs'
-                    : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
-                ].join(' ')}
-              >
-                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
-                  <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink truncate">{b.name}</p>
-                  {b.address && <p className="text-xs text-ink-3 truncate">{b.address}</p>}
-                </div>
-              </button>
-            ))}
-          </div>
-          <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
+        <div className="space-y-2.5">
+          <p className="text-[13px] font-medium text-ink mb-1">¿En qué sucursal?</p>
+          {branches.map(b => (
+            <button
+              key={b.id}
+              onClick={() => { setReBranch(b); setReSpecialist(null); setNewDate(null); setNewTime(null); setReschedStep('specialist'); }}
+              className={[
+                'w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
+                reBranch?.id === b.id
+                  ? 'border-gold bg-gold/6 shadow-xs'
+                  : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
+              ].join(' ')}
+            >
+              <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-ink truncate">{b.name}</p>
+                {b.address && <p className="text-xs text-ink-3 truncate">{b.address}</p>}
+              </div>
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Step: Specialist */}
+      {/* ── Step: Specialist ── */}
       {reschedStep === 'specialist' && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-ink">¿Con quién deseas tu cita?</p>
-          <div className="grid grid-cols-1 gap-2">
-            {filteredSpecialists.map(s => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  setReSpecialist(s);
-                  setNewDate(null); setNewTime(null);
-                  setReschedStep('datetime');
-                }}
-                className={[
-                  'flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
-                  reSpecialist?.id === s.id
-                    ? 'border-gold bg-gold/6 shadow-xs'
-                    : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
-                ].join(' ')}
-              >
-                <div className="w-9 h-9 rounded-full bg-raised border border-edge flex items-center justify-center shrink-0">
-                  {s.avatarUrl
-                    ? <img src={s.avatarUrl} alt={s.name} className="w-9 h-9 rounded-full object-cover" />
-                    : <span className="text-xs font-bold text-ink-3">{s.initials}</span>
-                  }
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink truncate">{toTitleCase(s.name)}</p>
-                  {s.specialty && <p className="text-xs text-ink-3 truncate">{s.specialty}</p>}
-                </div>
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            {isMulti && (
-              <Button variant="ghost" onClick={() => setReschedStep('branch')}>Atrás</Button>
-            )}
-            <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
-          </div>
+        <div className="space-y-2.5">
+          <p className="text-[13px] font-medium text-ink mb-1">¿Con quién?</p>
+          {filteredSpecialists.length === 0 ? (
+            <p className="text-xs text-ink-3 text-center py-4">Sin especialistas disponibles.</p>
+          ) : filteredSpecialists.map(s => (
+            <button
+              key={s.id}
+              onClick={() => { setReSpecialist(s); setNewDate(null); setNewTime(null); setReschedStep('datetime'); }}
+              className={[
+                'w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
+                reSpecialist?.id === s.id
+                  ? 'border-gold bg-gold/6 shadow-xs'
+                  : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
+              ].join(' ')}
+            >
+              <div className="w-9 h-9 rounded-full bg-raised border border-edge flex items-center justify-center shrink-0 overflow-hidden">
+                {s.avatarUrl
+                  ? <img src={s.avatarUrl} alt={s.name} className="w-full h-full object-cover" />
+                  : <span className="text-xs font-bold text-gold">{s.initials}</span>
+                }
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-ink truncate">{toTitleCase(s.name)}</p>
+                {s.specialty && <p className="text-xs text-ink-3 truncate">{s.specialty}</p>}
+              </div>
+            </button>
+          ))}
+          {isMulti && (
+            <button onClick={() => setReschedStep('branch')} className="text-xs text-ink-3 hover:text-ink mt-1 cursor-pointer">
+              ← Cambiar sucursal
+            </button>
+          )}
         </div>
       )}
 
-      {/* Step: Date + Time */}
+      {/* ── Step: Date + Time ── */}
       {reschedStep === 'datetime' && (
         <div className="space-y-4">
-          <p className="text-sm font-medium text-ink">Selecciona nueva fecha y hora</p>
-
-          {/* Summary pills */}
+          {/* Context pills */}
           {(reBranch || reSpecialist) && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {reBranch && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2.5 py-1 rounded-full">
                   <svg className="w-3 h-3 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
                   </svg>
                   {reBranch.name}
                 </span>
@@ -398,7 +493,8 @@ function ReschedulePanel({
               {reSpecialist && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2.5 py-1 rounded-full">
                   <svg className="w-3 h-3 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
                   </svg>
                   {toTitleCase(reSpecialist.name)}
                 </span>
@@ -412,10 +508,9 @@ function ReschedulePanel({
               <button
                 onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1))}
                 className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
-                aria-label="Mes anterior"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
                 </svg>
               </button>
               <span className="text-xs font-semibold text-ink capitalize">
@@ -424,25 +519,22 @@ function ReschedulePanel({
               <button
                 onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1))}
                 className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
-                aria-label="Mes siguiente"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>
               </button>
             </div>
-
             <div className="grid grid-cols-7 mb-1.5">
               {DAYS_ES.map(d => (
                 <div key={d} className="text-center text-[0.625rem] font-medium text-ink-3 py-0.5">{d}</div>
               ))}
             </div>
-
             <div className="grid grid-cols-7 gap-y-0.5">
               {cells.map((date, i) => {
                 if (!date) return <div key={`e-${i}`} />;
                 const disabled = isDisabled(date);
-                const isToday  = toDateStr(date) === toDateStr(today);
+                const isT      = toDateStr(date) === todayStr;
                 const isSel    = newDate && toDateStr(date) === toDateStr(newDate);
                 return (
                   <button
@@ -451,14 +543,14 @@ function ReschedulePanel({
                     onClick={() => setNewDate(date)}
                     className={[
                       'relative h-8 text-xs rounded-lg font-medium transition-all duration-160',
-                      disabled  ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
-                      isSel     ? 'bg-gold text-on-gold shadow-xs' : '',
-                      !isSel && isToday && !disabled ? 'text-gold font-semibold' : '',
+                      disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
+                      isSel    ? 'bg-gold text-on-gold shadow-xs' : '',
+                      !isSel && isT && !disabled ? 'text-gold font-semibold' : '',
                       !isSel && !disabled ? 'hover:bg-raised text-ink' : '',
                     ].join(' ')}
                   >
                     {date.getDate()}
-                    {isToday && !isSel && (
+                    {isT && !isSel && (
                       <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold" />
                     )}
                   </button>
@@ -474,7 +566,7 @@ function ReschedulePanel({
             ) : staffBlocked ? (
               <div className="flex flex-col items-center gap-2 py-5 text-center rounded-xl bg-raised border border-edge">
                 <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                 </svg>
                 <div>
                   <p className="text-sm font-medium text-ink">Día no disponible</p>
@@ -482,6 +574,10 @@ function ReschedulePanel({
                     {staffBlocked.reason || 'El especialista no estará disponible este día.'}
                   </p>
                 </div>
+              </div>
+            ) : allSlots.length === 0 ? (
+              <div className="flex items-center justify-center gap-2 py-5 rounded-xl bg-raised border border-edge">
+                <p className="text-xs text-ink-3">Sin horarios disponibles. Elige otro día.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -495,16 +591,13 @@ function ReschedulePanel({
                       <p className="label-section mb-2">{label}</p>
                       <div className="grid grid-cols-4 gap-1.5">
                         {slots.map(slot => {
-                          const [sh, sm] = slot.split(':').map(Number);
+                          const [sh, sm]  = slot.split(':').map(Number);
                           const slotStart = sh * 60 + sm;
                           const slotEnd   = slotStart + appointment.serviceDuration;
-                          // Lead-time: disable slots too close to now when rescheduling today
-                          const isPast = isToday && slotStart <= cutoffMins;
-                          const busy = isPast
+                          const isPast    = isToday && slotStart <= cutoffMins;
+                          const busy      = isPast
                             || slotEnd > closeMins
-                            || appointmentIntervals.some(
-                              ({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin
-                            );
+                            || appointmentIntervals.some(({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin);
                           const sel = newTime === slot;
                           return (
                             <button
@@ -530,12 +623,11 @@ function ReschedulePanel({
             )
           )}
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-2.5 pt-1">
             <Button onClick={onConfirm} disabled={!newDate || !newTime} loading={isLoading}>
-              Confirmar reagendo
+              Confirmar nuevo horario
             </Button>
             <Button variant="ghost" onClick={() => setReschedStep('specialist')}>Atrás</Button>
-            <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
           </div>
         </div>
       )}
@@ -543,17 +635,13 @@ function ReschedulePanel({
   );
 }
 
-function DetailRow({ label, value, gold }) {
-  return (
-    <div className="flex justify-between items-center gap-4">
-      <span className="text-sm text-ink-3 shrink-0">{label}</span>
-      <span className={`text-sm font-medium text-right ${gold ? 'text-gold' : 'text-ink'}`}>{value}</span>
-    </div>
-  );
-}
-
 function StatusBadge({ status }) {
-  const cls    = { confirmed: 'badge badge-confirmed', cancelled: 'badge badge-cancelled', rescheduled: 'badge badge-rescheduled' };
-  const labels = { confirmed: 'Confirmada', cancelled: 'Cancelada', rescheduled: 'Reagendada' };
-  return <span className={cls[status] || 'badge'}>{labels[status] || status}</span>;
+  const map = {
+    confirmed:   { cls: 'badge badge-confirmed',   label: 'Confirmada'  },
+    cancelled:   { cls: 'badge badge-cancelled',   label: 'Cancelada'   },
+    rescheduled: { cls: 'badge badge-rescheduled', label: 'Reagendada'  },
+    no_show:     { cls: 'badge',                   label: 'No asistió'  },
+  };
+  const { cls, label } = map[status] ?? { cls: 'badge', label: status };
+  return <span className={cls}>{label}</span>;
 }

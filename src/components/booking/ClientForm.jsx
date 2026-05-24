@@ -27,6 +27,17 @@ function personNameErr(v) {
   return null;
 }
 
+function slotToMins(slot) {
+  if (!slot) return 0;
+  const [h, m] = slot.split(':').map(Number);
+  return h * 60 + m;
+}
+function minsToSlot(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
+
 export default function ClientForm() {
   const { state, dispatch } = useBooking();
   const { data: config }    = useConfig();
@@ -36,21 +47,21 @@ export default function ClientForm() {
   const toast               = useToast();
   const groupMode           = isGroupMode(state);
 
-  // Single-service mutation
   const createMutation = useCreateAppointment();
-  // Group mutation
   const createGroupMutation = useMutation({
     mutationFn: api.createGroupAppointment,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['availability'] }); },
   });
   const isPending = createMutation.isPending || createGroupMutation.isPending;
 
-  // Computed summary values
-  const selectedServices    = state.services ?? [];
-  const serviceAssignments  = state.serviceAssignments ?? [];
+  const selectedServices   = state.services ?? [];
+  const serviceAssignments = state.serviceAssignments ?? [];
   const totalPrice = groupMode
     ? serviceAssignments.reduce((sum, a) => sum + (a.service.price || 0), 0)
     : selectedServices.reduce((sum, s) => sum + (s.price || 0), 0);
+  const totalDuration = groupMode
+    ? serviceAssignments.reduce((sum, a) => sum + (a.service.duration || 0), 0)
+    : selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
 
   const [name,          setName]          = useState(state.clientName);
   const [phone,         setPhone]         = useState(state.clientPhone);
@@ -132,64 +143,138 @@ export default function ClientForm() {
         <p className="text-ink-3 text-sm mt-1">Revisa los detalles y completa tus datos</p>
       </div>
 
-      <div className="card p-5 mb-6 space-y-3">
-        {groupMode ? (
-          // Per-service rows for group booking
-          serviceAssignments.map((a, i) => (
-            <div key={i} className="flex justify-between items-start gap-4">
-              <div>
-                <p className="text-sm font-medium text-ink">{toTitleCase(a.service.name)}</p>
-                <p className="text-xs text-ink-3 mt-0.5">con {toTitleCase(a.specialist.name)}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-sm font-medium text-ink tabular-nums">{formatPrice(a.service.price)}</p>
-                <p className="text-xs text-ink-3 mt-0.5">{a.service.duration} min</p>
-              </div>
+      {/* ── Booking summary card ──────────────────────────────────────────── */}
+      <div className="card overflow-hidden mb-6">
+
+        {/* Date + Time header */}
+        <div className="px-5 py-4 flex items-center gap-4 bg-raised/40 border-b border-edge">
+          <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex flex-col items-center justify-center shrink-0">
+            <span className="text-[8px] font-bold uppercase tracking-widest text-gold leading-none">
+              {state.date
+                ? new Date(state.date + 'T12:00:00').toLocaleDateString('es-MX', { month: 'short' })
+                : '—'}
+            </span>
+            <span className="text-[18px] font-bold text-gold leading-tight tabular-nums">
+              {state.date?.split('-')[2] ?? '—'}
+            </span>
+          </div>
+          <div>
+            <p className="text-[13px] font-semibold text-ink">{formatDate(state.date)}</p>
+            <p className="text-[15px] font-bold text-gold tabular-nums">{formatTime(state.time, timeFmt)}</p>
+          </div>
+          {groupMode && (
+            <div className="ml-auto text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Total</p>
+              <p className="text-[13px] font-bold text-gold tabular-nums">{totalDuration} min</p>
             </div>
-          ))
-        ) : (
-          <>
-            <SummaryRow
-              label={selectedServices.length > 1 ? 'Servicios' : 'Servicio'}
-              value={selectedServices.map(s => toTitleCase(s.name)).join(' + ')}
-            />
-            <SummaryRow label="Especialista" value={toTitleCase(state.specialist?.name)} />
-          </>
-        )}
-        <SummaryRow label="Fecha" value={formatDate(state.date)} />
-        <SummaryRow label="Hora"  value={formatTime(state.time, timeFmt)} />
-        <div className="pt-3 border-t border-edge flex justify-between items-center">
-          <span className="text-sm font-semibold text-ink">Total</span>
-          <span className="text-lg font-semibold text-gold tabular-nums">{formatPrice(totalPrice)}</span>
+          )}
+        </div>
+
+        {/* Services */}
+        <div className="px-5 py-4 space-y-3.5">
+          {groupMode ? (
+            serviceAssignments.map((a, i) => {
+              const offsetMins = serviceAssignments.slice(0, i).reduce((s, prev) => s + (prev.service.duration || 0), 0);
+              const startSlot  = minsToSlot(slotToMins(state.time) + offsetMins);
+              return (
+                <div key={i} className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <div className="w-5 h-5 rounded-full bg-gold/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[9px] font-bold text-gold">{i + 1}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-semibold text-ink leading-tight">
+                        {toTitleCase(a.service.name)}
+                      </p>
+                      <p className="text-xs text-ink-3 mt-0.5">
+                        {toTitleCase(a.specialist.name)}
+                        {' · '}
+                        <span className="text-gold font-semibold">{formatTime(startSlot, timeFmt)}</span>
+                        {' · '}
+                        {a.service.duration} min
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0">
+                    {formatPrice(a.service.price)}
+                  </p>
+                </div>
+              );
+            })
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-1">
+                    {selectedServices.length > 1 ? 'Servicios' : 'Servicio'}
+                  </p>
+                  <p className="text-[14px] font-semibold text-ink">
+                    {selectedServices.map(s => toTitleCase(s.name)).join(' + ')}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[14px] font-semibold text-gold tabular-nums">{formatPrice(totalPrice)}</p>
+                  <p className="text-xs text-ink-3 mt-0.5">{totalDuration} min</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gold/8 border border-gold/20 flex items-center justify-center shrink-0 text-[11px] font-bold text-gold">
+                  {state.specialist?.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Especialista</p>
+                  <p className="text-[13px] font-semibold text-ink">{toTitleCase(state.specialist?.name)}</p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Total row */}
+        <div className="px-5 py-3.5 border-t border-edge flex items-center justify-between bg-raised/30">
+          <span className="text-[13px] font-semibold text-ink">Total</span>
+          <span className="text-[18px] font-bold text-gold tabular-nums">{formatPrice(totalPrice)}</span>
         </div>
       </div>
 
+      {/* ── Client form ──────────────────────────────────────────────────── */}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <Input label="Nombre completo" placeholder="Ej. Juan García López" value={name}
+        <Input
+          label="Nombre completo"
+          placeholder="Ej. Juan García López"
+          value={name}
           onChange={e => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: null })); }}
           onBlur={e => { const err = personNameErr(e.target.value); if (err) setErrors(p => ({ ...p, name: err })); }}
-          error={errors.name} required autoComplete="name" maxLength={100} />
-        <PhoneInput label="Teléfono" placeholder="55 1234 5678" value={phone}
+          error={errors.name}
+          required
+          autoComplete="name"
+          maxLength={100}
+        />
+        <PhoneInput
+          label="Teléfono"
+          placeholder="55 1234 5678"
+          value={phone}
           onChange={e => setPhone(e.target.value)}
-          error={errors.phone} required autoComplete="tel"
-          helper="10 dígitos (asegúrate de incluir la lada)" />
-        <Input label="Correo electrónico" placeholder="tu@correo.com" value={email}
-          onChange={e => setEmail(e.target.value)} error={errors.email}
-          autoComplete="email" type="email" maxLength={120}
-          helper="Opcional · Recibirás confirmación y recordatorios" />
+          error={errors.phone}
+          required
+          autoComplete="tel"
+          helper="10 dígitos (asegúrate de incluir la lada)"
+        />
+        <Input
+          label="Correo electrónico"
+          placeholder="tu@correo.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          error={errors.email}
+          autoComplete="email"
+          type="email"
+          maxLength={120}
+          helper="Opcional · Recibirás confirmación y recordatorios"
+        />
         <Button type="submit" size="lg" className="w-full mt-2" loading={isPending}>
           Confirmar reservación
         </Button>
       </form>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }) {
-  return (
-    <div className="flex justify-between items-center gap-4">
-      <span className="text-sm text-ink-3">{label}</span>
-      <span className="text-sm font-medium text-ink text-right">{value}</span>
     </div>
   );
 }

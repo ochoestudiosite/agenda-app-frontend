@@ -19,16 +19,12 @@ function slotToMinutes(slot) {
   const [h, m] = slot.split(':').map(Number);
   return h * 60 + m;
 }
-
 function minutesToSlot(mins) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-// A slot is busy if [slotStart, slotStart+duration) overlaps any existing appointment
-// [apptStart, apptEnd) — standard interval overlap: s < e2 && s+d > s2.
-// appointmentIntervals = [{startMin, endMin}] already extended by bufferMins on the API.
 function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins) {
   const start = slotToMinutes(slot);
   const end   = start + duration;
@@ -42,29 +38,24 @@ export default function DateTimePicker() {
   const { state, dispatch } = useBooking();
   const { data: config }   = useConfig();
 
-  // ── Calendar bounds ───────────────────────────────────────────────────────
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const maxAdvance    = config?.max_advance_days   ?? 30;
-  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
+  const maxAdvance = config?.max_advance_days ?? 30;
+  const maxDate    = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
 
   const [viewMonth,    setViewMonth]    = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
 
   const timeFmt  = config?.time_format ?? '12h';
-
-  // config.hours is now { [branchId]: [...7 rows] } — extract for the selected branch
   const branchId = state.branch?.id;
   const hoursMap = config?.hours ?? {};
   const bizHours = branchId && hoursMap[String(branchId)]
     ? hoursMap[String(branchId)]
     : (Array.isArray(hoursMap) ? hoursMap : Object.values(hoursMap)[0] ?? []);
 
-  const selectedServices  = state.services ?? [];
-  const groupMode = isGroupMode(state);
+  const selectedServices = state.services ?? [];
+  const groupMode        = isGroupMode(state);
 
-  // Group mode: one specialist per service; use the group availability endpoint.
-  // Single mode: use the standard availability endpoint per specialist.
   const groupAssignments = groupMode
     ? state.serviceAssignments.map(a => ({ serviceId: a.service.id, specialistId: a.specialist.id }))
     : null;
@@ -72,7 +63,7 @@ export default function DateTimePicker() {
     ? selectedServices.map(s => s.id).join(',')
     : null;
 
-  const dateStr = selectedDate ? toDateStr(selectedDate) : null;
+  const dateStr            = selectedDate ? toDateStr(selectedDate) : null;
   const singleSpecialistId = groupMode ? null : state.specialist?.id;
   const { data: availData,      isFetching,       isError: availError }      = useAvailability(dateStr, singleSpecialistId, branchId, null, null, serviceIdsParam);
   const { data: groupAvailData, isFetching: gFetching, isError: groupAvailError } = useGroupAvailability(groupMode ? dateStr : null, groupAssignments, branchId);
@@ -81,67 +72,55 @@ export default function DateTimePicker() {
   const { data: blockedData } = useBlockedDates(monthStr, state.specialist?.id);
   const blockedDates = blockedData?.blockedDates || [];
 
-  // In group mode use the group availability response; otherwise the single endpoint
-  const activeData        = groupMode ? groupAvailData : availData;
-  const activeFetching    = groupMode ? gFetching      : isFetching;
-  const activeError       = groupMode ? groupAvailError : availError;
+  const activeData       = groupMode ? groupAvailData : availData;
+  const activeFetching   = groupMode ? gFetching      : isFetching;
+  const activeError      = groupMode ? groupAvailError : availError;
 
-  const liveConfig          = activeData?.config || {};
-  const timezone            = liveConfig.timezone || config?.business_timezone || null;
-  // Group mode returns availableSlots[] directly; single mode returns appointmentIntervals[]
+  const liveConfig           = activeData?.config || {};
+  const timezone             = liveConfig.timezone || config?.business_timezone || null;
   const appointmentIntervals = (!groupMode && activeData?.appointmentIntervals) || [];
   const groupAvailableSlots  = (groupMode  && activeData?.availableSlots)       || null;
   const staffBlocked         = activeData?.staffBlocked;
 
-  // ── Expert: Prioritize live config from avoid refresh issues ──────
-  const intervalMins  = liveConfig.interval   || config?.slot_interval_mins || 30;
-  const leadMins      = liveConfig.leadMins   || config?.booking_lead_mins  || 60;
-  const bufferMins    = liveConfig.bufferMins || 0;
+  const intervalMins       = liveConfig.interval   || config?.slot_interval_mins || 30;
+  const leadMins           = liveConfig.leadMins   || config?.booking_lead_mins  || 60;
+  const bufferMins         = liveConfig.bufferMins || 0;
 
-  // Days with is_open === false → disabled in calendar
   const daysClosed = bizHours.length > 0
     ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
-    : [0]; 
+    : [0];
 
   function getDayEntry(date) {
     if (!date) return null;
-    const entry = bizHours.find(h => h.day_of_week === date.getDay());
-    return entry ?? null;
+    return bizHours.find(h => h.day_of_week === date.getDay()) ?? null;
   }
 
-  // ── Handled above ──
-
-  // ── Slot generation for selected day ─────────────────────────────────────
-  // In group mode, totalDuration comes from resolved assignments; otherwise from selected services.
   const duration = groupMode
     ? (state.serviceAssignments.reduce((sum, a) => sum + (a.service.duration || 0), 0) || 30)
     : (selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0) || 30);
+
   const dayEntry  = getDayEntry(selectedDate);
   const openTime  = liveConfig.openTime  || dayEntry?.open_time  || '9:00';
   const closeTime = liveConfig.closeTime || dayEntry?.close_time || '19:00';
-  // In group mode the backend returns available slots directly (pre-filtered).
-  // In single mode we generate slots locally and filter with appointmentIntervals.
+
   const allSlots = groupMode
     ? (groupAvailableSlots ?? [])
     : (selectedDate ? generateSlots(openTime, closeTime, duration, intervalMins, bufferMins) : []);
-  const grouped   = groupSlots(allSlots);
+  const grouped = groupSlots(allSlots);
 
-  // ── Past-slot validation ──────────────────────────────────────────────────
-  const now          = new Date();
-  const todayStr     = toDateStr(today);
+  const now             = new Date();
+  const todayStr        = toDateStr(today);
   const isSelectedToday = !!selectedDate && toDateStr(selectedDate) === todayStr;
-  const cutoffMins   = now.getHours() * 60 + now.getMinutes() + leadMins;
+  const cutoffMins      = now.getHours() * 60 + now.getMinutes() + leadMins;
 
   function isSlotPast(slot) {
     return isSelectedToday && slotToMinutes(slot) <= cutoffMins;
   }
   const closeMinsForExhaust = slotToMinutes(closeTime);
-  // Group mode: backend already excludes busy/past slots; just check past for today
-  const allSlotsExhausted = allSlots.length > 0 && allSlots.every(s =>
+  const allSlotsExhausted   = allSlots.length > 0 && allSlots.every(s =>
     isSlotPast(s) || (!groupMode && isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust))
   );
 
-  // ── Calendar helpers ──────────────────────────────────────────────────────
   const firstDay    = viewMonth.getDay();
   const daysInMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
   const cells = [];
@@ -151,8 +130,8 @@ export default function DateTimePicker() {
   function isDayDisabled(d) {
     if (d < today || d > maxDate) return true;
     if (daysClosed.includes(d.getDay())) return true;
-    const dateStr = toDateStr(d);
-    if (blockedDates.includes(dateStr)) return true;
+    const ds = toDateStr(d);
+    if (blockedDates.includes(ds)) return true;
     if (blockedDates.includes(`recurring:${d.getDay()}`)) return true;
     return false;
   }
@@ -162,15 +141,31 @@ export default function DateTimePicker() {
     setSelectedTime(null);
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Group breakdown: compute each service's time window
+  const groupBreakdown = groupMode && selectedTime
+    ? state.serviceAssignments.map((a, i) => {
+        const offsetMins = state.serviceAssignments.slice(0, i).reduce((sum, prev) => sum + (prev.service.duration || 0), 0);
+        const startMins  = slotToMinutes(selectedTime) + offsetMins;
+        const endMins    = startMins + (a.service.duration || 0);
+        return { ...a, startMins, endMins, isLast: i === state.serviceAssignments.length - 1 };
+      })
+    : null;
+
+  // Group specialist subtitle
+  const specialistLabel = groupMode
+    ? state.serviceAssignments.map(a => toTitleCase(a.specialist.name)).join(' · ')
+    : toTitleCase(state.specialist?.name);
+
   return (
     <div className="animate-fade-up">
       <BackButton onClick={() => dispatch({ type: 'GO_BACK' })} />
+
+      {/* Header */}
       <div className="mb-7">
         <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige fecha y hora</h2>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
           <p className="text-ink-3 text-sm">
-            Con <span className="text-ink font-medium">{toTitleCase(state.specialist?.name)}</span>
+            Con <span className="text-ink font-medium">{specialistLabel}</span>
           </p>
           {timezone && (
             <span className="inline-flex items-center gap-1 text-[10px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
@@ -183,9 +178,10 @@ export default function DateTimePicker() {
         </div>
       </div>
 
+      {/* Calendar + Slots grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
 
-        {/* ── Calendar ───────────────────────────────────────────────────── */}
+        {/* ── Calendar ─────────────────────────────────────────────────────── */}
         <div className="card p-5">
           <div className="flex items-center justify-between mb-5">
             <button
@@ -193,7 +189,9 @@ export default function DateTimePicker() {
               className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
               aria-label="Mes anterior"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
             </button>
             <span className="text-sm font-semibold text-ink capitalize">
               {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
@@ -203,7 +201,9 @@ export default function DateTimePicker() {
               className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
               aria-label="Mes siguiente"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
             </button>
           </div>
 
@@ -226,9 +226,9 @@ export default function DateTimePicker() {
                   onClick={() => handleSelectDate(date)}
                   className={[
                     'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-160',
-                    disabled    ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
-                    isSelected  ? 'bg-gold text-on-gold shadow-xs' : '',
-                    !isSelected && isToday  && !disabled ? 'text-gold font-semibold' : '',
+                    disabled   ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
+                    isSelected ? 'bg-gold text-on-gold shadow-xs' : '',
+                    !isSelected && isToday && !disabled ? 'text-gold font-semibold' : '',
                     !isSelected && !disabled ? 'hover:bg-raised text-ink' : '',
                   ].join(' ')}
                 >
@@ -242,7 +242,7 @@ export default function DateTimePicker() {
           </div>
         </div>
 
-        {/* ── Time slots ─────────────────────────────────────────────────── */}
+        {/* ── Time slots ───────────────────────────────────────────────────── */}
         <div className="card p-5 min-h-[280px] flex flex-col">
 
           {!selectedDate && (
@@ -269,7 +269,7 @@ export default function DateTimePicker() {
               </div>
               <div>
                 <p className="text-sm font-medium text-ink">Error al cargar horarios</p>
-                <p className="text-xs text-ink-3 mt-1">Verifica tu conexión y elige otro día para reintentar.</p>
+                <p className="text-xs text-ink-3 mt-1">Verifica tu conexión y elige otro día.</p>
               </div>
             </div>
           )}
@@ -278,13 +278,15 @@ export default function DateTimePicker() {
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                 <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728v.474A6 6 0 015.636 20.636m-7.07 1.029a6 6 0 01-8.485 0"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                 </svg>
               </div>
               <div>
                 <p className="text-sm font-medium text-ink">Día no disponible</p>
                 <p className="text-xs text-ink-3 mt-1">
-                  {staffBlocked.reason || (groupMode ? 'Uno o más especialistas no están disponibles este día.' : 'El especialista no estará disponible este día.')}
+                  {staffBlocked.reason || (groupMode
+                    ? 'Uno o más especialistas no están disponibles este día.'
+                    : 'El especialista no estará disponible este día.')}
                 </p>
               </div>
             </div>
@@ -303,25 +305,16 @@ export default function DateTimePicker() {
                 </div>
               )}
 
-              {allSlots.length === 0 ? (
+              {allSlots.length === 0 || allSlotsExhausted ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                   <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                     <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                   </div>
-                  <p className="text-sm text-ink-3">Sin horarios disponibles para este día</p>
-                </div>
-              ) : allSlotsExhausted ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
-                  <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                  </div>
                   <div>
                     <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
-                    <p className="text-xs text-ink-3 mt-1">Todos los horarios de este día están ocupados. Elige otra fecha.</p>
+                    <p className="text-xs text-ink-3 mt-1">Elige otra fecha.</p>
                   </div>
                 </div>
               ) : (
@@ -335,7 +328,6 @@ export default function DateTimePicker() {
                       <div className="grid grid-cols-3 gap-2">
                         {slots.map(slot => {
                           const past    = isSlotPast(slot);
-                          // Group mode: backend already pre-filtered busy slots
                           const busy    = !groupMode && isSlotBusy(slot, duration, appointmentIntervals, closeMins);
                           const sel     = selectedTime === slot;
                           const unavail = past || busy;
@@ -371,6 +363,54 @@ export default function DateTimePicker() {
         </div>
       </div>
 
+      {/* ── Group schedule breakdown ─────────────────────────────────────────── */}
+      {groupBreakdown && !isSlotPast(selectedTime) && (
+        <div className="mt-4 animate-fade-up">
+          <div className="card p-5">
+            <p className="label-section mb-4">Cronograma de tu visita</p>
+            <div>
+              {groupBreakdown.map(({ service, specialist, startMins, endMins, isLast }, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  {/* Timeline dot + connector */}
+                  <div className="flex flex-col items-center shrink-0 pt-1" style={{ width: 20 }}>
+                    <div className="w-2.5 h-2.5 rounded-full bg-gold ring-[3px] ring-gold/20 shrink-0" />
+                    {!isLast && <div className="w-px bg-edge mt-1.5 mb-0" style={{ height: 32 }} />}
+                  </div>
+                  {/* Content */}
+                  <div className={`flex-1 min-w-0 flex items-start justify-between gap-2 ${!isLast ? 'pb-3' : ''}`}>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-ink leading-tight truncate">
+                        {toTitleCase(service.name)}
+                      </p>
+                      <p className="text-[11px] text-ink-3 mt-0.5">
+                        {toTitleCase(specialist.name)} · {service.duration} min
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[12px] font-semibold text-gold tabular-nums whitespace-nowrap">
+                        {formatTime(minutesToSlot(startMins), timeFmt)}
+                      </p>
+                      <p className="text-[11px] text-ink-3 mt-0.5 tabular-nums whitespace-nowrap">
+                        hasta {formatTime(minutesToSlot(endMins), timeFmt)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
+              <span className="text-[11px] font-medium text-ink-3">Duración total</span>
+              <span className="text-[12px] font-semibold text-ink tabular-nums">
+                {state.serviceAssignments.reduce((s, a) => s + (a.service.duration || 0), 0)} min —
+                {' terminamos a las '}
+                {formatTime(minutesToSlot(slotToMinutes(selectedTime) + state.serviceAssignments.reduce((s, a) => s + (a.service.duration || 0), 0)), timeFmt)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Continue button ──────────────────────────────────────────────────── */}
       {selectedDate && selectedTime && !isSlotPast(selectedTime) && (
         <div className="mt-6 flex justify-end animate-fade-in">
           <Button
