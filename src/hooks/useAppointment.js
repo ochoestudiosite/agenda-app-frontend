@@ -40,6 +40,16 @@ export function useRescheduleAppointment() {
   });
 }
 
+export function useRescheduleGroupAppointment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ code, date, time }) => api.rescheduleGroupAppointment(code, { date, time }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['groupAppointment', data.groupCode], data);
+    },
+  });
+}
+
 export function useCancelAppointment() {
   const queryClient = useQueryClient();
   return useMutation({

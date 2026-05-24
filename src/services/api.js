@@ -86,6 +86,7 @@ export const api = {
   },
   createGroupAppointment: (body) => request('POST', '/appointments/group', body),
   getGroupAppointment: (code) => request('GET', `/appointments/group/${code}`),
+  rescheduleGroupAppointment: (code, body) => request('PUT', `/appointments/group/${code}`, body),
   getAvailability: (date, specialistId, branchId, serviceId, excludeCode, serviceIds) => {
     const p = new URLSearchParams({ date });
     if (specialistId) p.set('specialistId', specialistId);

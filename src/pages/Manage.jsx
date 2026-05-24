@@ -77,7 +77,10 @@ export default function Manage() {
         )}
 
         {appointment && isGroup && (
-          <GroupAppointmentCard group={appointment} />
+          <GroupAppointmentCard
+            group={appointment}
+            onUpdated={updated => setLocalAppt(updated)}
+          />
         )}
 
         {appointment && !isGroup && (
