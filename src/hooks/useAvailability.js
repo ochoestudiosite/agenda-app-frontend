@@ -10,6 +10,18 @@ export function useAvailability(date, specialistId, branchId, serviceId, exclude
   });
 }
 
+// Group availability: finds start times where all specialists are free sequentially.
+// assignments = [{serviceId, specialistId}]
+export function useGroupAvailability(date, assignments, branchId) {
+  const enabled = !!date && assignments?.length >= 2;
+  return useQuery({
+    queryKey: ['groupAvailability', date, assignments, branchId],
+    queryFn:  () => api.getGroupAvailability(date, assignments, branchId),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
 export function useBlockedDates(month, specialistId) {
   return useQuery({
     queryKey: ['blockedDates', month, specialistId],

@@ -7,9 +7,14 @@ import Button from '../ui/Button';
 
 export default function BookingConfirmation() {
   const { state, dispatch } = useBooking();
-  const { data: config }   = useConfig();
-  const timeFmt = config?.time_format ?? '12h';
-  const { confirmation } = state;
+  const { data: config }    = useConfig();
+  const timeFmt             = config?.time_format ?? '12h';
+  const { confirmation }    = state;
+
+  // Detect group vs single appointment confirmation
+  const isGroup = !!confirmation?.groupCode;
+
+  const displayCode = isGroup ? confirmation.groupCode : confirmation?.code;
 
   return (
     <div className="animate-fade-up max-w-lg mx-auto text-center">
@@ -20,36 +25,79 @@ export default function BookingConfirmation() {
         </svg>
       </div>
 
-      <h2 className="font-display text-3xl font-semibold text-ink tracking-tight mb-2">Cita confirmada</h2>
-      <p className="text-ink-3 text-sm mb-8">Guarda tu código — lo necesitarás para gestionar tu cita</p>
+      <h2 className="font-display text-3xl font-semibold text-ink tracking-tight mb-2">
+        {isGroup ? 'Visita confirmada' : 'Cita confirmada'}
+      </h2>
+      <p className="text-ink-3 text-sm mb-8">
+        {isGroup
+          ? 'Guarda tu código de grupo — lo necesitarás para gestionar tu visita'
+          : 'Guarda tu código — lo necesitarás para gestionar tu cita'}
+      </p>
 
       {/* Confirmation code */}
       <div className="card p-6 mb-4">
-        <p className="label-section mb-4">Código de confirmación</p>
-        <div className="flex items-center justify-center gap-1.5 mb-5">
-          {confirmation?.code.split('').map((char, i) => (
+        <p className="label-section mb-4">
+          {isGroup ? 'Código de grupo' : 'Código de confirmación'}
+        </p>
+        <div className="flex items-center justify-center gap-1 flex-wrap mb-5">
+          {displayCode?.split('').map((char, i) => (
             <span
               key={i}
-              className="w-10 h-12 flex items-center justify-center bg-raised border border-edge rounded-xl font-display text-2xl font-bold text-gold tabular-nums select-all"
+              className="w-9 h-11 flex items-center justify-center bg-raised border border-edge rounded-xl font-display text-xl font-bold text-gold tabular-nums select-all"
             >
               {char}
             </span>
           ))}
         </div>
-        <CopyCodeButton code={confirmation?.code} />
+        <CopyCodeButton code={displayCode} />
         <p className="text-ink-3 text-xs mt-4 leading-relaxed">
-          Necesitarás este código para reagendar o cancelar tu cita
+          Necesitarás este código para gestionar tu {isGroup ? 'visita' : 'cita'}
         </p>
       </div>
 
-      {/* Appointment details */}
+      {/* Details card */}
       <div className="card p-5 text-left space-y-3 mb-8">
-        <DetailRow icon={<ScissorsIcon />} label="Servicio" value={`${toTitleCase(confirmation?.serviceName)} — ${formatPrice(confirmation?.servicePrice)}`} />
-        <DetailRow icon={<UserIcon />}     label="Especialista" value={toTitleCase(confirmation?.specialistName)} />
-        {state.branch?.name && <DetailRow icon={<MapPinIcon />} label="Sucursal" value={state.branch.name} />}
-        <DetailRow icon={<CalendarIcon />} label="Fecha"    value={formatDate(confirmation?.date)} />
-        <DetailRow icon={<ClockIcon />}    label="Hora"     value={formatTime(confirmation?.time, timeFmt)} />
-        <DetailRow icon={<PhoneIcon />}    label="Teléfono" value={confirmation?.clientPhone} />
+        {isGroup ? (
+          // Group: show each service + specialist on its own row
+          <>
+            {(confirmation.appointments ?? []).map((appt, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className="text-gold mt-0.5 shrink-0"><ScissorsIcon /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-ink-3 text-xs">Servicio {i + 1}</p>
+                  <p className="text-ink text-sm font-medium leading-snug">
+                    {toTitleCase(appt.serviceName)}
+                    <span className="text-ink-3 font-normal"> con {toTitleCase(appt.specialistName)}</span>
+                  </p>
+                  <p className="text-xs text-ink-3 mt-0.5">
+                    {formatTime(appt.time, timeFmt)} · {appt.serviceDuration} min · {formatPrice(appt.servicePrice)}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div className="pt-2 border-t border-edge">
+              <DetailRow icon={<CalendarIcon />} label="Fecha"    value={formatDate(confirmation.date)} />
+              <div className="mt-2.5">
+                <DetailRow icon={<PhoneIcon />}  label="Teléfono" value={confirmation.clientPhone} />
+              </div>
+              {state.branch?.name && (
+                <div className="mt-2.5">
+                  <DetailRow icon={<MapPinIcon />} label="Sucursal" value={state.branch.name} />
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          // Single appointment
+          <>
+            <DetailRow icon={<ScissorsIcon />} label="Servicio"     value={`${toTitleCase(confirmation?.serviceName)} — ${formatPrice(confirmation?.servicePrice)}`} />
+            <DetailRow icon={<UserIcon />}     label="Especialista" value={toTitleCase(confirmation?.specialistName)} />
+            {state.branch?.name && <DetailRow icon={<MapPinIcon />} label="Sucursal" value={state.branch.name} />}
+            <DetailRow icon={<CalendarIcon />} label="Fecha"        value={formatDate(confirmation?.date)} />
+            <DetailRow icon={<ClockIcon />}    label="Hora"         value={formatTime(confirmation?.time, timeFmt)} />
+            <DetailRow icon={<PhoneIcon />}    label="Teléfono"     value={confirmation?.clientPhone} />
+          </>
+        )}
       </div>
 
       <div className="flex gap-3 justify-center flex-wrap">

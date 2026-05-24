@@ -77,6 +77,15 @@ export const api = {
   getConfig:   () => request('GET', '/config'),
   getServices: () => request('GET', '/services'),
   getSpecialists: () => request('GET', '/services/specialists'),
+  getGroupAvailability: (date, assignments, branchId) => {
+    // assignments = [{serviceId, specialistId}]
+    const assignmentsParam = assignments.map(a => `${a.serviceId}:${a.specialistId}`).join(',');
+    const p = new URLSearchParams({ date, assignments: assignmentsParam });
+    if (branchId) p.set('branchId', String(branchId));
+    return request('GET', `/availability/group?${p}`);
+  },
+  createGroupAppointment: (body) => request('POST', '/appointments/group', body),
+  getGroupAppointment: (code) => request('GET', `/appointments/group/${code}`),
   getAvailability: (date, specialistId, branchId, serviceId, excludeCode, serviceIds) => {
     const p = new URLSearchParams({ date });
     if (specialistId) p.set('specialistId', specialistId);

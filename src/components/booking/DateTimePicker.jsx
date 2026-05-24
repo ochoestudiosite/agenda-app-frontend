@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBooking } from '../../context/BookingContext';
-import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
+import { isGroupMode } from '../../context/BookingContext';
+import { useAvailability, useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { formatTime, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import Spinner from '../ui/Spinner';
@@ -60,19 +61,37 @@ export default function DateTimePicker() {
     : (Array.isArray(hoursMap) ? hoursMap : Object.values(hoursMap)[0] ?? []);
 
   const selectedServices  = state.services ?? [];
-  const serviceIdsParam   = selectedServices.length > 0 ? selectedServices.map(s => s.id).join(',') : null;
+  const groupMode = isGroupMode(state);
+
+  // Group mode: one specialist per service; use the group availability endpoint.
+  // Single mode: use the standard availability endpoint per specialist.
+  const groupAssignments = groupMode
+    ? state.serviceAssignments.map(a => ({ serviceId: a.service.id, specialistId: a.specialist.id }))
+    : null;
+  const serviceIdsParam = !groupMode && selectedServices.length > 0
+    ? selectedServices.map(s => s.id).join(',')
+    : null;
 
   const dateStr = selectedDate ? toDateStr(selectedDate) : null;
-  const { data: availData, isFetching, isError: availError } = useAvailability(dateStr, state.specialist?.id, branchId, null, null, serviceIdsParam);
+  const singleSpecialistId = groupMode ? null : state.specialist?.id;
+  const { data: availData,      isFetching,       isError: availError }      = useAvailability(dateStr, singleSpecialistId, branchId, null, null, serviceIdsParam);
+  const { data: groupAvailData, isFetching: gFetching, isError: groupAvailError } = useGroupAvailability(groupMode ? dateStr : null, groupAssignments, branchId);
 
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
   const { data: blockedData } = useBlockedDates(monthStr, state.specialist?.id);
   const blockedDates = blockedData?.blockedDates || [];
 
-  const liveConfig          = availData?.config || {};
+  // In group mode use the group availability response; otherwise the single endpoint
+  const activeData        = groupMode ? groupAvailData : availData;
+  const activeFetching    = groupMode ? gFetching      : isFetching;
+  const activeError       = groupMode ? groupAvailError : availError;
+
+  const liveConfig          = activeData?.config || {};
   const timezone            = liveConfig.timezone || config?.business_timezone || null;
-  const appointmentIntervals = availData?.appointmentIntervals || [];
-  const staffBlocked         = availData?.staffBlocked;
+  // Group mode returns availableSlots[] directly; single mode returns appointmentIntervals[]
+  const appointmentIntervals = (!groupMode && activeData?.appointmentIntervals) || [];
+  const groupAvailableSlots  = (groupMode  && activeData?.availableSlots)       || null;
+  const staffBlocked         = !groupMode && activeData?.staffBlocked;
 
   // ── Expert: Prioritize live config from avoid refresh issues ──────
   const intervalMins  = liveConfig.interval   || config?.slot_interval_mins || 30;
@@ -93,11 +112,18 @@ export default function DateTimePicker() {
   // ── Handled above ──
 
   // ── Slot generation for selected day ─────────────────────────────────────
-  const duration  = selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0) || 30;
+  // In group mode, totalDuration comes from resolved assignments; otherwise from selected services.
+  const duration = groupMode
+    ? (state.serviceAssignments.reduce((sum, a) => sum + (a.service.duration || 0), 0) || 30)
+    : (selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0) || 30);
   const dayEntry  = getDayEntry(selectedDate);
   const openTime  = liveConfig.openTime  || dayEntry?.open_time  || '9:00';
   const closeTime = liveConfig.closeTime || dayEntry?.close_time || '19:00';
-  const allSlots  = selectedDate ? generateSlots(openTime, closeTime, duration, intervalMins, bufferMins) : [];
+  // In group mode the backend returns available slots directly (pre-filtered).
+  // In single mode we generate slots locally and filter with appointmentIntervals.
+  const allSlots = groupMode
+    ? (groupAvailableSlots ?? [])
+    : (selectedDate ? generateSlots(openTime, closeTime, duration, intervalMins, bufferMins) : []);
   const grouped   = groupSlots(allSlots);
 
   // ── Past-slot validation ──────────────────────────────────────────────────
@@ -110,8 +136,9 @@ export default function DateTimePicker() {
     return isSelectedToday && slotToMinutes(slot) <= cutoffMins;
   }
   const closeMinsForExhaust = slotToMinutes(closeTime);
+  // Group mode: backend already excludes busy/past slots; just check past for today
   const allSlotsExhausted = allSlots.length > 0 && allSlots.every(s =>
-    isSlotPast(s) || isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust)
+    isSlotPast(s) || (!groupMode && isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust))
   );
 
   // ── Calendar helpers ──────────────────────────────────────────────────────
@@ -229,11 +256,11 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && isFetching && (
+          {selectedDate && activeFetching && (
             <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
           )}
 
-          {selectedDate && !isFetching && availError && (
+          {selectedDate && !activeFetching && activeError && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                 <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -247,7 +274,7 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && !isFetching && !availError && staffBlocked && (
+          {selectedDate && !activeFetching && !activeError && staffBlocked && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                 <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -263,7 +290,7 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && !isFetching && !availError && !staffBlocked && (
+          {selectedDate && !activeFetching && !activeError && !staffBlocked && (
             <div className="space-y-4 flex-1">
               {isSelectedToday && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold/8 border border-gold/20">
@@ -308,7 +335,8 @@ export default function DateTimePicker() {
                       <div className="grid grid-cols-3 gap-2">
                         {slots.map(slot => {
                           const past    = isSlotPast(slot);
-                          const busy    = isSlotBusy(slot, duration, appointmentIntervals, closeMins);
+                          // Group mode: backend already pre-filtered busy slots
+                          const busy    = !groupMode && isSlotBusy(slot, duration, appointmentIntervals, closeMins);
                           const sel     = selectedTime === slot;
                           const unavail = past || busy;
                           return (

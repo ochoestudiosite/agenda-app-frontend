@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { useBooking } from '../../context/BookingContext';
+import { isGroupMode } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
 import { toTitleCase, formatPrice, formatTime } from '../../utils/formatters';
 
@@ -41,7 +42,22 @@ export default function BookingSummary() {
     });
   }
 
-  if (state.specialist) {
+  const groupMode = isGroupMode(state);
+  if (groupMode) {
+    // Group mode: show assigned specialists as they're selected
+    const assignments = state.serviceAssignments ?? [];
+    if (assignments.length > 0) {
+      items.push({
+        id:       'specialists',
+        category: 'especialistas',
+        isAvatar: true,
+        avatarUrl: assignments[0]?.specialist?.avatarUrl,
+        initials:  assignments[0]?.specialist?.initials,
+        label:     assignments.map(a => toTitleCase(a.specialist.name)).join(', '),
+        sub:       `${assignments.length} de ${state.services.length}`,
+      });
+    }
+  } else if (state.specialist) {
     items.push({
       id:        'specialist',
       category:  'especialista',
