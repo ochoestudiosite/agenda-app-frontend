@@ -6,7 +6,7 @@ const SESSION_KEY = 'cita24_booking';
 const initialState = {
   step: 1,
   branch: null,
-  service: null,
+  services: [],
   specialist: null,
   date: null,
   time: null,
@@ -33,7 +33,17 @@ function reducer(state, action) {
     case 'SET_BRANCH':
       return { ...state, branch: action.payload };
     case 'SET_SERVICE':
-      return { ...state, service: action.payload, step: 2, specialist: null, date: null, time: null };
+      return { ...state, services: [action.payload], step: 2, specialist: null, date: null, time: null };
+    case 'TOGGLE_SERVICE': {
+      const exists = state.services.some(s => s.id === action.payload.id);
+      const services = exists
+        ? state.services.filter(s => s.id !== action.payload.id)
+        : state.services.length >= 5 ? state.services : [...state.services, action.payload];
+      return { ...state, services, specialist: null, date: null, time: null };
+    }
+    case 'CONFIRM_SERVICES':
+      if (!state.services.length) return state;
+      return { ...state, step: 2, specialist: null, date: null, time: null };
     case 'SET_SPECIALIST':
       return { ...state, specialist: action.payload, step: 3, date: null, time: null };
     case 'SET_DATETIME':
@@ -42,7 +52,7 @@ function reducer(state, action) {
       return { ...state, clientName: action.payload.name, clientPhone: action.payload.phone };
     case 'SET_CONFIRMATION':
       // Guard: only transition to confirmation if all prior steps are complete.
-      if (!state.service || !state.specialist || !state.date || !state.time) return state;
+      if (!state.services.length || !state.specialist || !state.date || !state.time) return state;
       return { ...state, confirmation: action.payload, step: 5 };
     case 'GO_BACK':
       if (state.step === 1 && state.branch) return { ...state, branch: null };

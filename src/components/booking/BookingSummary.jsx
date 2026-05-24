@@ -28,13 +28,16 @@ export default function BookingSummary() {
     });
   }
 
-  if (state.service) {
+  const selectedServices = state.services ?? [];
+  if (selectedServices.length > 0) {
+    const totalDuration = selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalPrice    = selectedServices.reduce((sum, s) => sum + (s.price    || 0), 0);
     items.push({
       id:       'service',
-      category: 'servicio',
+      category: selectedServices.length > 1 ? 'servicios' : 'servicio',
       icon:     <ScissorsIcon />,
-      label:    toTitleCase(state.service.name),
-      sub:      `${state.service.duration} min · ${formatPrice(state.service.price)}`,
+      label:    selectedServices.map(s => toTitleCase(s.name)).join(' + '),
+      sub:      `${totalDuration} min · ${formatPrice(totalPrice)}`,
     });
   }
 

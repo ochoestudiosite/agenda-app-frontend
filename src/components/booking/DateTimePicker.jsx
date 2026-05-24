@@ -59,8 +59,11 @@ export default function DateTimePicker() {
     ? hoursMap[String(branchId)]
     : (Array.isArray(hoursMap) ? hoursMap : Object.values(hoursMap)[0] ?? []);
 
+  const selectedServices  = state.services ?? [];
+  const serviceIdsParam   = selectedServices.length > 0 ? selectedServices.map(s => s.id).join(',') : null;
+
   const dateStr = selectedDate ? toDateStr(selectedDate) : null;
-  const { data: availData, isFetching, isError: availError } = useAvailability(dateStr, state.specialist?.id, branchId);
+  const { data: availData, isFetching, isError: availError } = useAvailability(dateStr, state.specialist?.id, branchId, null, null, serviceIdsParam);
 
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
   const { data: blockedData } = useBlockedDates(monthStr, state.specialist?.id);
@@ -90,7 +93,7 @@ export default function DateTimePicker() {
   // ── Handled above ──
 
   // ── Slot generation for selected day ─────────────────────────────────────
-  const duration  = state.service?.duration || 30;
+  const duration  = selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0) || 30;
   const dayEntry  = getDayEntry(selectedDate);
   const openTime  = liveConfig.openTime  || dayEntry?.open_time  || '9:00';
   const closeTime = liveConfig.closeTime || dayEntry?.close_time || '19:00';

@@ -29,14 +29,15 @@ export default function SpecialistSelector() {
   );
 
   // Filter specialists by:
-  // 1. Service assignment (must have the selected service)
+  // 1. Service assignment (must have ALL selected services)
   // 2. Branch assignment (must belong to selected branch OR work in all branches)
-  const selectedServiceDbId = Number(state.service?.dbId);
-  const selectedBranchDbId  = state.branch?.id ? Number(state.branch.id) : null;
-  
+  const selectedServiceDbIds = (state.services ?? []).map(s => Number(s.dbId)).filter(Boolean);
+  const selectedBranchDbId   = state.branch?.id ? Number(state.branch.id) : null;
+
   const specialists = (data?.specialists ?? []).filter(sp => {
-    // Service check
-    const hasService = !selectedServiceDbId || sp.serviceIds?.some(id => Number(id) === selectedServiceDbId);
+    // Service check — specialist must support every selected service
+    const hasService = !selectedServiceDbIds.length ||
+      selectedServiceDbIds.every(id => sp.serviceIds?.some(sid => Number(sid) === id));
     if (!hasService) return false;
 
     // Branch check (if multi-branch is active)
@@ -74,7 +75,10 @@ export default function SpecialistSelector() {
       <div className="mb-7">
         <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige tu especialista</h2>
         <p className="text-ink-3 text-sm mt-1">
-          Para <span className="text-ink font-medium">{toTitleCase(state.service?.name)}</span>
+          Para{' '}
+          <span className="text-ink font-medium">
+            {(state.services ?? []).map(s => toTitleCase(s.name)).join(' + ')}
+          </span>
         </p>
       </div>
 
@@ -87,7 +91,7 @@ export default function SpecialistSelector() {
           </div>
           <p className="text-sm font-semibold text-ink">Sin especialistas disponibles</p>
           <p className="text-xs text-ink-3 mt-1 max-w-xs">
-            Ningún miembro del equipo tiene asignado el servicio "{state.service?.name}".
+            Ningún miembro del equipo tiene asignados todos los servicios seleccionados.
           </p>
           <button
             onClick={() => dispatch({ type: 'GO_BACK' })}

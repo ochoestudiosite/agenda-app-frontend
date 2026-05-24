@@ -34,6 +34,10 @@ export default function ClientForm() {
   const toast          = useToast();
   const createMutation = useCreateAppointment();
 
+  const selectedServices = state.services ?? [];
+  const combinedServiceName = selectedServices.map(s => toTitleCase(s.name)).join(' + ');
+  const totalPrice = selectedServices.reduce((sum, s) => sum + (s.price || 0), 0);
+
   const [name,          setName]          = useState(state.clientName);
   const [phone,         setPhone]         = useState(state.clientPhone);
   const [email,         setEmail]         = useState('');
@@ -65,7 +69,7 @@ export default function ClientForm() {
     dispatch({ type: 'SET_CLIENT', payload: { name: name.trim(), phone: phone.trim() } });
     try {
       const result = await createMutation.mutateAsync({
-        serviceId:    state.service.id,
+        serviceIds:   selectedServices.map(s => s.id),
         specialistId: state.specialist.id,
         date:         state.date,
         time:         state.time,
@@ -103,13 +107,13 @@ export default function ClientForm() {
         <p className="text-ink-3 text-sm mt-1">Revisa los detalles y completa tus datos</p>
       </div>
       <div className="card p-5 mb-6 space-y-3">
-        <SummaryRow label="Servicio" value={toTitleCase(state.service?.name)} />
+        <SummaryRow label={selectedServices.length > 1 ? 'Servicios' : 'Servicio'} value={combinedServiceName} />
         <SummaryRow label="Especialista" value={toTitleCase(state.specialist?.name)} />
         <SummaryRow label="Fecha"    value={formatDate(state.date)} />
         <SummaryRow label="Hora"     value={formatTime(state.time, timeFmt)} />
         <div className="pt-3 border-t border-edge flex justify-between items-center">
           <span className="text-sm font-semibold text-ink">Total</span>
-          <span className="text-lg font-semibold text-gold tabular-nums">{formatPrice(state.service?.price)}</span>
+          <span className="text-lg font-semibold text-gold tabular-nums">{formatPrice(totalPrice)}</span>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
