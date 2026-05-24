@@ -9,7 +9,7 @@ export default function AppointmentLookup({ onSearch, loading, initialCode = '' 
   function handleSubmit(e) {
     e.preventDefault();
     const clean = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (clean.length !== 6) { setError('El código debe tener exactamente 6 caracteres.'); return; }
+    if (clean.length < 6 || clean.length > 12) { setError('El código debe tener 6 o 12 caracteres.'); return; }
     setError('');
     onSearch(clean);
   }
@@ -21,15 +21,15 @@ export default function AppointmentLookup({ onSearch, loading, initialCode = '' 
         <Input
           placeholder="ABC123"
           value={code}
-          onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+          onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12))}
           error={error}
           required
           className="tracking-[0.35em] text-center text-xl font-display font-bold text-gold"
           autoCapitalize="characters"
-          maxLength={6}
+          maxLength={12}
           autoFocus={!initialCode}
         />
-        <p className="text-ink-3 text-xs text-center mt-2">6 caracteres — letras y números</p>
+        <p className="text-ink-3 text-xs text-center mt-2">6 caracteres (cita individual) o 12 (cita grupal)</p>
       </div>
       <Button type="submit" size="lg" className="w-full" loading={loading}>
         Buscar cita

@@ -6,7 +6,7 @@ import GroupAppointmentCard from '../components/manage/GroupAppointmentCard';
 import { useAppointmentLookup, useGroupAppointmentLookup } from '../hooks/useAppointment';
 import { useToast } from '../components/ui/Toast';
 
-const CODE_RE = /^[A-Z0-9]{6}$/;
+const CODE_RE = /^[A-Z0-9]{6,12}$/;
 
 export default function Manage() {
   const [searchParams, setSearchParams] = useSearchParams();
