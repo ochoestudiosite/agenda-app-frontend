@@ -91,7 +91,7 @@ export default function DateTimePicker() {
   // Group mode returns availableSlots[] directly; single mode returns appointmentIntervals[]
   const appointmentIntervals = (!groupMode && activeData?.appointmentIntervals) || [];
   const groupAvailableSlots  = (groupMode  && activeData?.availableSlots)       || null;
-  const staffBlocked         = !groupMode && activeData?.staffBlocked;
+  const staffBlocked         = activeData?.staffBlocked;
 
   // ── Expert: Prioritize live config from avoid refresh issues ──────
   const intervalMins  = liveConfig.interval   || config?.slot_interval_mins || 30;
@@ -284,7 +284,7 @@ export default function DateTimePicker() {
               <div>
                 <p className="text-sm font-medium text-ink">Día no disponible</p>
                 <p className="text-xs text-ink-3 mt-1">
-                  {staffBlocked.reason || 'El especialista no estará disponible este día.'}
+                  {staffBlocked.reason || (groupMode ? 'Uno o más especialistas no están disponibles este día.' : 'El especialista no estará disponible este día.')}
                 </p>
               </div>
             </div>

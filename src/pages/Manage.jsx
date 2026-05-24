@@ -2,8 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppointmentLookup from '../components/manage/AppointmentLookup';
 import AppointmentCard from '../components/manage/AppointmentCard';
-import { useAppointmentLookup } from '../hooks/useAppointment';
+import GroupAppointmentCard from '../components/manage/GroupAppointmentCard';
+import { useAppointmentLookup, useGroupAppointmentLookup } from '../hooks/useAppointment';
 import { useToast } from '../components/ui/Toast';
+
+const CODE_RE = /^[A-Z0-9]{6}$/;
 
 export default function Manage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -11,13 +14,22 @@ export default function Manage() {
   const toast                            = useToast();
   const prevData                         = useRef(null);
 
-  const codeParam  = (searchParams.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-  const activeCode = codeParam.length === 6 ? codeParam : '';
+  const rawParam   = (searchParams.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const activeCode = CODE_RE.test(rawParam) ? rawParam : '';
 
-  const { data, isLoading, isError, error } = useAppointmentLookup(activeCode);
+  // Fire both lookups in parallel — only one will return data, the other 404s silently.
+  const singleQuery = useAppointmentLookup(activeCode);
+  const groupQuery  = useGroupAppointmentLookup(activeCode);
+
+  const isGroup     = !singleQuery.data && !!groupQuery.data;
+  const data        = singleQuery.data ?? groupQuery.data ?? null;
+  const isLoading   = singleQuery.isLoading || groupQuery.isLoading;
+  // Show error only when both queries have settled and neither returned data.
+  const isError     = !isLoading && !!activeCode && !data && (singleQuery.isError || groupQuery.isError);
+  const error       = singleQuery.error ?? groupQuery.error ?? null;
+
   const appointment = localAppt || data;
 
-  // Show toast when appointment is found (query goes from undefined → data)
   useEffect(() => {
     if (data && !prevData.current) toast('Cita encontrada', 'success');
     prevData.current = data;
@@ -42,7 +54,6 @@ export default function Manage() {
       </div>
 
       <div className="animate-fade-up" style={{ animationDelay: '60ms', animationFillMode: 'both' }}>
-        {/* key forces remount when code changes so input state is always in sync */}
         <AppointmentLookup
           key={activeCode}
           initialCode={activeCode}
@@ -65,7 +76,11 @@ export default function Manage() {
           </div>
         )}
 
-        {appointment && (
+        {appointment && isGroup && (
+          <GroupAppointmentCard group={appointment} />
+        )}
+
+        {appointment && !isGroup && (
           <AppointmentCard
             appointment={appointment}
             onUpdated={updated => setLocalAppt(updated)}

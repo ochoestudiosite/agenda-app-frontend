@@ -10,6 +10,15 @@ export function useAppointmentLookup(code) {
   });
 }
 
+export function useGroupAppointmentLookup(code) {
+  return useQuery({
+    queryKey: ['groupAppointment', code],
+    queryFn: () => api.getGroupAppointment(code),
+    enabled: !!code,
+    retry: false,
+  });
+}
+
 export function useCreateAppointment() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -8,7 +8,7 @@ export default function AppointmentLookup({ onSearch, loading, initialCode = '' 
 
   function handleSubmit(e) {
     e.preventDefault();
-    const clean = code.trim().toUpperCase();
+    const clean = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (clean.length !== 6) { setError('El código debe tener exactamente 6 caracteres.'); return; }
     setError('');
     onSearch(clean);
