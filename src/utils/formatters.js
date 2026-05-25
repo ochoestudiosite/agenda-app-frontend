@@ -37,6 +37,29 @@ export function formatServicePrice(service) {
   }
 }
 
+// Combined price display for a list of selected services.
+// Handles all 4 priceTypes and multi-service combos correctly.
+export function formatCombinedPrice(services) {
+  if (!services || services.length === 0) return '';
+  const hasAsk          = services.some(s => s.priceType === 'ask');
+  const hasRange        = services.some(s => s.priceType === 'range');
+  const hasStartingFrom = services.some(s => s.priceType === 'starting_from');
+  const knownMin        = services.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : (s.price || 0)), 0);
+  if (hasAsk) {
+    return knownMin > 0 ? `${formatPrice(knownMin)}+` : 'Precio a consultar';
+  }
+  if (hasRange) {
+    if (services.length === 1 && services[0].priceMax != null) {
+      return `${formatPrice(services[0].price)} – ${formatPrice(services[0].priceMax)}`;
+    }
+    return `${formatPrice(knownMin)}+`;
+  }
+  if (hasStartingFrom) {
+    return `Desde ${formatPrice(knownMin)}`;
+  }
+  return formatPrice(knownMin);
+}
+
 export function capitalize(str) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 }

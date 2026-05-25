@@ -4,7 +4,7 @@ import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useCreateAppointment } from '../../hooks/useAppointment';
 import { useConfig } from '../../hooks/useConfig';
-import { formatDate, formatTime, formatPrice, formatServicePrice, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatServicePrice, formatCombinedPrice, toTitleCase } from '../../utils/formatters';
 import { api } from '../../services/api';
 import Input from '../ui/Input';
 import PhoneInput from '../ui/PhoneInput';
@@ -56,15 +56,13 @@ export default function ClientForm() {
 
   const selectedServices   = state.services ?? [];
   const serviceAssignments = state.serviceAssignments ?? [];
-  const totalPrice = groupMode
-    ? serviceAssignments.reduce((sum, a) => sum + (a.service.priceType === 'ask' ? 0 : (a.service.price || 0)), 0)
-    : selectedServices.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : (s.price || 0)), 0);
-  const hasAskPrice = groupMode
-    ? serviceAssignments.some(a => a.service.priceType === 'ask')
-    : selectedServices.some(s => s.priceType === 'ask');
+  const groupServices      = serviceAssignments.map(a => a.service);
   const totalDuration = groupMode
-    ? serviceAssignments.reduce((sum, a) => sum + (a.service.duration || 0), 0)
+    ? groupServices.reduce((sum, s) => sum + (s.duration || 0), 0)
     : selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
+  const combinedPriceStr = groupMode
+    ? formatCombinedPrice(groupServices)
+    : formatCombinedPrice(selectedServices);
 
   const [name,          setName]          = useState(state.clientName);
   const [phone,         setPhone]         = useState(state.clientPhone);
@@ -217,7 +215,7 @@ export default function ClientForm() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[14px] font-semibold text-gold tabular-nums">
-                    {hasAskPrice ? (totalPrice > 0 ? `${formatPrice(totalPrice)}+` : 'Precio a consultar') : formatPrice(totalPrice)}
+                    {combinedPriceStr}
                   </p>
                   <p className="text-xs text-ink-3 mt-0.5">{totalDuration} min</p>
                 </div>
@@ -239,7 +237,7 @@ export default function ClientForm() {
         <div className="px-5 py-3.5 border-t border-edge flex items-center justify-between bg-raised/30">
           <span className="text-[13px] font-semibold text-ink">Total</span>
           <span className="text-[18px] font-bold text-gold tabular-nums">
-            {hasAskPrice ? (totalPrice > 0 ? `${formatPrice(totalPrice)}+` : 'Precio a consultar') : formatPrice(totalPrice)}
+            {combinedPriceStr}
           </span>
         </div>
       </div>

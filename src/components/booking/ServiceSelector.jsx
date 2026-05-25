@@ -1,6 +1,6 @@
 import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
-import { formatPrice, formatServicePrice, toTitleCase } from '../../utils/formatters';
+import { formatServicePrice, formatCombinedPrice, toTitleCase } from '../../utils/formatters';
 import { BackButton } from './SpecialistSelector';
 
 export default function ServiceSelector() {
@@ -9,8 +9,6 @@ export default function ServiceSelector() {
   const selected = state.services ?? [];
   const atMax = selected.length >= 5;
   const totalDuration = selected.reduce((sum, s) => sum + (s.duration || 0), 0);
-  const hasAsk        = selected.some(s => s.priceType === 'ask');
-  const knownPrice    = selected.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : (s.price || 0)), 0);
 
   if (isLoading) return (
     <div className="space-y-2.5">
@@ -78,9 +76,7 @@ export default function ServiceSelector() {
                 <span className="text-xs text-ink-3 tabular-nums">{totalDuration} min</span>
               </div>
               <span className="font-semibold text-ink tabular-nums">
-                {hasAsk
-                  ? knownPrice > 0 ? `${formatPrice(knownPrice)}+` : 'Precio a consultar'
-                  : formatPrice(knownPrice)}
+                {formatCombinedPrice(selected)}
               </span>
             </div>
             <button

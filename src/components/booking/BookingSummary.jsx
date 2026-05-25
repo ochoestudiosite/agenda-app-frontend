@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
-import { toTitleCase, formatPrice, formatTime } from '../../utils/formatters';
+import { toTitleCase, formatTime, formatCombinedPrice } from '../../utils/formatters';
 
 function shortDate(dateStr) {
   if (!dateStr) return '';
@@ -32,17 +32,12 @@ export default function BookingSummary() {
   const selectedServices = state.services ?? [];
   if (selectedServices.length > 0) {
     const totalDuration = selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
-    const hasAsk        = selectedServices.some(s => s.priceType === 'ask');
-    const knownPrice    = selectedServices.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : (s.price || 0)), 0);
-    const priceStr      = hasAsk
-      ? knownPrice > 0 ? `${formatPrice(knownPrice)}+` : 'Precio a consultar'
-      : formatPrice(knownPrice);
     items.push({
       id:       'service',
       category: selectedServices.length > 1 ? 'servicios' : 'servicio',
       icon:     <ScissorsIcon />,
       label:    selectedServices.map(s => toTitleCase(s.name)).join(' + '),
-      sub:      `${totalDuration} min · ${priceStr}`,
+      sub:      `${totalDuration} min · ${formatCombinedPrice(selectedServices)}`,
     });
   }
 
