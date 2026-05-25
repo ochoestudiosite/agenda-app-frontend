@@ -18,7 +18,7 @@ export default function ServiceSelector() {
       </div>
       {[...Array(4)].map((_, i) => (
         <div key={i} className="flex items-center gap-4 p-5 rounded-2xl border border-edge bg-card">
-          <div className="shrink-0 w-14 h-14 rounded-xl skeleton" />
+          <div className="shrink-0 w-14 h-14 rounded-full skeleton" />
           <div className="flex-1 space-y-2">
             <div className="h-4 skeleton rounded-lg" style={{ width: `${55 + (i % 3) * 15}%` }} />
             <div className="h-3 skeleton rounded-md" style={{ width: `${35 + (i % 2) * 20}%` }} />
@@ -94,10 +94,12 @@ export default function ServiceSelector() {
 }
 
 function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
+  const hasImage = Boolean(service.imageUrl);
+
   return (
     <button
       onClick={onToggle}
-      className={`w-full text-left group flex items-center gap-4 p-5 rounded-2xl border
+      className={`w-full text-left group flex items-center gap-4 p-4 rounded-2xl border
                   transition-all duration-240 cursor-pointer animate-fade-up
                   ${isSelected
                     ? 'border-gold bg-gold/5 shadow-card'
@@ -107,12 +109,20 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
                   }`}
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
-      {/* Duration pill */}
-      <div className={`shrink-0 flex flex-col items-center justify-center w-14 h-14 rounded-xl
-                       transition-colors duration-240
-                       ${isSelected ? 'bg-gold/15' : 'bg-raised group-hover:bg-gold/8'}`}>
-        <span className="font-display text-base font-semibold text-ink leading-none">{service.duration}</span>
-        <span className="text-[0.625rem] text-ink-3 font-medium mt-0.5">min</span>
+      {/* Circular avatar — image when available, duration fallback otherwise */}
+      <div className={`shrink-0 w-14 h-14 rounded-full overflow-hidden flex flex-col items-center justify-center
+                       border-2 transition-all duration-240
+                       ${isSelected
+                         ? 'border-gold/60 bg-gold/10'
+                         : 'border-edge bg-raised group-hover:border-gold/40 group-hover:bg-gold/5'}`}>
+        {hasImage ? (
+          <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+        ) : (
+          <>
+            <span className="font-display text-sm font-bold text-gold leading-none">{service.duration}</span>
+            <span className="text-[0.5625rem] text-ink-3 font-medium mt-0.5">min</span>
+          </>
+        )}
       </div>
 
       {/* Info */}
@@ -121,7 +131,14 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
                        ${isSelected ? 'text-gold' : 'text-ink group-hover:text-gold'}`}>
           {toTitleCase(service.name)}
         </p>
-        <p className="text-xs text-ink-3 mt-0.5 leading-snug line-clamp-1">{service.description}</p>
+        {service.description && (
+          <p className="text-xs text-ink-3 mt-0.5 leading-snug line-clamp-2">{service.description}</p>
+        )}
+        {hasImage && (
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[0.6875rem] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
+            {service.duration} min
+          </span>
+        )}
       </div>
 
       {/* Price + checkbox */}

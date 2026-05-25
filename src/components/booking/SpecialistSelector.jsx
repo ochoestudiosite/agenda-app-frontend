@@ -178,12 +178,12 @@ function SpecialistCard({ specialist, onSelect, delay }) {
   return (
     <button
       onClick={onSelect}
-      className="group flex sm:flex-col items-center sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge bg-card
+      className="group flex sm:flex-col items-start sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge bg-card
                  text-left sm:text-center hover:border-gold/40 hover:shadow-card
                  active:scale-[0.99] transition-all duration-240 cursor-pointer animate-fade-up"
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
-      <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-raised border-2 border-edge
+      <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-raised border-2 border-edge mt-0.5 sm:mt-0
                       group-hover:border-gold/50 flex items-center justify-center transition-all duration-240 overflow-hidden">
         {specialist.avatarUrl ? (
           <img src={specialist.avatarUrl} alt={specialist.name} className="w-full h-full object-cover" />
@@ -191,13 +191,18 @@ function SpecialistCard({ specialist, onSelect, delay }) {
           <span className="font-display text-xl font-bold text-gold">{specialist.initials}</span>
         )}
       </div>
-      <div className="flex-1 sm:flex-none">
+      <div className="flex-1 sm:flex-none min-w-0">
         <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160">
           {toTitleCase(specialist.name)}
         </p>
-        <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{specialist.specialty}</p>
+        {specialist.specialty && (
+          <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{specialist.specialty}</p>
+        )}
+        {specialist.bio && (
+          <p className="text-xs text-ink-3/70 mt-1.5 leading-relaxed line-clamp-2 sm:line-clamp-3">{specialist.bio}</p>
+        )}
       </div>
-      <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
       </svg>
     </button>
