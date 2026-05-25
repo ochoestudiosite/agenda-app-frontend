@@ -57,6 +57,8 @@ export default function Home() {
   const { data: servicesData, isLoading: loadingServices } = useQuery({
     queryKey: ['services'],
     queryFn: api.getServices,
+    staleTime: 0,
+    refetchOnMount: 'always',
     retry: 2,
   });
 
