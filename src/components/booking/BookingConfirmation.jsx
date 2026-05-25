@@ -1,18 +1,31 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useBooking } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
+import { api } from '../../services/api';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import Button from '../ui/Button';
+
+function initials(name) {
+  return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+}
 
 export default function BookingConfirmation() {
   const { state, dispatch } = useBooking();
   const { data: config }    = useConfig();
   const timeFmt             = config?.time_format ?? '12h';
   const { confirmation }    = state;
+  const isGroup             = !!confirmation?.groupCode;
+  const displayCode         = isGroup ? confirmation?.groupCode : confirmation?.code;
 
-  const isGroup    = !!confirmation?.groupCode;
-  const displayCode = isGroup ? confirmation.groupCode : confirmation?.code;
+  const { data: specialistsData } = useQuery({
+    queryKey: ['specialists'],
+    queryFn:  () => api.getSpecialists(),
+    staleTime: 300_000,
+    enabled:  isGroup,
+  });
+  const allSpecialists = specialistsData?.specialists ?? [];
 
   return (
     <div className="animate-fade-up max-w-md mx-auto px-1">
@@ -74,27 +87,33 @@ export default function BookingConfirmation() {
         <div className="px-6 pt-5 pb-6 space-y-3">
           {isGroup ? (
             <>
-              {(confirmation.appointments ?? []).map((appt, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 mt-px">
-                    <span className="text-[9px] font-bold text-gold leading-none">{i + 1}</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-ink leading-snug">
-                      {toTitleCase(appt.serviceName)}
+              {(confirmation.appointments ?? []).map((appt, i) => {
+                const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+                return (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-px">
+                      {specialist?.avatarUrl
+                        ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
+                        : <span className="text-[10px] font-bold text-gold leading-none">{initials(appt.specialistName)}</span>
+                      }
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-semibold text-ink leading-snug">
+                        {toTitleCase(appt.serviceName)}
+                      </p>
+                      <p className="text-[11.5px] text-ink-3 mt-0.5 leading-snug">
+                        {toTitleCase(appt.specialistName)}
+                        {' · '}
+                        <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
+                        {' · '}{appt.serviceDuration} min
+                      </p>
+                    </div>
+                    <p className="text-[12px] font-semibold text-gold tabular-nums shrink-0">
+                      {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
                     </p>
-                    <p className="text-[11.5px] text-ink-3 mt-0.5 leading-snug">
-                      {toTitleCase(appt.specialistName)}
-                      {' · '}
-                      <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
-                      {' · '}{appt.serviceDuration} min
-                    </p>
                   </div>
-                  <p className="text-[12px] font-semibold text-gold tabular-nums shrink-0">
-                    {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
 
               <div className="pt-3.5 border-t border-edge space-y-2.5">
                 <DetailRow icon={<CalendarIcon />} label="Fecha"    value={formatDate(confirmation.date)} />

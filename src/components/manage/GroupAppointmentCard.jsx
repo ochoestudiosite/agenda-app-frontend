@@ -1,11 +1,17 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, formatServicePrice, toTitleCase } from '../../utils/formatters';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../hooks/useAppointment';
 import { useToast } from '../ui/Toast';
+import { api } from '../../services/api';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
+
+function initials(name) {
+  return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+}
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS_ES   = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
@@ -28,6 +34,13 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const isCancelled  = status === 'cancelled';
   const todayStr     = toDateStr(new Date());
   const isPast       = !!group.date && group.date < todayStr;
+
+  const { data: specialistsData } = useQuery({
+    queryKey: ['specialists'],
+    queryFn:  () => api.getSpecialists(),
+    staleTime: 300_000,
+  });
+  const allSpecialists = specialistsData?.specialists ?? [];
 
   const [mode,          setMode]          = useState('view');
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -84,29 +97,37 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
 
         {/* Appointments list */}
         <div className="px-6 py-4 space-y-2.5 border-b border-edge">
-          {(group.appointments ?? []).map((appt, i) => (
-            <div key={appt.code} className="flex items-start gap-3 p-3 rounded-xl border border-edge bg-raised/40">
-              <div className="w-6 h-6 rounded-md bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 text-[10px] font-bold text-gold">
-                {i + 1}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-ink leading-snug">
-                  {toTitleCase(appt.serviceName)}
-                </p>
-                <p className="text-[11px] text-ink-3 mt-0.5">con {toTitleCase(appt.specialistName)}</p>
-                <div className="flex items-center gap-2.5 mt-1">
-                  <span className="text-[11px] text-ink-2 font-medium">{formatTime(appt.time, timeFmt)}</span>
-                  <span className="text-[10px] text-ink-3">{appt.serviceDuration} min</span>
-                  <span className="text-[11px] text-gold font-medium tabular-nums">
-                    {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
-                  </span>
-                  {appt.status === 'cancelled' && (
-                    <span className="badge badge-cancelled text-[10px]">Cancelada</span>
-                  )}
+          {(group.appointments ?? []).map((appt) => {
+            const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+            return (
+              <div key={appt.code} className="flex items-start gap-3 p-3 rounded-xl border border-edge bg-raised/40">
+                <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
+                  {specialist?.avatarUrl
+                    ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
+                    : <span className="text-[11px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                  }
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-ink leading-snug">
+                    {toTitleCase(appt.serviceName)}
+                  </p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">{toTitleCase(appt.specialistName)}</p>
+                  <div className="flex items-center gap-2.5 mt-1.5">
+                    <span className="text-[11px] text-ink-2 font-medium">{formatTime(appt.time, timeFmt)}</span>
+                    <span className="w-0.5 h-0.5 rounded-full bg-ink-3/50" />
+                    <span className="text-[10px] text-ink-3">{appt.serviceDuration} min</span>
+                    <span className="w-0.5 h-0.5 rounded-full bg-ink-3/50" />
+                    <span className="text-[11px] text-gold font-medium tabular-nums">
+                      {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
+                    </span>
+                    {appt.status === 'cancelled' && (
+                      <span className="badge badge-cancelled text-[10px]">Cancelada</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Reagendada banner */}
@@ -160,7 +181,10 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                       ¿Cancelar todos los servicios de este grupo? Esta acción no se puede deshacer.
                     </p>
                     <div className="flex gap-2">
-                      <button
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        loading={cancelMutation.isPending}
                         onClick={async () => {
                           try {
                             const updated = await cancelMutation.mutateAsync(group.groupCode);
@@ -171,18 +195,19 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                             toast(err.message || 'Error al cancelar.', 'error');
                           }
                         }}
-                        disabled={cancelMutation.isPending}
-                        className="flex-1 py-2 rounded-lg text-xs font-semibold bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-all cursor-pointer"
+                        className="flex-1"
                       >
-                        {cancelMutation.isPending ? 'Cancelando…' : 'Sí, cancelar'}
-                      </button>
-                      <button
-                        onClick={() => setConfirmCancel(false)}
+                        Sí, cancelar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         disabled={cancelMutation.isPending}
-                        className="flex-1 py-2 rounded-lg text-xs font-medium text-ink-2 bg-raised hover:bg-edge transition-all cursor-pointer"
+                        onClick={() => setConfirmCancel(false)}
+                        className="flex-1"
                       >
                         No, volver
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -420,30 +445,41 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
           <div className="bg-raised rounded-xl border border-edge px-4 py-3.5">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-3">Cronograma</p>
             <div className="space-y-2">
-              {cronograma.map((appt, i) => (
-                <div key={appt.code} className="flex items-center gap-3">
-                  <div className="flex flex-col items-center self-stretch">
-                    <div className="w-2 h-2 rounded-full bg-gold border-2 border-card mt-1 shrink-0" />
-                    {i < cronograma.length - 1 && <div className="w-px flex-1 bg-gold/30 my-0.5" />}
-                  </div>
-                  <div className="flex-1 pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-[12px] font-semibold text-ink leading-snug">
-                          {toTitleCase(appt.serviceName)}
-                        </p>
-                        <p className="text-[10px] text-ink-3">con {toTitleCase(appt.specialistName)}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-[11px] font-bold text-gold tabular-nums">
-                          {formatTime(appt.startStr, timeFmt)}
-                        </p>
-                        <p className="text-[10px] text-ink-3">{appt.serviceDuration} min</p>
+              {cronograma.map((appt, i) => {
+                const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+                return (
+                  <div key={appt.code} className="flex items-center gap-3">
+                    <div className="flex flex-col items-center self-stretch">
+                      <div className="w-2 h-2 rounded-full bg-gold border-2 border-card mt-1 shrink-0" />
+                      {i < cronograma.length - 1 && <div className="w-px flex-1 bg-gold/30 my-0.5" />}
+                    </div>
+                    <div className="flex-1 pb-2">
+                      <div className="flex items-center gap-2.5 justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-full border border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                            {specialist?.avatarUrl
+                              ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
+                              : <span className="text-[9px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                            }
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-semibold text-ink leading-snug truncate">
+                              {toTitleCase(appt.serviceName)}
+                            </p>
+                            <p className="text-[10px] text-ink-3 truncate">{toTitleCase(appt.specialistName)}</p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[11px] font-bold text-gold tabular-nums">
+                            {formatTime(appt.startStr, timeFmt)}
+                          </p>
+                          <p className="text-[10px] text-ink-3">{appt.serviceDuration} min</p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="pt-2.5 border-t border-edge flex justify-between text-xs">
               <span className="text-ink-3">Total</span>

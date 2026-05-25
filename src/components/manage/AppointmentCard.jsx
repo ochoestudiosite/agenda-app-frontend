@@ -14,6 +14,10 @@ const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Ago
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DAYS_ES     = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
 
+function initials(name) {
+  return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+}
+
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
@@ -28,6 +32,17 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
   // Look up service DB id for specialist filtering
   const serviceDbId = svcData?.services?.find(s => s.id === appointment.serviceId)?.dbId ?? null;
+
+  // Full data for avatar rendering in the card view
+  const { data: specialistsData } = useQuery({
+    queryKey: ['specialists'],
+    queryFn:  () => api.getSpecialists(),
+    staleTime: 300_000,
+  });
+  const allSpecialistsMain     = specialistsData?.specialists ?? [];
+  const appointmentSpecialist  = allSpecialistsMain.find(s => String(s.id) === String(appointment.specialistId));
+  const appointmentService     = svcData?.services?.find(s => s.id === appointment.serviceId);
+  const appointmentBranch      = branches.find(b => String(b.id) === String(appointment.branchId));
 
   const [mode,         setMode]         = useState('view');
   const [reschedStep,  setReschedStep]  = useState('branch');
@@ -152,45 +167,55 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
         {/* Service */}
         <div className="px-6 py-4 border-b border-edge">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-2">Servicio</p>
-          <div className="flex items-start justify-between gap-4">
-            <p className="text-[15px] font-semibold text-ink leading-snug">
-              {toTitleCase(appointment.serviceName)}
-            </p>
-            <div className="text-right shrink-0">
-              <p className="text-[19px] font-bold text-gold tabular-nums">
-                {appointment.priceType === 'ask' ? 'Precio a consultar' : formatPrice(appointment.servicePrice)}
-              </p>
-              <p className="text-[11px] text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
+          <p className="label-section mb-3">Servicio</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
+              {appointmentService?.imageUrl
+                ? <img src={appointmentService.imageUrl} alt={appointment.serviceName} className="w-full h-full object-cover" />
+                : <span className="text-sm font-bold text-ink-2">{initials(appointment.serviceName)}</span>
+              }
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                {toTitleCase(appointment.serviceName)}
+              </p>
+              <p className="text-xs text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
+            </div>
+            <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
+              {appointment.priceType === 'ask' ? 'A consultar' : formatPrice(appointment.servicePrice)}
+            </p>
           </div>
         </div>
 
         {/* Specialist + Branch */}
-        <div className="px-6 py-4 space-y-3">
+        <div className="px-6 py-4 space-y-3.5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gold/8 border border-gold/20 flex items-center justify-center shrink-0">
-              <span className="text-[13px] font-bold text-gold">
-                {appointment.specialistName?.charAt(0)?.toUpperCase() || '?'}
-              </span>
+            <div className="w-10 h-10 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+              {appointmentSpecialist?.avatarUrl
+                ? <img src={appointmentSpecialist.avatarUrl} alt={appointment.specialistName} className="w-full h-full object-cover" />
+                : <span className="text-sm font-bold text-gold">{initials(appointment.specialistName)}</span>
+              }
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Especialista</p>
-              <p className="text-[14px] font-semibold text-ink">{toTitleCase(appointment.specialistName)}</p>
+              <p className="label-section">Especialista</p>
+              <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(appointment.specialistName)}</p>
             </div>
           </div>
 
           {appointment.branchName && (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-raised border border-edge flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
+              <div className="w-10 h-10 rounded-full border border-edge bg-raised flex items-center justify-center shrink-0 overflow-hidden">
+                {appointmentBranch?.image_url
+                  ? <img src={appointmentBranch.image_url} alt={appointment.branchName} className="w-full h-full object-cover" />
+                  : <svg className="w-4 h-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                }
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
-                <p className="text-[14px] font-semibold text-ink">{appointment.branchName}</p>
+                <p className="label-section">Sucursal</p>
+                <p className="text-[14px] font-semibold text-ink mt-0.5">{appointment.branchName}</p>
               </div>
             </div>
           )}
@@ -444,17 +469,22 @@ function ReschedulePanel({
               key={b.id}
               onClick={() => { setReBranch(b); setReSpecialist(null); setNewDate(null); setNewTime(null); setReschedStep('specialist'); }}
               className={[
-                'w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
+                'w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer',
                 reBranch?.id === b.id
                   ? 'border-gold bg-gold/6 shadow-xs'
                   : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
               ].join(' ')}
             >
-              <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
+              <div className="w-9 h-9 rounded-full border border-edge overflow-hidden flex items-center justify-center shrink-0">
+                {b.image_url
+                  ? <img src={b.image_url} alt={b.name} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full bg-gold/10 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                    </div>
+                }
               </div>
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-ink truncate">{b.name}</p>
@@ -509,20 +539,27 @@ function ReschedulePanel({
           {(reBranch || reSpecialist) && (
             <div className="flex flex-wrap gap-1.5">
               {reBranch && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2.5 py-1 rounded-full">
-                  <svg className="w-3 h-3 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2 py-1 rounded-full">
+                  <div className="w-4 h-4 rounded-full overflow-hidden border border-edge bg-gold/10 flex items-center justify-center shrink-0">
+                    {reBranch.image_url
+                      ? <img src={reBranch.image_url} className="w-full h-full object-cover" alt="" />
+                      : <svg className="w-2.5 h-2.5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    }
+                  </div>
                   {reBranch.name}
                 </span>
               )}
               {reSpecialist && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2.5 py-1 rounded-full">
-                  <svg className="w-3 h-3 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2 py-1 rounded-full">
+                  <div className="w-4 h-4 rounded-full overflow-hidden border border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
+                    {reSpecialist.avatarUrl
+                      ? <img src={reSpecialist.avatarUrl} className="w-full h-full object-cover" alt="" />
+                      : <span className="text-[7px] font-bold text-gold leading-none">{initials(reSpecialist.name)}</span>
+                    }
+                  </div>
                   {toTitleCase(reSpecialist.name)}
                 </span>
               )}
