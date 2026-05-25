@@ -215,7 +215,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
               </div>
               <div>
                 <p className="label-section">Sucursal</p>
-                <p className="text-[14px] font-semibold text-ink mt-0.5">{appointment.branchName}</p>
+                <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(appointment.branchName)}</p>
               </div>
             </div>
           )}
@@ -487,7 +487,7 @@ function ReschedulePanel({
                 }
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink truncate">{b.name}</p>
+                <p className="text-[13px] font-semibold text-ink truncate">{toTitleCase(b.name)}</p>
                 {b.address && <p className="text-xs text-ink-3 truncate">{b.address}</p>}
               </div>
             </button>
@@ -549,7 +549,7 @@ function ReschedulePanel({
                         </svg>
                     }
                   </div>
-                  {reBranch.name}
+                  {toTitleCase(reBranch.name)}
                 </span>
               )}
               {reSpecialist && (
@@ -653,7 +653,7 @@ function ReschedulePanel({
                   return (
                     <div key={key}>
                       <p className="label-section mb-2">{label}</p>
-                      <div className="grid grid-cols-4 gap-1.5">
+                      <div className="grid grid-cols-3 gap-2">
                         {slots.map(slot => {
                           const [sh, sm]  = slot.split(':').map(Number);
                           const slotStart = sh * 60 + sm;

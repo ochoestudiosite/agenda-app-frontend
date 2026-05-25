@@ -372,9 +372,9 @@ export default function DateTimePicker() {
               {groupBreakdown.map(({ service, specialist, startMins, endMins, isLast }, i) => (
                 <div key={i} className="flex items-start gap-3">
                   {/* Timeline dot + connector */}
-                  <div className="flex flex-col items-center shrink-0 pt-1" style={{ width: 20 }}>
+                  <div className="w-5 flex flex-col items-center shrink-0 pt-1">
                     <div className="w-2.5 h-2.5 rounded-full bg-gold ring-[3px] ring-gold/20 shrink-0" />
-                    {!isLast && <div className="w-px bg-edge mt-1.5 mb-0" style={{ height: 32 }} />}
+                    {!isLast && <div className="w-px h-8 bg-edge mt-1.5" />}
                   </div>
                   {/* Content */}
                   <div className={`flex-1 min-w-0 flex items-start justify-between gap-2 ${!isLast ? 'pb-3' : ''}`}>
