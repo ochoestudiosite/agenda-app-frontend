@@ -131,6 +131,8 @@ function ServiceCard({ service, i, buttonText }) {
   const duration  = service.duration || service.duration_mins;
   const priceType = service.priceType || service.price_type || 'fixed';
   const showPrice = priceType !== 'ask' && service.price != null;
+  // Accepts both camelCase (API/serviceCache) and snake_case (custom editor items)
+  const imageUrl  = service.imageUrl || service.image_url || null;
 
   return (
     <motion.div
@@ -143,9 +145,9 @@ function ServiceCard({ service, i, buttonText }) {
       <Link to="/agendar" className="block">
         {/* Image with floating price chip */}
         <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] overflow-hidden bg-raised">
-          {service.image_url ? (
+          {imageUrl ? (
             <img
-              src={service.image_url}
+              src={imageUrl}
               alt={service.name}
               loading="lazy"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
@@ -169,7 +171,7 @@ function ServiceCard({ service, i, buttonText }) {
           )}
 
           {/* Title overlaid at bottom for image-rich cards */}
-          {service.image_url && (
+          {imageUrl && (
             <div className="absolute inset-x-0 bottom-0 p-5 lg:p-6">
               <h3 className="text-white text-xl lg:text-2xl font-semibold tracking-tight drop-shadow-md">
                 {service.name}
@@ -189,9 +191,9 @@ function ServiceCard({ service, i, buttonText }) {
           image (image-rich cards already show those over the image). The
           description is always shown so admins can use the Studio Editor's
           description field to add context on every card style. */}
-      {(!service.image_url || service.description) && (
+      {(!imageUrl || service.description) && (
         <div className="mt-5 px-1 flex-1 flex flex-col">
-          {!service.image_url && (
+          {!imageUrl && (
             <>
               <h3 className="text-xl font-semibold text-ink tracking-tight">{service.name}</h3>
               {duration && (
@@ -203,7 +205,7 @@ function ServiceCard({ service, i, buttonText }) {
             </>
           )}
           {service.description && (
-            <p className={`text-sm text-ink-2 leading-relaxed line-clamp-2 ${!service.image_url ? 'mt-3' : ''}`}>
+            <p className={`text-sm text-ink-2 leading-relaxed line-clamp-2 ${!imageUrl ? 'mt-3' : ''}`}>
               {service.description}
             </p>
           )}
