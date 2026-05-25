@@ -51,6 +51,8 @@ export default function Home() {
   const { data: config, isLoading: loadingConfig, isError: configError } = useQuery({
     queryKey: ['config'],
     queryFn: api.getConfig,
+    staleTime: 0,
+    refetchOnMount: 'always',
     retry: 2,
   });
 
@@ -65,6 +67,8 @@ export default function Home() {
   const { data: staffData, isLoading: loadingStaff } = useQuery({
     queryKey: ['specialists'],
     queryFn: api.getSpecialists,
+    staleTime: 0,
+    refetchOnMount: 'always',
     retry: 2,
   });
 
