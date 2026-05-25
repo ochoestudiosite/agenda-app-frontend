@@ -49,9 +49,9 @@ export default function StepIndicator({ currentStep, hasBranch = false, onNaviga
                     'transition-all duration-300',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
                     isCompleted
-                      ? 'bg-gold cursor-pointer hover:scale-110 hover:shadow-[0_0_0_5px_rgba(184,134,11,0.18)] active:scale-[0.97]'
+                      ? 'bg-gold cursor-pointer hover:scale-110 hover:shadow-[0_0_0_5px_rgba(0,184,122,0.18)] active:scale-[0.97]'
                       : isCurrent
-                        ? 'bg-surface border-2 border-gold shadow-[0_0_0_4px_rgba(184,134,11,0.1)] cursor-default'
+                        ? 'bg-surface border-2 border-gold shadow-[0_0_0_4px_rgba(0,184,122,0.1)] cursor-default'
                         : 'bg-surface border-2 border-edge/50 cursor-default',
                   ].join(' ')}
                 >
