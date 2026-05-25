@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
-import { useRescheduleGroupAppointment } from '../../hooks/useAppointment';
+import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../hooks/useAppointment';
 import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
@@ -29,7 +29,9 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const todayStr     = toDateStr(new Date());
   const isPast       = !!group.date && group.date < todayStr;
 
-  const [mode, setMode] = useState('view');
+  const [mode,          setMode]          = useState('view');
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const cancelMutation = useCancelGroupAppointment();
 
   return (
     <div className="max-w-xl mx-auto animate-fade-up space-y-3">
@@ -126,7 +128,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
 
         {/* Actions */}
         {!isCancelled && mode === 'view' && (
-          <div className="px-6 pb-6 pt-3">
+          <div className="px-6 pb-6 pt-3 space-y-2.5">
             {isPast ? (
               <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -135,9 +137,50 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                 Este grupo ya ocurrió.
               </div>
             ) : (
-              <Button onClick={() => setMode('reschedule')} className="w-full">
-                Reagendar grupo
-              </Button>
+              <>
+                <Button onClick={() => setMode('reschedule')} className="w-full">
+                  Reagendar grupo
+                </Button>
+                {!confirmCancel ? (
+                  <button
+                    onClick={() => setConfirmCancel(true)}
+                    className="w-full py-2.5 rounded-xl text-xs font-medium text-red-500 hover:bg-red-500/6 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
+                  >
+                    Cancelar reservación
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3.5 space-y-3">
+                    <p className="text-xs text-ink-2 leading-relaxed">
+                      ¿Cancelar todos los servicios de este grupo? Esta acción no se puede deshacer.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const updated = await cancelMutation.mutateAsync(group.groupCode);
+                            setConfirmCancel(false);
+                            onUpdated?.(updated);
+                            toast('Reservación cancelada.', 'success');
+                          } catch (err) {
+                            toast(err.message || 'Error al cancelar.', 'error');
+                          }
+                        }}
+                        disabled={cancelMutation.isPending}
+                        className="flex-1 py-2 rounded-lg text-xs font-semibold bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-all cursor-pointer"
+                      >
+                        {cancelMutation.isPending ? 'Cancelando…' : 'Sí, cancelar'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmCancel(false)}
+                        disabled={cancelMutation.isPending}
+                        className="flex-1 py-2 rounded-lg text-xs font-medium text-ink-2 bg-raised hover:bg-edge transition-all cursor-pointer"
+                      >
+                        No, volver
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

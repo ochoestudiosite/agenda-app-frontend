@@ -60,3 +60,13 @@ export function useCancelAppointment() {
     },
   });
 }
+
+export function useCancelGroupAppointment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (code) => api.cancelGroupAppointment(code),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['groupAppointment', data.groupCode], data);
+    },
+  });
+}
