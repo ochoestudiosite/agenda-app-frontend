@@ -167,7 +167,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
         {/* Service */}
         <div className="px-6 py-4 border-b border-edge">
-          <p className="label-section mb-3">Servicio</p>
+          <p className="label-section mb-3">{appointment.serviceName?.includes(' + ') ? 'Servicios' : 'Servicio'}</p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
               {appointmentService?.imageUrl

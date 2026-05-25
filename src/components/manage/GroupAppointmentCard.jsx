@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { formatDate, formatTime, formatPrice, formatServicePrice, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../hooks/useAppointment';
@@ -13,8 +13,9 @@ function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 }
 
-const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DAYS_ES   = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+const MONTHS_ES   = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DAYS_ES     = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
 
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -27,13 +28,27 @@ function minsToStr(m) {
 export default function GroupAppointmentCard({ group, onUpdated }) {
   const toast            = useToast();
   const { data: config } = useConfig();
-  const timeFmt = config?.time_format ?? '12h';
+  const timeFmt  = config?.time_format ?? '12h';
+  const branches = config?.branches   ?? [];
 
   const allCancelled = group.appointments?.every(a => a.status === 'cancelled');
   const status       = allCancelled ? 'cancelled' : group.status;
   const isCancelled  = status === 'cancelled';
   const todayStr     = toDateStr(new Date());
   const isPast       = !!group.date && group.date < todayStr;
+
+  // Date box values
+  const apptDate  = new Date(group.date + 'T12:00:00');
+  const monthAbbr = MONTH_SHORT[apptDate.getMonth()];
+  const dayNum    = group.date?.split('-')[2];
+
+  // Overall start time = first appointment's time
+  const startTime = group.appointments?.[0]?.time ?? null;
+
+  // Branch info
+  const groupBranchId   = group.appointments?.[0]?.branchId ?? null;
+  const groupBranch     = branches.find(b => String(b.id) === String(groupBranchId));
+  const groupBranchName = group.appointments?.[0]?.branchName ?? groupBranch?.name ?? null;
 
   const { data: specialistsData } = useQuery({
     queryKey: ['specialists'],
@@ -42,9 +57,19 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   });
   const allSpecialists = specialistsData?.specialists ?? [];
 
-  const [mode,          setMode]          = useState('view');
-  const [confirmCancel, setConfirmCancel] = useState(false);
-  const cancelMutation = useCancelGroupAppointment();
+  const [mode, setMode]    = useState('view'); // 'view' | 'cancel-confirm' | 'reschedule'
+  const cancelMutation     = useCancelGroupAppointment();
+
+  async function handleCancel() {
+    try {
+      const updated = await cancelMutation.mutateAsync(group.groupCode);
+      setMode('view');
+      onUpdated?.(updated);
+      toast('Visita cancelada.', 'info');
+    } catch (err) {
+      toast(err.message || 'Error al cancelar.', 'error');
+    }
+  }
 
   return (
     <div className="max-w-xl mx-auto animate-fade-up space-y-3">
@@ -57,77 +82,107 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           'bg-gold'
         }`} />
 
-        {/* Header */}
+        {/* Code + client | StatusBadge */}
         <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-3 border-b border-edge">
           <div className="min-w-0">
-            <div className="flex items-center gap-2.5 mb-1">
-              <p className="font-mono text-[22px] font-bold text-gold tracking-[0.18em] leading-tight">
-                {group.groupCode}
-              </p>
-              <StatusBadge status={status} />
-            </div>
-            <p className="text-xs text-ink-3 truncate">
+            <p className="font-mono text-[22px] font-bold text-gold tracking-[0.18em] leading-tight">
+              {group.groupCode}
+            </p>
+            <p className="text-xs text-ink-3 mt-0.5 truncate">
               {toTitleCase(group.clientName)} · {group.clientPhone}
             </p>
           </div>
+          <StatusBadge status={status} />
+        </div>
+
+        {/* Date + Time */}
+        <div className="px-6 py-4 flex items-center gap-4 border-b border-edge">
+          <div className="w-12 h-12 rounded-2xl bg-gold/8 border border-gold/20 flex flex-col items-center justify-center shrink-0">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
+            <span className="text-[22px] font-bold text-gold leading-tight tabular-nums">{dayNum}</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-[14px] font-semibold text-ink leading-snug">{formatDate(group.date)}</p>
+            {startTime && (
+              <p className="text-[22px] font-bold text-gold tabular-nums leading-tight">
+                {formatTime(startTime, timeFmt)}
+              </p>
+            )}
+          </div>
           <div className="text-right shrink-0">
-            <p className="text-[10px] text-ink-3 uppercase tracking-wider font-medium">Total</p>
-            <p className="text-base font-bold text-gold tabular-nums">
-              {(group.appointments ?? []).some(a => a.priceType === 'ask')
-                ? (group.totalPrice > 0 ? `${formatPrice(group.totalPrice)}+` : 'A consultar')
-                : formatPrice(group.totalPrice)}
+            <p className="text-xs text-ink-3 tabular-nums">{group.totalDuration} min</p>
+            <p className="text-xs text-ink-3">
+              {group.appointments?.length} {group.appointments?.length === 1 ? 'servicio' : 'servicios'}
             </p>
           </div>
         </div>
 
-        {/* Date */}
+        {/* Appointments / Services list */}
         <div className="px-6 py-4 border-b border-edge">
-          <div className="flex items-center gap-2 text-sm">
-            <svg className="w-4 h-4 text-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-              <rect x="3" y="4" width="18" height="18" rx="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-            <span className="font-semibold text-ink">{formatDate(group.date)}</span>
-            <span className="text-ink-3 text-xs ml-auto">
-              {group.totalDuration} min · {group.appointments?.length} servicios
-            </span>
+          <p className="label-section mb-3">Servicios</p>
+          <div className="space-y-2.5">
+            {(group.appointments ?? []).map((appt) => {
+              const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+              return (
+                <div key={appt.code} className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
+                    {specialist?.avatarUrl
+                      ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
+                      : <span className="text-[11px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                    }
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-ink leading-snug">
+                      {toTitleCase(appt.serviceName)}
+                    </p>
+                    <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">
+                      {toTitleCase(appt.specialistName)}
+                      {' · '}
+                      <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
+                      {' · '}{appt.serviceDuration} min
+                    </p>
+                    {appt.status === 'cancelled' && (
+                      <span className="badge badge-cancelled text-[10px] mt-1 inline-block">Cancelada</span>
+                    )}
+                  </div>
+                  <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
+                    {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Appointments list */}
-        <div className="px-6 py-4 space-y-2.5 border-b border-edge">
-          {(group.appointments ?? []).map((appt) => {
-            const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
-            return (
-              <div key={appt.code} className="flex items-start gap-3 p-3 rounded-xl border border-edge bg-raised/40">
-                <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
-                  {specialist?.avatarUrl
-                    ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
-                    : <span className="text-[11px] font-bold text-gold">{initials(appt.specialistName)}</span>
-                  }
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-semibold text-ink leading-snug">
-                    {toTitleCase(appt.serviceName)}
-                  </p>
-                  <p className="text-[11px] text-ink-3 mt-0.5">{toTitleCase(appt.specialistName)}</p>
-                  <div className="flex items-center gap-2.5 mt-1.5">
-                    <span className="text-[11px] text-ink-2 font-medium">{formatTime(appt.time, timeFmt)}</span>
-                    <span className="w-0.5 h-0.5 rounded-full bg-ink-3/50" />
-                    <span className="text-[10px] text-ink-3">{appt.serviceDuration} min</span>
-                    <span className="w-0.5 h-0.5 rounded-full bg-ink-3/50" />
-                    <span className="text-[11px] text-gold font-medium tabular-nums">
-                      {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
-                    </span>
-                    {appt.status === 'cancelled' && (
-                      <span className="badge badge-cancelled text-[10px]">Cancelada</span>
-                    )}
-                  </div>
-                </div>
+        {/* Branch */}
+        {groupBranchName && (
+          <div className="px-6 py-4 border-b border-edge">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full border border-edge bg-raised flex items-center justify-center shrink-0 overflow-hidden">
+                {groupBranch?.image_url
+                  ? <img src={groupBranch.image_url} alt={groupBranchName} className="w-full h-full object-cover" />
+                  : <svg className="w-4 h-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                }
               </div>
-            );
-          })}
+              <div>
+                <p className="label-section">Sucursal</p>
+                <p className="text-[14px] font-semibold text-ink mt-0.5">{groupBranchName}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Total */}
+        <div className="px-6 py-3.5 border-b border-edge flex items-center justify-between bg-raised/30">
+          <span className="text-[13px] font-semibold text-ink">Total</span>
+          <span className="text-[18px] font-bold text-gold tabular-nums">
+            {(group.appointments ?? []).some(a => a.priceType === 'ask')
+              ? (group.totalPrice > 0 ? `${formatPrice(group.totalPrice)}+` : 'A consultar')
+              : formatPrice(group.totalPrice)}
+          </span>
         </div>
 
         {/* Reagendada banner */}
@@ -138,81 +193,60 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
             </svg>
             <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
               <span className="font-semibold">Reagendada.</span>{' '}
-              Antes: <span className="line-through">{formatDate(group.previousDate)}</span>
+              Antes:{' '}
+              <span className="line-through">
+                {formatDate(group.previousDate)}
+                {group.previousTime && ` · ${formatTime(group.previousTime, timeFmt)}`}
+              </span>
             </p>
           </div>
         )}
 
         {/* Cancelled notice */}
         {isCancelled && (
-          <div className="mx-4 mb-4 mt-2 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/6 border border-red-500/20 text-xs text-red-500">
+          <div className="mx-4 mb-4 mt-3 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/6 border border-red-500/20 text-xs text-red-500">
             <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
-            Este grupo de citas fue cancelado.
+            Esta visita fue cancelada.
           </div>
         )}
 
-        {/* Actions */}
+        {/* Actions — view mode */}
         {!isCancelled && mode === 'view' && (
-          <div className="px-6 pb-6 pt-3 space-y-2.5">
-            {isPast ? (
-              <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
+          <div className="px-6 pt-4 pb-6">
+            {isPast && (
+              <div className="flex items-center gap-2 px-3.5 py-2.5 mb-3 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Este grupo ya ocurrió.
+                Esta visita ya ocurrió. Solo puedes cancelarla.
               </div>
-            ) : (
-              <>
-                <Button onClick={() => setMode('reschedule')} className="w-full">
-                  Reagendar grupo
-                </Button>
-                {!confirmCancel ? (
-                  <button
-                    onClick={() => setConfirmCancel(true)}
-                    className="w-full py-2.5 rounded-xl text-xs font-medium text-red-500 hover:bg-red-500/6 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
-                  >
-                    Cancelar reservación
-                  </button>
-                ) : (
-                  <div className="rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3.5 space-y-3">
-                    <p className="text-xs text-ink-2 leading-relaxed">
-                      ¿Cancelar todos los servicios de este grupo? Esta acción no se puede deshacer.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        loading={cancelMutation.isPending}
-                        onClick={async () => {
-                          try {
-                            const updated = await cancelMutation.mutateAsync(group.groupCode);
-                            setConfirmCancel(false);
-                            onUpdated?.(updated);
-                            toast('Reservación cancelada.', 'success');
-                          } catch (err) {
-                            toast(err.message || 'Error al cancelar.', 'error');
-                          }
-                        }}
-                        className="flex-1"
-                      >
-                        Sí, cancelar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={cancelMutation.isPending}
-                        onClick={() => setConfirmCancel(false)}
-                        className="flex-1"
-                      >
-                        No, volver
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
             )}
+            <div className="flex gap-2.5">
+              <Button variant="outline" onClick={() => setMode('reschedule')} disabled={isPast} className="flex-1">
+                Reagendar
+              </Button>
+              <Button variant="danger" onClick={() => setMode('cancel-confirm')} className="flex-1">
+                Cancelar visita
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel confirm */}
+        {mode === 'cancel-confirm' && (
+          <div className="px-6 pt-4 pb-6">
+            <div className="p-4 bg-red-500/6 border border-red-500/20 rounded-2xl animate-fade-in">
+              <p className="text-[14px] font-semibold text-ink mb-0.5">¿Cancelar esta visita?</p>
+              <p className="text-xs text-ink-3 mb-4">Se cancelarán todos los servicios del grupo. Esta acción no se puede deshacer.</p>
+              <div className="flex gap-2.5">
+                <Button variant="danger" loading={cancelMutation.isPending} onClick={handleCancel}>
+                  Sí, cancelar
+                </Button>
+                <Button variant="ghost" onClick={() => setMode('view')}>Volver</Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -227,7 +261,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           onSuccess={updated => {
             setMode('view');
             onUpdated?.(updated);
-            toast('Grupo reagendado correctamente.', 'success');
+            toast('Visita reagendada correctamente.', 'success');
           }}
         />
       )}
@@ -248,7 +282,6 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
     : (Array.isArray(hoursByBranch) ? hoursByBranch : Object.values(hoursByBranch)[0] ?? []);
   const daysClosed = bizHoursRaw.filter(h => !h.is_open).map(h => h.day_of_week);
 
-  // Build assignments array for group availability query
   const assignments = (group.appointments ?? []).map(a => ({
     serviceId:    a.serviceId,
     specialistId: a.specialistId,
@@ -292,7 +325,6 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d));
 
-  // Group slots by period
   const groupedSlots = { morning: [], afternoon: [], evening: [] };
   for (const s of availableSlots) {
     const [h] = s.split(':').map(Number);
@@ -301,7 +333,6 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
     else groupedSlots.evening.push(s);
   }
 
-  // Cronograma breakdown when slot is selected
   const cronograma = newTime ? (() => {
     const [bH, bM] = newTime.split(':').map(Number);
     let offset = 0;
@@ -311,6 +342,14 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
       return { ...appt, startStr: minsToStr(start), endStr: minsToStr(start + appt.serviceDuration) };
     });
   })() : null;
+
+  // Specialists for cronograma avatars
+  const { data: specialistsData } = useQuery({
+    queryKey: ['specialists'],
+    queryFn:  () => api.getSpecialists(),
+    staleTime: 300_000,
+  });
+  const allSpecialists = specialistsData?.specialists ?? [];
 
   async function handleConfirm() {
     if (!newDate || !newTime) return;
@@ -329,7 +368,7 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
   return (
     <div className="card p-5 animate-fade-in">
       <div className="flex items-center justify-between mb-5">
-        <h3 className="text-[15px] font-semibold text-ink">Reagendar grupo</h3>
+        <h3 className="text-[15px] font-semibold text-ink">Reagendar visita</h3>
         <button
           onClick={onCancel}
           className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
@@ -443,7 +482,7 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
         {/* Cronograma breakdown */}
         {cronograma && (
           <div className="bg-raised rounded-xl border border-edge px-4 py-3.5">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-3">Cronograma</p>
+            <p className="label-section mb-3">Cronograma</p>
             <div className="space-y-2">
               {cronograma.map((appt, i) => {
                 const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
@@ -500,7 +539,7 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
           >
             Confirmar nuevo horario
           </Button>
-          <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
+          <Button variant="ghost" onClick={onCancel}>Volver</Button>
         </div>
       </div>
     </div>
