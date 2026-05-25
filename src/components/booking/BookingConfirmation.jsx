@@ -70,7 +70,7 @@ export default function BookingConfirmation() {
                     <span className="text-ink-3 font-normal"> con {toTitleCase(appt.specialistName)}</span>
                   </p>
                   <p className="text-xs text-ink-3 mt-0.5">
-                    {formatTime(appt.time, timeFmt)} · {appt.serviceDuration} min · {formatPrice(appt.servicePrice)}
+                    {formatTime(appt.time, timeFmt)} · {appt.serviceDuration} min · {appt.priceType === 'ask' ? 'Precio a consultar' : formatPrice(appt.servicePrice)}
                   </p>
                 </div>
               </div>
@@ -90,7 +90,9 @@ export default function BookingConfirmation() {
         ) : (
           // Single appointment
           <>
-            <DetailRow icon={<ScissorsIcon />} label="Servicio"     value={`${toTitleCase(confirmation?.serviceName)} — ${formatPrice(confirmation?.servicePrice)}`} />
+            <DetailRow icon={<ScissorsIcon />} label="Servicio"
+              value={`${toTitleCase(confirmation?.serviceName)} — ${confirmation?.priceType === 'ask' ? 'Precio a consultar' : formatPrice(confirmation?.servicePrice)}`}
+            />
             <DetailRow icon={<UserIcon />}     label="Especialista" value={toTitleCase(confirmation?.specialistName)} />
             {state.branch?.name && <DetailRow icon={<MapPinIcon />} label="Sucursal" value={state.branch.name} />}
             <DetailRow icon={<CalendarIcon />} label="Fecha"        value={formatDate(confirmation?.date)} />
