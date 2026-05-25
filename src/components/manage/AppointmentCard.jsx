@@ -158,7 +158,9 @@ export default function AppointmentCard({ appointment, onUpdated }) {
               {toTitleCase(appointment.serviceName)}
             </p>
             <div className="text-right shrink-0">
-              <p className="text-[19px] font-bold text-gold tabular-nums">{formatPrice(appointment.servicePrice)}</p>
+              <p className="text-[19px] font-bold text-gold tabular-nums">
+                {appointment.priceType === 'ask' ? 'Precio a consultar' : formatPrice(appointment.servicePrice)}
+              </p>
               <p className="text-[11px] text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, formatServicePrice, toTitleCase } from '../../utils/formatters';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../hooks/useAppointment';
@@ -59,7 +59,11 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           </div>
           <div className="text-right shrink-0">
             <p className="text-[10px] text-ink-3 uppercase tracking-wider font-medium">Total</p>
-            <p className="text-base font-bold text-gold tabular-nums">{formatPrice(group.totalPrice)}</p>
+            <p className="text-base font-bold text-gold tabular-nums">
+              {(group.appointments ?? []).some(a => a.priceType === 'ask')
+                ? (group.totalPrice > 0 ? `${formatPrice(group.totalPrice)}+` : 'A consultar')
+                : formatPrice(group.totalPrice)}
+            </p>
           </div>
         </div>
 
@@ -93,7 +97,9 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                 <div className="flex items-center gap-2.5 mt-1">
                   <span className="text-[11px] text-ink-2 font-medium">{formatTime(appt.time, timeFmt)}</span>
                   <span className="text-[10px] text-ink-3">{appt.serviceDuration} min</span>
-                  <span className="text-[11px] text-gold font-medium tabular-nums">{formatPrice(appt.servicePrice)}</span>
+                  <span className="text-[11px] text-gold font-medium tabular-nums">
+                    {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
+                  </span>
                   {appt.status === 'cancelled' && (
                     <span className="badge badge-cancelled text-[10px]">Cancelada</span>
                   )}
@@ -442,7 +448,9 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
             <div className="pt-2.5 border-t border-edge flex justify-between text-xs">
               <span className="text-ink-3">Total</span>
               <span className="font-semibold text-ink tabular-nums">
-                {totalDuration} min · {formatPrice(group.totalPrice)}
+                {totalDuration} min · {(group.appointments ?? []).some(a => a.priceType === 'ask')
+                  ? (group.totalPrice > 0 ? `${formatPrice(group.totalPrice)}+` : 'A consultar')
+                  : formatPrice(group.totalPrice)}
               </span>
             </div>
           </div>

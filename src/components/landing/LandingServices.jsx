@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import { Sparkles, ArrowUpRight, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatServicePrice } from '../../utils/formatters';
 
 const VISIBLE_DESKTOP = 6;
 
@@ -126,9 +127,10 @@ export default function LandingServices({ services = [], customServices, useCust
 }
 
 function ServiceCard({ service, i, buttonText }) {
-  const IconComp = service.icon ? (LucideIcons[service.icon] || Sparkles) : Sparkles;
-  const duration = service.duration || service.duration_mins;
-  const price    = service.price;
+  const IconComp  = service.icon ? (LucideIcons[service.icon] || Sparkles) : Sparkles;
+  const duration  = service.duration || service.duration_mins;
+  const priceType = service.priceType || service.price_type || 'fixed';
+  const showPrice = priceType !== 'ask' && service.price != null;
 
   return (
     <motion.div
@@ -158,10 +160,11 @@ function ServiceCard({ service, i, buttonText }) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-transparent" />
 
           {/* Floating price chip */}
-          {price != null && (
-            <div className="absolute top-4 right-4 inline-flex items-baseline gap-1 px-3 py-1.5 rounded-full bg-card/85 backdrop-blur-md border border-edge/50 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-3">Desde</span>
-              <span className="text-[15px] font-bold text-ink tabular-nums">${price}</span>
+          {showPrice && (
+            <div className="absolute top-4 right-4 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/85 backdrop-blur-md border border-edge/50 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+              <span className="text-[14px] font-bold text-ink tabular-nums">
+                {formatServicePrice(service)}
+              </span>
             </div>
           )}
 

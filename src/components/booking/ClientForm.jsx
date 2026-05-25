@@ -4,7 +4,7 @@ import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useCreateAppointment } from '../../hooks/useAppointment';
 import { useConfig } from '../../hooks/useConfig';
-import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, formatServicePrice, toTitleCase } from '../../utils/formatters';
 import { api } from '../../services/api';
 import Input from '../ui/Input';
 import PhoneInput from '../ui/PhoneInput';
@@ -57,8 +57,11 @@ export default function ClientForm() {
   const selectedServices   = state.services ?? [];
   const serviceAssignments = state.serviceAssignments ?? [];
   const totalPrice = groupMode
-    ? serviceAssignments.reduce((sum, a) => sum + (a.service.price || 0), 0)
-    : selectedServices.reduce((sum, s) => sum + (s.price || 0), 0);
+    ? serviceAssignments.reduce((sum, a) => sum + (a.service.priceType === 'ask' ? 0 : (a.service.price || 0)), 0)
+    : selectedServices.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : (s.price || 0)), 0);
+  const hasAskPrice = groupMode
+    ? serviceAssignments.some(a => a.service.priceType === 'ask')
+    : selectedServices.some(s => s.priceType === 'ask');
   const totalDuration = groupMode
     ? serviceAssignments.reduce((sum, a) => sum + (a.service.duration || 0), 0)
     : selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
@@ -196,7 +199,7 @@ export default function ClientForm() {
                     </div>
                   </div>
                   <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0">
-                    {formatPrice(a.service.price)}
+                    {formatServicePrice(a.service)}
                   </p>
                 </div>
               );
@@ -213,7 +216,9 @@ export default function ClientForm() {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[14px] font-semibold text-gold tabular-nums">{formatPrice(totalPrice)}</p>
+                  <p className="text-[14px] font-semibold text-gold tabular-nums">
+                    {hasAskPrice ? (totalPrice > 0 ? `${formatPrice(totalPrice)}+` : 'Precio a consultar') : formatPrice(totalPrice)}
+                  </p>
                   <p className="text-xs text-ink-3 mt-0.5">{totalDuration} min</p>
                 </div>
               </div>
@@ -233,7 +238,9 @@ export default function ClientForm() {
         {/* Total row */}
         <div className="px-5 py-3.5 border-t border-edge flex items-center justify-between bg-raised/30">
           <span className="text-[13px] font-semibold text-ink">Total</span>
-          <span className="text-[18px] font-bold text-gold tabular-nums">{formatPrice(totalPrice)}</span>
+          <span className="text-[18px] font-bold text-gold tabular-nums">
+            {hasAskPrice ? (totalPrice > 0 ? `${formatPrice(totalPrice)}+` : 'Precio a consultar') : formatPrice(totalPrice)}
+          </span>
         </div>
       </div>
 
