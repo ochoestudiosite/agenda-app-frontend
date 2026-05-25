@@ -32,13 +32,17 @@ export default function BookingSummary() {
   const selectedServices = state.services ?? [];
   if (selectedServices.length > 0) {
     const totalDuration = selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
-    const totalPrice    = selectedServices.reduce((sum, s) => sum + (s.price    || 0), 0);
+    const hasAsk        = selectedServices.some(s => s.priceType === 'ask');
+    const knownPrice    = selectedServices.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : (s.price || 0)), 0);
+    const priceStr      = hasAsk
+      ? knownPrice > 0 ? `${formatPrice(knownPrice)}+` : 'Precio a consultar'
+      : formatPrice(knownPrice);
     items.push({
       id:       'service',
       category: selectedServices.length > 1 ? 'servicios' : 'servicio',
       icon:     <ScissorsIcon />,
       label:    selectedServices.map(s => toTitleCase(s.name)).join(' + '),
-      sub:      `${totalDuration} min · ${formatPrice(totalPrice)}`,
+      sub:      `${totalDuration} min · ${priceStr}`,
     });
   }
 

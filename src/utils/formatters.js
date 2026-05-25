@@ -28,6 +28,15 @@ export function formatPrice(price) {
   }).format(price);
 }
 
+export function formatServicePrice(service) {
+  switch (service.priceType) {
+    case 'starting_from': return `Desde ${formatPrice(service.price)}`;
+    case 'range':         return `${formatPrice(service.price)} – ${formatPrice(service.priceMax)}`;
+    case 'ask':           return 'Consultar';
+    default:              return formatPrice(service.price);
+  }
+}
+
 export function capitalize(str) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 }

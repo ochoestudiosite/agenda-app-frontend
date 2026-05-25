@@ -1,6 +1,6 @@
 import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
-import { formatPrice, toTitleCase } from '../../utils/formatters';
+import { formatPrice, formatServicePrice, toTitleCase } from '../../utils/formatters';
 import { BackButton } from './SpecialistSelector';
 
 export default function ServiceSelector() {
@@ -9,7 +9,8 @@ export default function ServiceSelector() {
   const selected = state.services ?? [];
   const atMax = selected.length >= 5;
   const totalDuration = selected.reduce((sum, s) => sum + (s.duration || 0), 0);
-  const totalPrice    = selected.reduce((sum, s) => sum + (s.price    || 0), 0);
+  const hasAsk        = selected.some(s => s.priceType === 'ask');
+  const knownPrice    = selected.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : (s.price || 0)), 0);
 
   if (isLoading) return (
     <div className="space-y-2.5">
@@ -76,7 +77,11 @@ export default function ServiceSelector() {
                 </span>
                 <span className="text-xs text-ink-3 tabular-nums">{totalDuration} min</span>
               </div>
-              <span className="font-semibold text-ink tabular-nums">{formatPrice(totalPrice)}</span>
+              <span className="font-semibold text-ink tabular-nums">
+                {hasAsk
+                  ? knownPrice > 0 ? `${formatPrice(knownPrice)}+` : 'Precio a consultar'
+                  : formatPrice(knownPrice)}
+              </span>
             </div>
             <button
               onClick={() => dispatch({ type: 'CONFIRM_SERVICES' })}
@@ -125,7 +130,7 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
 
       {/* Price + checkbox */}
       <div className="shrink-0 flex items-center gap-3">
-        <span className="font-semibold text-[0.9375rem] text-gold tabular-nums">{formatPrice(service.price)}</span>
+        <span className="font-semibold text-[0.9375rem] text-gold tabular-nums">{formatServicePrice(service)}</span>
         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-160 shrink-0
                          ${isSelected ? 'border-gold bg-gold' : 'border-ink-3/50 group-hover:border-gold'}`}>
           {isSelected && (
