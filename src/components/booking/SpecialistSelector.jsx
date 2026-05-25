@@ -204,18 +204,24 @@ function SpecialistCard({ specialist, onSelect, delay }) {
   );
 }
 
-export function BackButton({ onClick }) {
+export function BackButton({ onClick, label = 'Volver' }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-3 hover:text-ink mb-6
-                 transition-colors duration-160 cursor-pointer group"
+      className="group inline-flex items-center gap-2.5 mb-8 px-3 py-2.5 -mx-3 rounded-xl
+                 text-sm font-medium text-ink-2 hover:text-ink hover:bg-raised/70
+                 transition-all duration-200 cursor-pointer active:scale-[0.98]"
     >
-      <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-160"
-           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-      </svg>
-      Volver
+      <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30
+                       group-hover:bg-card flex items-center justify-center shrink-0
+                       transition-all duration-200">
+        <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </span>
+      {label}
     </button>
   );
 }

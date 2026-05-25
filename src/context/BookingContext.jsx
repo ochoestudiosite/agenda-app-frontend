@@ -134,6 +134,20 @@ function reducer(state, action) {
     case 'RESET':
       return initialState;
 
+    // Jump directly to a completed step (used by clickable StepIndicator).
+    // Clears all state downstream of the target to force re-confirmation of each step.
+    case 'GO_TO_STEP': {
+      const target = action.payload;
+      // Branch step (0): clear branch selection, step stays at 1
+      if (target === 0) return { ...state, branch: null };
+      // Guard: can't jump forward
+      if (target >= state.step) return state;
+      if (target === 1) return { ...state, step: 1, serviceAssignments: [], currentAssignmentIdx: 0, specialist: null, date: null, time: null };
+      if (target === 2) return { ...state, step: 2, serviceAssignments: [], currentAssignmentIdx: 0, date: null, time: null };
+      if (target === 3) return { ...state, step: 3, date: null, time: null };
+      return { ...state, step: target };
+    }
+
     default:
       return state;
   }
