@@ -381,30 +381,55 @@ function ReschedulePanel({
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-1.5 mb-6">
+      <div className="flex items-center mb-6">
         {steps.map((s, i) => {
           const currentIdx = steps.findIndex(x => x.key === reschedStep);
           const done       = i < currentIdx;
           const active     = s.key === reschedStep;
+          const clickable  = done;
           return (
-            <div key={s.key} className="flex items-center gap-1.5">
-              {i > 0 && <div className={`h-px w-4 transition-colors ${done ? 'bg-gold' : 'bg-edge'}`} />}
-              <button
-                onClick={() => done && setReschedStep(s.key)}
-                disabled={!done}
-                className={[
-                  'flex items-center gap-1.5 text-[11px] font-semibold transition-colors',
-                  active ? 'text-ink' : done ? 'text-gold cursor-pointer' : 'text-ink-3 cursor-default',
-                ].join(' ')}
-              >
+            <div key={s.key} className="flex items-center flex-1 last:flex-none">
+              {i > 0 && (
+                <div className="flex-1 h-px mx-2 relative rounded-full overflow-hidden bg-edge/40">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gold/55 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: currentIdx >= i ? '100%' : '0%' }}
+                  />
+                </div>
+              )}
+              <div className="flex flex-col items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={clickable ? () => setReschedStep(s.key) : undefined}
+                  disabled={!clickable}
+                  title={clickable ? `Volver a ${s.label}` : undefined}
+                  className={[
+                    'w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1',
+                    done
+                      ? 'bg-gold cursor-pointer hover:scale-110 hover:shadow-[0_0_0_4px_rgba(184,134,11,0.18)] active:scale-[0.97]'
+                      : active
+                        ? 'bg-surface border-2 border-gold shadow-[0_0_0_3px_rgba(184,134,11,0.1)] cursor-default'
+                        : 'bg-surface border-2 border-edge/50 cursor-default',
+                  ].join(' ')}
+                >
+                  {done ? (
+                    <svg className="w-3 h-3 text-bg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <span className={`text-[10px] font-bold tabular-nums leading-none ${active ? 'text-gold' : 'text-ink-3/40'}`}>
+                      {i + 1}
+                    </span>
+                  )}
+                </button>
                 <span className={[
-                  'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors',
-                  active ? 'bg-ink text-card' : done ? 'bg-gold text-on-gold' : 'bg-raised text-ink-3 border border-edge',
+                  'text-[10px] font-medium whitespace-nowrap transition-colors duration-200',
+                  active ? 'text-ink font-semibold' : done ? 'text-ink-3' : 'text-ink-3/40',
                 ].join(' ')}>
-                  {done ? '✓' : i + 1}
+                  {s.label}
                 </span>
-                <span className="hidden sm:inline">{s.label}</span>
-              </button>
+              </div>
             </div>
           );
         })}
