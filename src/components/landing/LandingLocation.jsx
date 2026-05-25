@@ -38,15 +38,59 @@ function getBranchHours(config, branchId) {
 
 function buildHoursDisplay(hours, hoursTextOverride) {
   if (hoursTextOverride) return { display: hoursTextOverride, closedDays: [] };
+  if (!hours || !hours.length) return { display: '', closedDays: [] };
+
   const open   = hours.filter(h => h.is_open);
   const closed = hours.filter(h => !h.is_open).map(h => DAY_NAMES[h.day_of_week]);
   if (!open.length) return { display: '', closedDays: closed };
-  const first = open[0];
-  const last  = open[open.length - 1];
-  return {
-    display: `${DAY_NAMES[first.day_of_week]} – ${DAY_NAMES[last.day_of_week]} · ${first.open_time?.slice(0, 5)} – ${last.close_time?.slice(0, 5)}`,
-    closedDays: closed,
-  };
+
+  // Sort ascending by day_of_week (0=Sun … 6=Sat)
+  const sorted = [...open].sort((a, b) => a.day_of_week - b.day_of_week);
+
+  // Group consecutive days that share identical open/close times
+  const groups = [];
+  for (const day of sorted) {
+    const prev      = groups[groups.length - 1];
+    const adjacent  = prev && prev.lastDow + 1 === day.day_of_week;
+    const sameTimes = prev
+      && prev.openTime  === (day.open_time?.slice(0, 5)  ?? '')
+      && prev.closeTime === (day.close_time?.slice(0, 5) ?? '');
+
+    if (adjacent && sameTimes) {
+      prev.lastDow = day.day_of_week;
+    } else {
+      groups.push({
+        firstDow:  day.day_of_week,
+        lastDow:   day.day_of_week,
+        openTime:  day.open_time?.slice(0, 5)  ?? '',
+        closeTime: day.close_time?.slice(0, 5) ?? '',
+      });
+    }
+  }
+
+  const lines = groups.map(g => {
+    const dayPart = g.firstDow === g.lastDow
+      ? DAY_NAMES[g.firstDow]
+      : `${DAY_NAMES[g.firstDow]} – ${DAY_NAMES[g.lastDow]}`;
+    return `${dayPart} · ${g.openTime} – ${g.closeTime}`;
+  });
+
+  return { display: lines.join('\n'), closedDays: closed };
+}
+
+// Returns true when the current local time falls within the branch's hours for today.
+// Uses browser local time as an approximation (business and client are typically co-located).
+function isOpenNow(hours) {
+  if (!hours || !hours.length) return false;
+  const now   = new Date();
+  const dow   = now.getDay();
+  const today = hours.find(h => h.day_of_week === dow);
+  if (!today?.is_open) return false;
+  const [oh, om] = (today.open_time  || '').split(':').map(Number);
+  const [ch, cm] = (today.close_time || '').split(':').map(Number);
+  if (isNaN(oh) || isNaN(ch)) return false;
+  const cur = now.getHours() * 60 + now.getMinutes();
+  return cur >= oh * 60 + om && cur < ch * 60 + cm;
 }
 
 export default function LandingLocation({ config = {}, locationConfig = {}, title, subtitle, subtitleAccent }) {
@@ -59,16 +103,17 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
   const loc     = locations[Math.min(activeIdx, locations.length - 1)];
   const hours   = getBranchHours(config, loc.branch_id);
   const { display: hoursDisplay, closedDays } = buildHoursDisplay(hours, loc.hours_text);
+  const openNow = isOpenNow(hours);
 
   const infoRows = [
     loc.address && { icon: MapPin, label: 'Dirección', value: loc.address },
     loc.phone   && { icon: Phone,  label: 'Teléfono',  value: loc.phone },
     loc.email   && { icon: Mail,   label: 'Email',     value: loc.email, small: true },
-    {
+    hoursDisplay ? {
       icon: Clock, label: 'Horarios',
-      value: hoursDisplay || 'Lun – Sáb · 9:00 – 20:00',
-      extra: closedDays.length ? `${closedDays.join(', ')} cerrado` : null,
-    },
+      value: hoursDisplay,
+      extra: closedDays.length ? `Cerrado: ${closedDays.join(', ')}` : null,
+    } : null,
   ].filter(Boolean);
 
   return (
@@ -169,15 +214,25 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                 <div className="absolute inset-x-5 bottom-5 sm:inset-x-6 sm:bottom-6">
                   <div className="rounded-2xl bg-card/85 backdrop-blur-xl border border-edge/40 px-5 py-4 flex items-center justify-between gap-4 shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
-                        <span className="relative flex w-1.5 h-1.5">
-                          <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
-                          <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        </span>
-                        Abierto ahora
-                      </div>
+                      {openNow ? (
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+                          <span className="relative flex w-1.5 h-1.5">
+                            <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
+                            <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          </span>
+                          Abierto ahora
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gold/80">
+                          <span className="w-1.5 h-1.5 rounded-full bg-gold/60 shrink-0" />
+                          Agenda en línea
+                        </div>
+                      )}
                       <p className="mt-1 text-sm font-semibold text-ink truncate">
-                        {loc.open_now_text || 'Estamos listos para recibirte'}
+                        {openNow
+                          ? (loc.open_now_text || 'Estamos listos para recibirte')
+                          : 'Reserva tu cita cuando quieras'
+                        }
                       </p>
                     </div>
                     <a
@@ -209,7 +264,7 @@ function InfoRow({ icon: Icon, label, value, extra, small, isLast }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-3">{label}</p>
-        <p className={`mt-1 font-medium text-ink leading-snug ${small ? 'text-sm break-all' : 'text-base'}`}>
+        <p className={`mt-1 font-medium text-ink leading-snug whitespace-pre-line ${small ? 'text-sm break-all' : 'text-base'}`}>
           {value}
         </p>
         {extra && <p className="text-xs text-ink-3 mt-1">{extra}</p>}

@@ -47,7 +47,7 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
               <span className="absolute inset-0 rounded-full bg-gold animate-ping opacity-60" />
               <span className="relative w-1.5 h-1.5 rounded-full bg-gold" />
             </span>
-            Reservas abiertas hoy
+            Reserva en línea · Sin esperas
           </motion.div>
 
           {/* Headline */}
