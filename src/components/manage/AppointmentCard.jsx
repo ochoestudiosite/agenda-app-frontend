@@ -169,7 +169,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         <div className="px-6 py-4 border-b border-edge">
           <p className="label-section mb-3">Servicio</p>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
               {appointmentService?.imageUrl
                 ? <img src={appointmentService.imageUrl} alt={appointment.serviceName} className="w-full h-full object-cover" />
                 : <span className="text-sm font-bold text-ink-2">{initials(appointment.serviceName)}</span>
