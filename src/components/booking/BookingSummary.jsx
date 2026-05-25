@@ -12,6 +12,10 @@ function shortDate(dateStr) {
   });
 }
 
+function nameInitials(name) {
+  return (name || '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+}
+
 export default function BookingSummary() {
   const { state }        = useBooking();
   const { data: config } = useConfig();
@@ -23,7 +27,7 @@ export default function BookingSummary() {
     items.push({
       id:      'branch',
       category: 'sucursal',
-      icon:    <PinIcon />,
+      avatars: [{ src: state.branch.image_url || null, initials: nameInitials(state.branch.name) }],
       label:   toTitleCase(state.branch.name),
       sub:     null,
     });
@@ -33,38 +37,39 @@ export default function BookingSummary() {
   if (selectedServices.length > 0) {
     const totalDuration = selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
     items.push({
-      id:       'service',
+      id:      'service',
       category: selectedServices.length > 1 ? 'servicios' : 'servicio',
-      icon:     <ScissorsIcon />,
-      label:    selectedServices.map(s => toTitleCase(s.name)).join(' + '),
-      sub:      `${totalDuration} min · ${formatCombinedPrice(selectedServices)}`,
+      avatars: selectedServices.map(s => ({ src: s.imageUrl || null, initials: nameInitials(s.name) })),
+      label:   selectedServices.map(s => toTitleCase(s.name)).join(' + '),
+      sub:     `${totalDuration} min · ${formatCombinedPrice(selectedServices)}`,
     });
   }
 
   const groupMode = isGroupMode(state);
   if (groupMode) {
-    // Group mode: show assigned specialists as they're selected
     const assignments = state.serviceAssignments ?? [];
     if (assignments.length > 0) {
       items.push({
-        id:       'specialists',
+        id:      'specialists',
         category: 'especialistas',
-        isAvatar: true,
-        avatarUrl: assignments[0]?.specialist?.avatarUrl,
-        initials:  assignments[0]?.specialist?.initials,
-        label:     assignments.map(a => toTitleCase(a.specialist.name)).join(', '),
-        sub:       `${assignments.length} de ${state.services.length}`,
+        avatars: assignments.map(a => ({
+          src:      a.specialist.avatarUrl || null,
+          initials: a.specialist.initials || nameInitials(a.specialist.name),
+        })),
+        label:   assignments.map(a => toTitleCase(a.specialist.name)).join(', '),
+        sub:     `${assignments.length} de ${state.services.length}`,
       });
     }
   } else if (state.specialist) {
     items.push({
-      id:        'specialist',
-      category:  'especialista',
-      isAvatar:  true,
-      avatarUrl: state.specialist.avatarUrl,
-      initials:  state.specialist.initials,
-      label:     toTitleCase(state.specialist.name),
-      sub:       state.specialist.specialty || null,
+      id:      'specialist',
+      category: 'especialista',
+      avatars: [{
+        src:      state.specialist.avatarUrl || null,
+        initials: state.specialist.initials || nameInitials(state.specialist.name),
+      }],
+      label:   toTitleCase(state.specialist.name),
+      sub:     state.specialist.specialty || null,
     });
   }
 
@@ -83,8 +88,6 @@ export default function BookingSummary() {
   return (
     <div className="mb-8 animate-fade-in" role="status" aria-label="Resumen de tu selección">
       <div className="relative bg-card border border-edge/60 rounded-2xl shadow-xs overflow-hidden border-l-4 border-l-gold">
-
-        {/* Scrollable items */}
         <div className="flex items-stretch overflow-x-auto scrollbar-hide">
           {items.map((item, i) => (
             <Fragment key={item.id}>
@@ -97,8 +100,41 @@ export default function BookingSummary() {
             </Fragment>
           ))}
         </div>
-
       </div>
+    </div>
+  );
+}
+
+// Stacked circular avatars — up to 3 visible, then "+N" overflow bubble
+function AvatarStack({ avatars }) {
+  const show  = avatars.slice(0, 3);
+  const extra = avatars.length - 3;
+  const multi = avatars.length > 1;
+
+  return (
+    <div className="flex items-center shrink-0" style={{ paddingRight: multi ? '4px' : '0' }}>
+      {show.map((a, i) => (
+        <div
+          key={i}
+          className="w-8 h-8 rounded-full border-2 border-card overflow-hidden
+                     bg-gold/10 flex items-center justify-center"
+          style={{ marginLeft: i > 0 ? '-8px' : '0', zIndex: show.length - i, position: 'relative' }}
+        >
+          {a.src ? (
+            <img src={a.src} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[9px] font-bold text-gold leading-none select-none">{a.initials}</span>
+          )}
+        </div>
+      ))}
+      {extra > 0 && (
+        <div
+          className="w-8 h-8 rounded-full border-2 border-card bg-raised flex items-center justify-center"
+          style={{ marginLeft: '-8px', zIndex: 0, position: 'relative' }}
+        >
+          <span className="text-[9px] font-bold text-ink-3 leading-none">+{extra}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -106,18 +142,14 @@ export default function BookingSummary() {
 function SummaryItem({ item }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 shrink-0">
-      {/* Icon / Avatar bubble */}
-      <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 text-gold overflow-hidden">
-        {item.isAvatar ? (
-          item.avatarUrl
-            ? <img src={item.avatarUrl} alt="" className="w-full h-full object-cover" />
-            : <span className="text-[9px] font-bold leading-none">{item.initials || '?'}</span>
-        ) : (
-          item.icon
-        )}
-      </div>
+      {item.avatars ? (
+        <AvatarStack avatars={item.avatars} />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 text-gold">
+          {item.icon}
+        </div>
+      )}
 
-      {/* Text */}
       <div>
         <p className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-gold/70 leading-none mb-1">
           {item.category}
@@ -132,28 +164,6 @@ function SummaryItem({ item }) {
         )}
       </div>
     </div>
-  );
-}
-
-function ScissorsIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <circle cx="6" cy="6" r="3" />
-      <circle cx="6" cy="18" r="3" />
-      <line x1="20" y1="4" x2="8.12" y2="15.88" />
-      <line x1="14.47" y1="14.48" x2="20" y2="20" />
-      <line x1="8.12" y1="8.12" x2="12" y2="12" />
-    </svg>
-  );
-}
-
-function PinIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round"
-        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
   );
 }
 
