@@ -45,29 +45,29 @@ export default function StepIndicator({ currentStep, hasBranch = false, onNaviga
                   disabled={!isClickable}
                   title={isClickable ? `Volver a ${step.label}` : undefined}
                   className={[
-                    'w-8 h-8 rounded-full flex items-center justify-center',
-                    'transition-all duration-300',
+                    'w-7 h-7 rounded-full flex items-center justify-center',
+                    'transition-all duration-300 border-2',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
                     isCompleted
-                      ? 'bg-gold cursor-pointer hover:scale-110 hover:shadow-[0_0_0_5px_rgba(0,184,122,0.18)] active:scale-[0.97]'
+                      ? 'bg-gold border-gold cursor-pointer hover:scale-110 hover:shadow-[0_0_0_4px_rgba(0,184,122,0.2)] active:scale-[0.97]'
                       : isCurrent
-                        ? 'bg-surface border-2 border-gold shadow-[0_0_0_4px_rgba(0,184,122,0.1)] cursor-default'
-                        : 'bg-surface border-2 border-edge/50 cursor-default',
+                        ? 'bg-surface border-gold cursor-default'
+                        : 'bg-surface border-edge/50 cursor-default',
                   ].join(' ')}
                 >
                   {isCompleted ? (
-                    <svg className="w-3.5 h-3.5 text-bg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <svg className="w-3 h-3 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    <span className={`text-[11px] font-bold tabular-nums leading-none ${isCurrent ? 'text-gold' : 'text-ink-3/40'}`}>
+                    <span className={`text-[10px] font-bold tabular-nums leading-none ${isCurrent ? 'text-gold' : 'text-ink-3/40'}`}>
                       {idx + 1}
                     </span>
                   )}
                 </button>
 
                 <span className={[
-                  'hidden sm:block text-[10.5px] font-medium whitespace-nowrap transition-colors duration-200',
+                  'hidden sm:block text-[10px] font-medium whitespace-nowrap transition-colors duration-200',
                   isCurrent   ? 'text-ink font-semibold'
                   : isCompleted ? 'text-ink-3'
                                 : 'text-ink-3/40',

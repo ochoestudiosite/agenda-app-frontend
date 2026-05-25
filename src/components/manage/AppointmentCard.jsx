@@ -404,17 +404,17 @@ function ReschedulePanel({
                   disabled={!clickable}
                   title={clickable ? `Volver a ${s.label}` : undefined}
                   className={[
-                    'w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300',
+                    'w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border-2',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1',
                     done
-                      ? 'bg-gold cursor-pointer hover:scale-110 hover:shadow-[0_0_0_4px_rgba(0,184,122,0.18)] active:scale-[0.97]'
+                      ? 'bg-gold border-gold cursor-pointer hover:scale-110 hover:shadow-[0_0_0_4px_rgba(0,184,122,0.2)] active:scale-[0.97]'
                       : active
-                        ? 'bg-surface border-2 border-gold shadow-[0_0_0_3px_rgba(0,184,122,0.1)] cursor-default'
-                        : 'bg-surface border-2 border-edge/50 cursor-default',
+                        ? 'bg-surface border-gold cursor-default'
+                        : 'bg-surface border-edge/50 cursor-default',
                   ].join(' ')}
                 >
                   {done ? (
-                    <svg className="w-3 h-3 text-bg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <svg className="w-2.5 h-2.5 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
@@ -424,7 +424,7 @@ function ReschedulePanel({
                   )}
                 </button>
                 <span className={[
-                  'text-[10px] font-medium whitespace-nowrap transition-colors duration-200',
+                  'text-[9.5px] font-medium whitespace-nowrap transition-colors duration-200',
                   active ? 'text-ink font-semibold' : done ? 'text-ink-3' : 'text-ink-3/40',
                 ].join(' ')}>
                   {s.label}

@@ -81,7 +81,7 @@ export default function ServiceSelector() {
             </div>
             <button
               onClick={() => dispatch({ type: 'CONFIRM_SERVICES' })}
-              className="w-full py-3 rounded-xl bg-gold text-bg font-semibold text-sm tracking-wide
+              className="w-full py-3 rounded-xl bg-gold text-on-gold font-semibold text-sm tracking-wide
                          hover:bg-gold/90 active:scale-[0.98] transition-all duration-160 cursor-pointer"
             >
               Continuar
@@ -130,7 +130,7 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-160 shrink-0
                          ${isSelected ? 'border-gold bg-gold' : 'border-ink-3/50 group-hover:border-gold'}`}>
           {isSelected && (
-            <svg className="w-3 h-3 text-bg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <svg className="w-3 h-3 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           )}
