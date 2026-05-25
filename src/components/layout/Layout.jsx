@@ -47,7 +47,7 @@ export default function Layout({ children }) {
         <header className="sticky top-0 z-40 border-b border-edge/60 bg-surface/80 backdrop-blur-xl backdrop-saturate-150">
           <div className="max-w-3xl mx-auto px-5 h-14 flex items-center justify-between">
 
-            <Link to="/" className="flex items-center gap-2.5 group">
+            <Link to="/" className="flex items-center gap-2.5 group shrink-0">
               <BizLogo url={logoUrl} size="nav" />
               {isLoading
                 ? <span className="h-4 w-28 skeleton rounded-md" />
@@ -138,24 +138,33 @@ function BizLogo({ url, size = 'nav' }) {
 
   if (size === 'nav') {
     return safe ? (
-      <span className="w-7 h-7 rounded-lg shrink-0 overflow-hidden bg-raised border border-edge/50">
-        <img src={url} alt="" onError={() => setFailed(true)}
-          className="w-full h-full object-cover" loading="lazy" />
-      </span>
+      <img
+        src={url}
+        alt=""
+        onError={() => setFailed(true)}
+        className="h-[30px] w-auto max-w-[110px] object-contain shrink-0"
+        loading="lazy"
+      />
     ) : (
-      <span className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center shrink-0">
+      <span
+        className="w-[30px] h-[30px] rounded-lg shrink-0 flex items-center justify-center"
+        style={{ background: 'linear-gradient(135deg, rgb(var(--gold-light)), rgb(var(--gold)))', color: 'rgb(var(--on-gold))' }}
+      >
         <CalendarIcon />
       </span>
     );
   }
 
   return safe ? (
-    <span className="w-5 h-5 rounded-md shrink-0 overflow-hidden bg-raised border border-edge/40">
-      <img src={url} alt="" onError={() => setFailed(true)}
-        className="w-full h-full object-cover" loading="lazy" />
-    </span>
+    <img
+      src={url}
+      alt=""
+      onError={() => setFailed(true)}
+      className="h-5 w-auto max-w-[80px] object-contain shrink-0"
+      loading="lazy"
+    />
   ) : (
-    <span className="w-5 h-5 rounded-md bg-gold/10 flex items-center justify-center">
+    <span className="w-5 h-5 rounded-md bg-gold/10 flex items-center justify-center shrink-0">
       <CalendarIcon className="w-2.5 h-2.5 text-gold" />
     </span>
   );
