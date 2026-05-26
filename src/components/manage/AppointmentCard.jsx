@@ -151,9 +151,14 @@ export default function AppointmentCard({ appointment, onUpdated }) {
             <p className="font-mono text-[22px] font-bold text-gold tracking-[0.18em] leading-tight">
               {appointment.code}
             </p>
-            <p className="text-xs text-ink-3 mt-0.5 truncate">
-              {toTitleCase(appointment.clientName)} · {appointment.clientPhone}
-            </p>
+            <div className="mt-0.5 space-y-0.5">
+              <p className="text-xs text-ink-3 truncate">
+                {toTitleCase(appointment.clientName)} · {appointment.clientPhone}
+              </p>
+              {appointment.clientEmail && (
+                <p className="text-xs text-ink-3 truncate">{appointment.clientEmail}</p>
+              )}
+            </div>
           </div>
           <StatusBadge status={appointment.status} />
         </div>

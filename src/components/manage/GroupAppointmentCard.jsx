@@ -99,9 +99,14 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
             <p className="font-mono text-[22px] font-bold text-gold tracking-[0.18em] leading-tight">
               {group.groupCode}
             </p>
-            <p className="text-xs text-ink-3 mt-0.5 truncate">
-              {toTitleCase(group.clientName)} · {group.clientPhone}
-            </p>
+            <div className="mt-0.5 space-y-0.5">
+              <p className="text-xs text-ink-3 truncate">
+                {toTitleCase(group.clientName)} · {group.clientPhone}
+              </p>
+              {group.clientEmail && (
+                <p className="text-xs text-ink-3 truncate">{group.clientEmail}</p>
+              )}
+            </div>
           </div>
           <StatusBadge status={status} />
         </div>
