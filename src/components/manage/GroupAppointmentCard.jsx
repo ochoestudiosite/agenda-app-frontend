@@ -534,9 +534,14 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
             <div className="pt-2.5 border-t border-edge flex justify-between text-xs">
               <span className="text-ink-3">Total</span>
               <span className="font-semibold text-ink tabular-nums">
-                {totalDuration} min · {(group.appointments ?? []).some(a => a.priceType === 'ask')
-                  ? (group.totalPrice > 0 ? `${formatPrice(group.totalPrice)}+` : 'A consultar')
-                  : formatPrice(group.totalPrice)}
+                {totalDuration} min · {(() => {
+                  const appts = group.appointments ?? [];
+                  const allAsk = appts.every(a => a.priceType === 'ask');
+                  const hasVariable = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
+                  if (allAsk) return 'A consultar';
+                  if (hasVariable) return `${formatPrice(group.totalPrice)}+`;
+                  return formatPrice(group.totalPrice);
+                })()}
               </span>
             </div>
           </div>
