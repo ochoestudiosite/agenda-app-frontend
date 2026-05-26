@@ -95,7 +95,7 @@ export default function ClientForm() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    dispatch({ type: 'SET_CLIENT', payload: { name: name.trim(), phone: phone.trim() } });
+    dispatch({ type: 'SET_CLIENT', payload: { name: name.trim(), phone: phone.trim(), email: email.trim() || '' } });
 
     const branchId = state.branch?.id ?? (configBranches.length === 1 ? configBranches[0].id : null);
 

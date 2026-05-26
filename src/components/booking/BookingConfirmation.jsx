@@ -85,13 +85,21 @@ export default function BookingConfirmation() {
 
         {/* Code + status badge */}
         <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-3 border-b border-edge">
-          <div className="min-w-0">
-            <p className="font-mono text-[22px] font-bold text-gold tracking-[0.18em] leading-tight select-all">
-              {displayCode}
-            </p>
-            <p className="text-xs text-ink-3 mt-0.5 truncate">
-              {confirmation?.clientName ? `${toTitleCase(confirmation.clientName)} · ` : ''}{confirmation?.clientPhone}
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-mono text-[22px] font-bold text-gold tracking-[0.18em] leading-tight select-all">
+                {displayCode}
+              </p>
+              <CopyIconButton code={displayCode} />
+            </div>
+            <div className="mt-1 space-y-0.5">
+              <p className="text-xs text-ink-3 truncate">
+                {confirmation?.clientName ? `${toTitleCase(confirmation.clientName)} · ` : ''}{confirmation?.clientPhone}
+              </p>
+              {state.clientEmail && (
+                <p className="text-xs text-ink-3 truncate">{state.clientEmail}</p>
+              )}
+            </div>
           </div>
           <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gold/12 text-gold border border-gold/25">
             Confirmada
@@ -296,13 +304,8 @@ export default function BookingConfirmation() {
         )}
       </div>
 
-      {/* Copy code */}
-      <div className="flex justify-center mb-5">
-        <CopyCodeButton code={displayCode} />
-      </div>
-
       {/* Tip */}
-      <p className="text-center text-[11.5px] text-ink-3 mb-8 leading-relaxed">
+      <p className="text-center text-[11.5px] text-ink-3 mb-5 leading-relaxed">
         Accede a{' '}
         <Link to="/gestionar" className="text-gold font-medium hover:underline underline-offset-2">
           Gestionar
@@ -323,9 +326,9 @@ export default function BookingConfirmation() {
   );
 }
 
-// ── Copy button ───────────────────────────────────────────────────────────────
+// ── Copy icon button (compact, inline with code) ──────────────────────────────
 
-function CopyCodeButton({ code }) {
+function CopyIconButton({ code }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -348,30 +351,25 @@ function CopyCodeButton({ code }) {
   return (
     <button
       onClick={handleCopy}
-      aria-label={copied ? 'Código copiado' : 'Copiar código de confirmación'}
+      aria-label={copied ? 'Código copiado' : 'Copiar código'}
+      title={copied ? '¡Copiado!' : 'Copiar código'}
       className={[
-        'inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold',
-        'border transition-all duration-200 cursor-pointer min-h-[44px] active:scale-[0.97]',
+        'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
+        'border transition-all duration-150 cursor-pointer active:scale-95',
         copied
-          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          : 'border-gold/40 bg-gold/8 text-gold hover:bg-gold/15 hover:border-gold/60',
+          ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
+          : 'border-gold/30 bg-gold/8 text-gold hover:bg-gold/15 hover:border-gold/50',
       ].join(' ')}
     >
       {copied ? (
-        <>
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-          ¡Copiado!
-        </>
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
       ) : (
-        <>
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <rect x="9" y="9" width="13" height="13" rx="2" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-          </svg>
-          Copiar código
-        </>
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <rect x="9" y="9" width="13" height="13" rx="2" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+        </svg>
       )}
     </button>
   );

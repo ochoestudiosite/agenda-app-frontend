@@ -16,6 +16,7 @@ const initialState = {
   time: null,
   clientName: '',
   clientPhone: '',
+  clientEmail: '',
   confirmation: null,       // single appt or group {groupCode, appointments[]}
 };
 
@@ -106,7 +107,7 @@ function reducer(state, action) {
       return { ...state, date: action.payload.date, time: action.payload.time, step: 4 };
 
     case 'SET_CLIENT':
-      return { ...state, clientName: action.payload.name, clientPhone: action.payload.phone };
+      return { ...state, clientName: action.payload.name, clientPhone: action.payload.phone, clientEmail: action.payload.email ?? '' };
 
     case 'SET_CONFIRMATION': {
       // Guard: group mode requires all assignments + date/time
