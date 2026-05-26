@@ -1,0 +1,6 @@
+# Default owner for all files
+* @ochoestudiosite
+
+# Security-critical — require explicit review
+.env.example                   @ochoestudiosite
+src/services/api.js            @ochoestudiosite
