@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
+import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
 import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../hooks/useAppointment';
 import { useToast } from '../ui/Toast';
@@ -33,7 +34,8 @@ function minsToStr(m) {
 
 export default function GroupAppointmentCard({ group, onUpdated }) {
   const toast            = useToast();
-  const { data: config } = useConfig();
+  const { data: config }  = useConfig();
+  const { data: svcData } = useServices();
   const timeFmt  = config?.time_format ?? '12h';
   const branches = config?.branches   ?? [];
 
@@ -132,26 +134,37 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           <div className="space-y-2.5">
             {(group.appointments ?? []).map((appt) => {
               const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+              const svcObj     = svcData?.services?.find(s => s.id === appt.serviceId);
               return (
                 <div key={appt.code} className="flex items-start gap-3">
+                  {/* Service avatar */}
                   <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
-                    {specialist?.avatarUrl
-                      ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
-                      : <span className="text-[11px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                    {svcObj?.imageUrl
+                      ? <img src={svcObj.imageUrl} alt={appt.serviceName} className="w-full h-full object-cover" />
+                      : <span className="text-[11px] font-bold text-gold">{initials(appt.serviceName)}</span>
                     }
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-ink leading-snug">
                       {toTitleCase(appt.serviceName)}
                     </p>
-                    <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">
-                      {toTitleCase(appt.specialistName)}
-                      {' · '}
-                      <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
-                      {' · '}{appt.serviceDuration} min
-                    </p>
+                    {/* Specialist mini-avatar + info */}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                        {specialist?.avatarUrl
+                          ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
+                          : <span className="text-[8px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                        }
+                      </div>
+                      <p className="text-[11px] text-ink-3 leading-none">
+                        {toTitleCase(appt.specialistName)}
+                        {' · '}
+                        <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
+                        {' · '}{appt.serviceDuration} min
+                      </p>
+                    </div>
                     {appt.status === 'cancelled' && (
-                      <span className="badge badge-cancelled text-[10px] mt-1 inline-block">Cancelada</span>
+                      <span className="badge badge-cancelled text-[10px] mt-1.5 inline-block">Cancelada</span>
                     )}
                   </div>
                   <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
