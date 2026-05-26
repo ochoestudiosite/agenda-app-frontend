@@ -190,28 +190,54 @@ export default function BookingConfirmation() {
           </>
         ) : (
           <>
-            {/* ── SINGLE: service ─────────────────────────────────────────── */}
+            {/* ── SINGLE: service(s) ──────────────────────────────────────── */}
             <div className="px-6 py-4 border-b border-edge">
-              <p className="label-section mb-3">Servicio</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
-                  {service?.imageUrl
-                    ? <img src={service.imageUrl} alt={confirmation?.serviceName} className="w-full h-full object-cover" />
-                    : <span className="text-sm font-bold text-ink-2">{initials(confirmation?.serviceName)}</span>
-                  }
+              <p className="label-section mb-3">
+                {confirmation?.services?.length > 1 ? 'Servicios' : 'Servicio'}
+              </p>
+              {confirmation?.services?.length > 1 ? (
+                <div className="space-y-2.5">
+                  {confirmation.services.map((svc, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0 mt-0.5">
+                        {svc.imageUrl
+                          ? <img src={svc.imageUrl} alt={svc.serviceName} className="w-full h-full object-cover" />
+                          : <span className="text-[11px] font-bold text-ink-2">{initials(svc.serviceName)}</span>
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+                          {toTitleCase(svc.serviceName)}
+                        </p>
+                        <p className="text-xs text-ink-3 mt-0.5">{svc.serviceDuration} min</p>
+                      </div>
+                      <p className="text-[14px] font-bold text-gold tabular-nums shrink-0 mt-0.5">
+                        {displayPrice(svc.priceType, svc.servicePrice)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-semibold text-ink leading-snug truncate">
-                    {toTitleCase(confirmation?.serviceName)}
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
+                    {service?.imageUrl
+                      ? <img src={service.imageUrl} alt={confirmation?.serviceName} className="w-full h-full object-cover" />
+                      : <span className="text-sm font-bold text-ink-2">{initials(confirmation?.serviceName)}</span>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                      {toTitleCase(confirmation?.serviceName)}
+                    </p>
+                    {confirmation?.serviceDuration && (
+                      <p className="text-xs text-ink-3 mt-0.5">{confirmation.serviceDuration} min</p>
+                    )}
+                  </div>
+                  <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
+                    {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
                   </p>
-                  {confirmation?.serviceDuration && (
-                    <p className="text-xs text-ink-3 mt-0.5">{confirmation.serviceDuration} min</p>
-                  )}
                 </div>
-                <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
-                  {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
-                </p>
-              </div>
+              )}
             </div>
 
             {/* ── SINGLE: specialist ──────────────────────────────────────── */}

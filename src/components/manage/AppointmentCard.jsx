@@ -171,26 +171,52 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           </div>
         </div>
 
-        {/* Service */}
+        {/* Service(s) */}
         <div className="px-6 py-4 border-b border-edge">
-          <p className="label-section mb-3">{appointment.serviceName?.includes(' + ') ? 'Servicios' : 'Servicio'}</p>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
-              {appointmentService?.imageUrl
-                ? <img src={appointmentService.imageUrl} alt={appointment.serviceName} className="w-full h-full object-cover" />
-                : <span className="text-sm font-bold text-ink-2">{initials(appointment.serviceName)}</span>
-              }
+          <p className="label-section mb-3">
+            {appointment.services ? 'Servicios' : appointment.serviceName?.includes(' + ') ? 'Servicios' : 'Servicio'}
+          </p>
+          {appointment.services ? (
+            <div className="space-y-2.5">
+              {appointment.services.map((svc, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0 mt-0.5">
+                    {svc.imageUrl
+                      ? <img src={svc.imageUrl} alt={svc.serviceName} className="w-full h-full object-cover" />
+                      : <span className="text-[11px] font-bold text-ink-2">{initials(svc.serviceName)}</span>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+                      {toTitleCase(svc.serviceName)}
+                    </p>
+                    <p className="text-xs text-ink-3 mt-0.5">{svc.serviceDuration} min</p>
+                  </div>
+                  <p className="text-[14px] font-bold text-gold tabular-nums shrink-0 mt-0.5">
+                    {displayPrice(svc.priceType, svc.servicePrice)}
+                  </p>
+                </div>
+              ))}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-semibold text-ink leading-snug truncate">
-                {toTitleCase(appointment.serviceName)}
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
+                {appointmentService?.imageUrl
+                  ? <img src={appointmentService.imageUrl} alt={appointment.serviceName} className="w-full h-full object-cover" />
+                  : <span className="text-sm font-bold text-ink-2">{initials(appointment.serviceName)}</span>
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                  {toTitleCase(appointment.serviceName)}
+                </p>
+                <p className="text-xs text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
+              </div>
+              <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
+                {displayPrice(appointment.priceType, appointment.servicePrice)}
               </p>
-              <p className="text-xs text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
             </div>
-            <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
-              {displayPrice(appointment.priceType, appointment.servicePrice)}
-            </p>
-          </div>
+          )}
         </div>
 
         {/* Specialist */}
