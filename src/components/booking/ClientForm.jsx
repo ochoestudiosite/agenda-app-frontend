@@ -15,6 +15,10 @@ import BookingUnavailable from './BookingUnavailable';
 
 const PERSON_WORD_RE = /^[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+$/;
 
+function initials(name) {
+  return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+}
+
 function personNameErr(v) {
   const s = (v || '').trim();
   if (!s) return 'Ingresa tu nombre completo.';
@@ -63,6 +67,8 @@ export default function ClientForm() {
   const combinedPriceStr = groupMode
     ? formatCombinedPrice(groupServices)
     : formatCombinedPrice(selectedServices);
+
+  const displayBranch = state.branch ?? (configBranches.length === 1 ? configBranches[0] : null);
 
   const [name,          setName]          = useState(state.clientName);
   const [phone,         setPhone]         = useState(state.clientPhone);
@@ -174,16 +180,19 @@ export default function ClientForm() {
         {/* Services */}
         <div className="px-5 py-4 space-y-3.5">
           {groupMode ? (
-            serviceAssignments.map((a, i) => {
-              const offsetMins = serviceAssignments.slice(0, i).reduce((s, prev) => s + (prev.service.duration || 0), 0);
-              const startSlot  = minsToSlot(slotToMins(state.time) + offsetMins);
-              return (
-                <div key={i} className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                    <div className="w-5 h-5 rounded-full bg-gold/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-[9px] font-bold text-gold">{i + 1}</span>
+            <>
+              {serviceAssignments.map((a, i) => {
+                const offsetMins = serviceAssignments.slice(0, i).reduce((s, prev) => s + (prev.service.duration || 0), 0);
+                const startSlot  = minsToSlot(slotToMins(state.time) + offsetMins);
+                return (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
+                      {a.specialist?.avatarUrl
+                        ? <img src={a.specialist.avatarUrl} alt={a.specialist.name} className="w-full h-full object-cover" />
+                        : <span className="text-[11px] font-bold text-gold">{initials(a.specialist?.name)}</span>
+                      }
                     </div>
-                    <div className="min-w-0">
+                    <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold text-ink leading-tight">
                         {toTitleCase(a.service.name)}
                       </p>
@@ -195,40 +204,90 @@ export default function ClientForm() {
                         {a.service.duration} min
                       </p>
                     </div>
+                    <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0 mt-0.5">
+                      {formatServicePrice(a.service)}
+                    </p>
                   </div>
-                  <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0">
-                    {formatServicePrice(a.service)}
-                  </p>
+                );
+              })}
+              {displayBranch?.name && (
+                <div className="flex items-center gap-3 pt-0.5">
+                  <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                    {displayBranch.image_url
+                      ? <img src={displayBranch.image_url} alt={displayBranch.name} className="w-full h-full object-cover" />
+                      : <span className="text-[11px] font-bold text-gold">{initials(displayBranch.name)}</span>
+                    }
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
+                    <p className="text-[13px] font-semibold text-ink">{toTitleCase(displayBranch.name)}</p>
+                  </div>
                 </div>
-              );
-            })
+              )}
+            </>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-1">
-                    {selectedServices.length > 1 ? 'Servicios' : 'Servicio'}
-                  </p>
-                  <p className="text-[14px] font-semibold text-ink">
-                    {selectedServices.map(s => toTitleCase(s.name)).join(' + ')}
-                  </p>
+              {selectedServices.length > 1 ? (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Servicios</p>
+                  {selectedServices.map((svc, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
+                        {svc.imageUrl
+                          ? <img src={svc.imageUrl} alt={svc.name} className="w-full h-full object-cover" />
+                          : <span className="text-[11px] font-bold text-gold">{initials(svc.name)}</span>
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-ink leading-snug truncate">{toTitleCase(svc.name)}</p>
+                        <p className="text-xs text-ink-3 mt-0.5">{svc.duration} min</p>
+                      </div>
+                      <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">{formatServicePrice(svc)}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[14px] font-semibold text-gold tabular-nums">
-                    {combinedPriceStr}
-                  </p>
-                  <p className="text-xs text-ink-3 mt-0.5">{totalDuration} min</p>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
+                    {selectedServices[0]?.imageUrl
+                      ? <img src={selectedServices[0].imageUrl} alt={selectedServices[0].name} className="w-full h-full object-cover" />
+                      : <span className="text-[11px] font-bold text-gold">{initials(selectedServices[0]?.name)}</span>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-0.5">Servicio</p>
+                    <p className="text-[14px] font-semibold text-ink leading-snug">{toTitleCase(selectedServices[0]?.name)}</p>
+                    <p className="text-xs text-ink-3 mt-0.5">{selectedServices[0]?.duration} min</p>
+                  </div>
+                  <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0">{combinedPriceStr}</p>
                 </div>
-              </div>
+              )}
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gold/8 border border-gold/20 flex items-center justify-center shrink-0 text-[11px] font-bold text-gold">
-                  {state.specialist?.name?.charAt(0)?.toUpperCase() || '?'}
+                <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                  {state.specialist?.avatarUrl
+                    ? <img src={state.specialist.avatarUrl} alt={state.specialist.name} className="w-full h-full object-cover" />
+                    : <span className="text-[11px] font-bold text-gold">{initials(state.specialist?.name)}</span>
+                  }
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Especialista</p>
                   <p className="text-[13px] font-semibold text-ink">{toTitleCase(state.specialist?.name)}</p>
                 </div>
               </div>
+              {displayBranch?.name && (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                    {displayBranch.image_url
+                      ? <img src={displayBranch.image_url} alt={displayBranch.name} className="w-full h-full object-cover" />
+                      : <span className="text-[11px] font-bold text-gold">{initials(displayBranch.name)}</span>
+                    }
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
+                    <p className="text-[13px] font-semibold text-ink">{toTitleCase(displayBranch.name)}</p>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
