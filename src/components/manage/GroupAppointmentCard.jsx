@@ -41,7 +41,6 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const status       = allCancelled ? 'cancelled' : group.status;
   const isCancelled  = status === 'cancelled';
   const todayStr     = toDateStr(new Date());
-  const isPast       = !!group.date && group.date < todayStr;
 
   // Date box values
   const apptDate  = new Date(group.date + 'T12:00:00');
@@ -49,7 +48,11 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const dayNum    = group.date?.split('-')[2];
 
   // Overall start time = first appointment's time
-  const startTime = group.appointments?.[0]?.time ?? null;
+  const startTime    = group.appointments?.[0]?.time ?? null;
+  const apptDateTime = (group.date && startTime)
+    ? new Date(`${group.date}T${startTime.padStart(5, '0')}:00`)
+    : null;
+  const isPast = apptDateTime ? apptDateTime < new Date() : (!!group.date && group.date < todayStr);
 
   // Branch info
   const groupBranchId   = group.appointments?.[0]?.branchId ?? null;
@@ -226,22 +229,23 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
         {/* Actions — view mode */}
         {!isCancelled && mode === 'view' && (
           <div className="px-6 pt-4 pb-6">
-            {isPast && (
-              <div className="flex items-center gap-2 px-3.5 py-2.5 mb-3 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
+            {isPast ? (
+              <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Esta visita ya ocurrió. Solo puedes cancelarla.
+                Esta visita ya ocurrió.
+              </div>
+            ) : (
+              <div className="flex gap-2.5">
+                <Button variant="outline" onClick={() => setMode('reschedule')} className="flex-1">
+                  Reagendar
+                </Button>
+                <Button variant="danger" onClick={() => setMode('cancel-confirm')} className="flex-1">
+                  Cancelar visita
+                </Button>
               </div>
             )}
-            <div className="flex gap-2.5">
-              <Button variant="outline" onClick={() => setMode('reschedule')} disabled={isPast} className="flex-1">
-                Reagendar
-              </Button>
-              <Button variant="danger" onClick={() => setMode('cancel-confirm')} className="flex-1">
-                Cancelar visita
-              </Button>
-            </div>
           </div>
         )}
 

@@ -86,7 +86,8 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
   const isCancelled        = appointment.status === 'cancelled';
-  const isPastAppt         = appointment.date < toDateStr(new Date());
+  const apptDateTime       = new Date(`${appointment.date}T${(appointment.time ?? '00:00').padStart(5, '0')}:00`);
+  const isPastAppt         = apptDateTime < new Date();
 
   const apptDate   = new Date(appointment.date + 'T12:00:00');
   const monthAbbr  = MONTH_SHORT[apptDate.getMonth()];
@@ -266,7 +267,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
         {/* Reagendada banner */}
         {appointment.status === 'rescheduled' && appointment.previousDate && appointment.previousTime && (
-          <div className="mx-4 mb-4 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/6 border border-amber-500/20">
+          <div className="mx-4 mt-3 mb-4 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/6 border border-amber-500/20">
             <svg className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
@@ -282,7 +283,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
         {/* Cancelled notice */}
         {isCancelled && (
-          <div className="mx-4 mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/6 border border-red-500/20 text-xs text-red-500">
+          <div className="mx-4 mt-3 mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/6 border border-red-500/20 text-xs text-red-500">
             <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -292,23 +293,24 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
         {/* Actions — view mode */}
         {!isCancelled && mode === 'view' && (
-          <div className="px-6 pb-6">
-            {isPastAppt && (
-              <div className="flex items-center gap-2 px-3.5 py-2.5 mb-3 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
+          <div className="px-6 pt-4 pb-6">
+            {isPastAppt ? (
+              <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Esta cita ya ocurrió. Solo puedes cancelarla.
+                Esta cita ya ocurrió.
+              </div>
+            ) : (
+              <div className="flex gap-2.5">
+                <Button variant="outline" onClick={openReschedule} className="flex-1">
+                  Reagendar
+                </Button>
+                <Button variant="danger" onClick={() => setMode('cancel-confirm')} className="flex-1">
+                  Cancelar cita
+                </Button>
               </div>
             )}
-            <div className="flex gap-2.5">
-              <Button variant="outline" onClick={openReschedule} disabled={isPastAppt} className="flex-1">
-                Reagendar
-              </Button>
-              <Button variant="danger" onClick={() => setMode('cancel-confirm')} className="flex-1">
-                Cancelar cita
-              </Button>
-            </div>
           </div>
         )}
 
