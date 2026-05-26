@@ -167,13 +167,10 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
         {groupBranchName && (
           <div className="px-6 py-4 border-b border-edge">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border border-edge bg-raised flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="w-10 h-10 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
                 {groupBranch?.image_url
                   ? <img src={groupBranch.image_url} alt={groupBranchName} className="w-full h-full object-cover" />
-                  : <svg className="w-4 h-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
+                  : <span className="text-sm font-bold text-gold">{initials(groupBranchName)}</span>
                 }
               </div>
               <div>

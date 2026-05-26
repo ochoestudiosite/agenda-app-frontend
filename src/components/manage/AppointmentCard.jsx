@@ -181,10 +181,10 @@ export default function AppointmentCard({ appointment, onUpdated }) {
             <div className="space-y-2.5">
               {appointment.services.map((svc, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 mt-0.5">
                     {svc.imageUrl
                       ? <img src={svc.imageUrl} alt={svc.serviceName} className="w-full h-full object-cover" />
-                      : <span className="text-[11px] font-bold text-ink-2">{initials(svc.serviceName)}</span>
+                      : <span className="text-[11px] font-bold text-gold">{initials(svc.serviceName)}</span>
                     }
                   </div>
                   <div className="flex-1 min-w-0">
@@ -201,10 +201,10 @@ export default function AppointmentCard({ appointment, onUpdated }) {
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
                 {appointmentService?.imageUrl
                   ? <img src={appointmentService.imageUrl} alt={appointment.serviceName} className="w-full h-full object-cover" />
-                  : <span className="text-sm font-bold text-ink-2">{initials(appointment.serviceName)}</span>
+                  : <span className="text-sm font-bold text-gold">{initials(appointment.serviceName)}</span>
                 }
               </div>
               <div className="flex-1 min-w-0">
@@ -240,13 +240,10 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         {appointment.branchName && (
           <div className="px-6 py-4 border-b border-edge">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border border-edge bg-raised flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="w-10 h-10 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
                 {appointmentBranch?.image_url
                   ? <img src={appointmentBranch.image_url} alt={appointment.branchName} className="w-full h-full object-cover" />
-                  : <svg className="w-4 h-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
+                  : <span className="text-sm font-bold text-gold">{initials(appointment.branchName)}</span>
                 }
               </div>
               <div>
