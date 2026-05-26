@@ -186,23 +186,33 @@ export default function ClientForm() {
                 const startSlot  = minsToSlot(slotToMins(state.time) + offsetMins);
                 return (
                   <div key={i} className="flex items-start gap-3">
+                    {/* Service avatar */}
                     <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
-                      {a.specialist?.avatarUrl
-                        ? <img src={a.specialist.avatarUrl} alt={a.specialist.name} className="w-full h-full object-cover" />
-                        : <span className="text-[11px] font-bold text-gold">{initials(a.specialist?.name)}</span>
+                      {a.service?.imageUrl
+                        ? <img src={a.service.imageUrl} alt={a.service.name} className="w-full h-full object-cover" />
+                        : <span className="text-[11px] font-bold text-gold">{initials(a.service?.name)}</span>
                       }
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold text-ink leading-tight">
                         {toTitleCase(a.service.name)}
                       </p>
-                      <p className="text-xs text-ink-3 mt-0.5">
-                        {toTitleCase(a.specialist.name)}
-                        {' · '}
-                        <span className="text-gold font-semibold">{formatTime(startSlot, timeFmt)}</span>
-                        {' · '}
-                        {a.service.duration} min
-                      </p>
+                      {/* Specialist mini-avatar + info */}
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                          {a.specialist?.avatarUrl
+                            ? <img src={a.specialist.avatarUrl} alt={a.specialist.name} className="w-full h-full object-cover" />
+                            : <span className="text-[8px] font-bold text-gold">{initials(a.specialist?.name)}</span>
+                          }
+                        </div>
+                        <p className="text-xs text-ink-3 leading-none">
+                          {toTitleCase(a.specialist.name)}
+                          {' · '}
+                          <span className="text-gold font-semibold">{formatTime(startSlot, timeFmt)}</span>
+                          {' · '}
+                          {a.service.duration} min
+                        </p>
+                      </div>
                     </div>
                     <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0 mt-0.5">
                       {formatServicePrice(a.service)}

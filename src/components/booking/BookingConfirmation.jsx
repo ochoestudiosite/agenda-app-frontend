@@ -127,25 +127,36 @@ export default function BookingConfirmation() {
               <p className="label-section mb-3">Servicios</p>
               <div className="space-y-2.5">
                 {appts.map((appt, i) => {
-                  const spec = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+                  const spec    = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+                  const svcObj  = svcData?.services?.find(s => s.name?.toLowerCase() === appt.serviceName?.toLowerCase());
                   return (
                     <div key={i} className="flex items-start gap-3">
+                      {/* Service avatar */}
                       <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
-                        {spec?.avatarUrl
-                          ? <img src={spec.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
-                          : <span className="text-[11px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                        {svcObj?.imageUrl
+                          ? <img src={svcObj.imageUrl} alt={appt.serviceName} className="w-full h-full object-cover" />
+                          : <span className="text-[11px] font-bold text-gold">{initials(appt.serviceName)}</span>
                         }
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-semibold text-ink leading-snug">
                           {toTitleCase(appt.serviceName)}
                         </p>
-                        <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">
-                          {toTitleCase(appt.specialistName)}
-                          {' · '}
-                          <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
-                          {' · '}{appt.serviceDuration} min
-                        </p>
+                        {/* Specialist mini-avatar + info */}
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                            {spec?.avatarUrl
+                              ? <img src={spec.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
+                              : <span className="text-[8px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                            }
+                          </div>
+                          <p className="text-[11px] text-ink-3 leading-none">
+                            {toTitleCase(appt.specialistName)}
+                            {' · '}
+                            <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
+                            {' · '}{appt.serviceDuration} min
+                          </p>
+                        </div>
                       </div>
                       <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
                         {displayPrice(appt.priceType, appt.servicePrice)}
