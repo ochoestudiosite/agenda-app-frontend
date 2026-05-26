@@ -230,6 +230,14 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           </div>
         )}
 
+        {/* Total */}
+        <div className="px-6 py-3.5 border-b border-edge flex items-center justify-between bg-raised/30">
+          <span className="text-[13px] font-semibold text-ink">Total</span>
+          <span className="text-[18px] font-bold text-gold tabular-nums">
+            {displayPrice(appointment.priceType, appointment.servicePrice)}
+          </span>
+        </div>
+
         {/* Reagendada banner */}
         {appointment.status === 'rescheduled' && appointment.previousDate && appointment.previousTime && (
           <div className="mx-4 mb-4 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/6 border border-amber-500/20">
