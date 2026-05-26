@@ -18,6 +18,12 @@ function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 }
 
+function displayPrice(priceType, price) {
+  if (priceType === 'ask') return 'A consultar';
+  if (priceType === 'range' || priceType === 'starting_from') return `${formatPrice(price)}+`;
+  return formatPrice(price);
+}
+
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
@@ -182,13 +188,13 @@ export default function AppointmentCard({ appointment, onUpdated }) {
               <p className="text-xs text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
             </div>
             <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
-              {appointment.priceType === 'ask' ? 'A consultar' : formatPrice(appointment.servicePrice)}
+              {displayPrice(appointment.priceType, appointment.servicePrice)}
             </p>
           </div>
         </div>
 
-        {/* Specialist + Branch */}
-        <div className="px-6 py-4 space-y-3.5">
+        {/* Specialist */}
+        <div className="px-6 py-4 border-b border-edge">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
               {appointmentSpecialist?.avatarUrl
@@ -201,8 +207,11 @@ export default function AppointmentCard({ appointment, onUpdated }) {
               <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(appointment.specialistName)}</p>
             </div>
           </div>
+        </div>
 
-          {appointment.branchName && (
+        {/* Branch */}
+        {appointment.branchName && (
+          <div className="px-6 py-4 border-b border-edge">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full border border-edge bg-raised flex items-center justify-center shrink-0 overflow-hidden">
                 {appointmentBranch?.image_url
@@ -218,8 +227,8 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                 <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(appointment.branchName)}</p>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Reagendada banner */}
         {appointment.status === 'rescheduled' && appointment.previousDate && appointment.previousTime && (

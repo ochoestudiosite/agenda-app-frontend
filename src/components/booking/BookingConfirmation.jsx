@@ -14,6 +14,12 @@ function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 }
 
+function displayPrice(priceType, price) {
+  if (priceType === 'ask') return 'A consultar';
+  if (priceType === 'range' || priceType === 'starting_from') return `${formatPrice(price)}+`;
+  return formatPrice(price);
+}
+
 export default function BookingConfirmation() {
   const { state, dispatch } = useBooking();
   const { data: config }    = useConfig();
@@ -44,7 +50,6 @@ export default function BookingConfirmation() {
   const startTime    = appts[0]?.time ?? null;
   const totalDuration = isGroup ? appts.reduce((s, a) => s + (a.serviceDuration ?? 0), 0) : 0;
   const totalPrice    = isGroup ? appts.reduce((s, a) => s + (a.servicePrice   ?? 0), 0) : 0;
-  const hasAsk        = isGroup ? appts.some(a => a.priceType === 'ask') : false;
 
   const apptDate  = confirmation?.date ? new Date(confirmation.date + 'T12:00:00') : null;
   const monthAbbr = apptDate ? MONTH_SHORT[apptDate.getMonth()] : '';
@@ -143,7 +148,7 @@ export default function BookingConfirmation() {
                         </p>
                       </div>
                       <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
-                        {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
+                        {displayPrice(appt.priceType, appt.servicePrice)}
                       </p>
                     </div>
                   );
@@ -173,10 +178,13 @@ export default function BookingConfirmation() {
             <div className="px-6 py-3.5 flex items-center justify-between bg-raised/30">
               <span className="text-[13px] font-semibold text-ink">Total</span>
               <span className="text-[18px] font-bold text-gold tabular-nums">
-                {hasAsk
-                  ? (totalPrice > 0 ? `${formatPrice(totalPrice)}+` : 'A consultar')
-                  : formatPrice(totalPrice)
-                }
+                {(() => {
+                  const allAsk = appts.every(a => a.priceType === 'ask');
+                  const hasVariable = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
+                  if (allAsk) return 'A consultar';
+                  if (hasVariable) return `${formatPrice(totalPrice)}+`;
+                  return formatPrice(totalPrice);
+                })()}
               </span>
             </div>
           </>
@@ -201,7 +209,7 @@ export default function BookingConfirmation() {
                   )}
                 </div>
                 <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
-                  {confirmation?.priceType === 'ask' ? 'A consultar' : formatPrice(confirmation?.servicePrice)}
+                  {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
                 </p>
               </div>
             </div>
@@ -241,14 +249,12 @@ export default function BookingConfirmation() {
             )}
 
             {/* ── SINGLE: total ───────────────────────────────────────────── */}
-            {confirmation?.priceType !== 'ask' && (
-              <div className="px-6 py-3.5 flex items-center justify-between bg-raised/30">
-                <span className="text-[13px] font-semibold text-ink">Total</span>
-                <span className="text-[18px] font-bold text-gold tabular-nums">
-                  {formatPrice(confirmation?.servicePrice)}
-                </span>
-              </div>
-            )}
+            <div className="px-6 py-3.5 flex items-center justify-between bg-raised/30">
+              <span className="text-[13px] font-semibold text-ink">Total</span>
+              <span className="text-[18px] font-bold text-gold tabular-nums">
+                {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
+              </span>
+            </div>
           </>
         )}
       </div>

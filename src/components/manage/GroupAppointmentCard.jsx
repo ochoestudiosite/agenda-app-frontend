@@ -13,6 +13,12 @@ function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 }
 
+function displayPrice(priceType, price) {
+  if (priceType === 'ask') return 'A consultar';
+  if (priceType === 'range' || priceType === 'starting_from') return `${formatPrice(price)}+`;
+  return formatPrice(price);
+}
+
 const MONTHS_ES   = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DAYS_ES     = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
@@ -146,7 +152,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                     )}
                   </div>
                   <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
-                    {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
+                    {displayPrice(appt.priceType, appt.servicePrice)}
                   </p>
                 </div>
               );
@@ -179,9 +185,14 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
         <div className="px-6 py-3.5 border-b border-edge flex items-center justify-between bg-raised/30">
           <span className="text-[13px] font-semibold text-ink">Total</span>
           <span className="text-[18px] font-bold text-gold tabular-nums">
-            {(group.appointments ?? []).some(a => a.priceType === 'ask')
-              ? (group.totalPrice > 0 ? `${formatPrice(group.totalPrice)}+` : 'A consultar')
-              : formatPrice(group.totalPrice)}
+            {(() => {
+              const appts = group.appointments ?? [];
+              const allAsk = appts.every(a => a.priceType === 'ask');
+              const hasVariable = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
+              if (allAsk) return 'A consultar';
+              if (hasVariable) return `${formatPrice(group.totalPrice)}+`;
+              return formatPrice(group.totalPrice);
+            })()}
           </span>
         </div>
 
