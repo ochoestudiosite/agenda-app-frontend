@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useBooking } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
+import { useServices } from '../../hooks/useServices';
 import { api } from '../../services/api';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import Button from '../ui/Button';
+
+const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
 function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
@@ -14,7 +17,9 @@ function initials(name) {
 export default function BookingConfirmation() {
   const { state, dispatch } = useBooking();
   const { data: config }    = useConfig();
+  const { data: svcData }   = useServices();
   const timeFmt             = config?.time_format ?? '12h';
+  const branches            = config?.branches    ?? [];
   const { confirmation }    = state;
   const isGroup             = !!confirmation?.groupCode;
   const displayCode         = isGroup ? confirmation?.groupCode : confirmation?.code;
@@ -23,124 +28,234 @@ export default function BookingConfirmation() {
     queryKey: ['specialists'],
     queryFn:  () => api.getSpecialists(),
     staleTime: 300_000,
-    enabled:  isGroup,
   });
   const allSpecialists = specialistsData?.specialists ?? [];
+
+  // Single appointment lookups — prefer state objects set during flow
+  const specialist = state.specialist
+    ?? allSpecialists.find(s => String(s.id) === String(confirmation?.specialistId));
+  const service    = state.service
+    ?? svcData?.services?.find(s => s.name?.toLowerCase() === confirmation?.serviceName?.toLowerCase());
+  const branch     = branches.find(b => String(b.id) === String(state.branch?.id))
+    ?? state.branch;
+
+  // Group totals
+  const appts        = confirmation?.appointments ?? [];
+  const startTime    = appts[0]?.time ?? null;
+  const totalDuration = isGroup ? appts.reduce((s, a) => s + (a.serviceDuration ?? 0), 0) : 0;
+  const totalPrice    = isGroup ? appts.reduce((s, a) => s + (a.servicePrice   ?? 0), 0) : 0;
+  const hasAsk        = isGroup ? appts.some(a => a.priceType === 'ask') : false;
+
+  const apptDate  = confirmation?.date ? new Date(confirmation.date + 'T12:00:00') : null;
+  const monthAbbr = apptDate ? MONTH_SHORT[apptDate.getMonth()] : '';
+  const dayNum    = confirmation?.date?.split('-')[2] ?? '';
 
   return (
     <div className="animate-fade-up max-w-md mx-auto px-1">
 
       {/* ── Success hero ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col items-center text-center mb-10">
-        {/* Layered ring icon — Apple-style */}
-        <div className="relative mb-7 animate-scale-in">
+      <div className="flex flex-col items-center text-center mb-7">
+        <div className="relative mb-5 animate-scale-in">
           <div className="absolute inset-0 rounded-full bg-gold/8 scale-[1.35]" />
           <div className="absolute inset-0 rounded-full bg-gold/12 scale-[1.15]" />
-          <div className="w-20 h-20 rounded-full bg-gold/15 border-2 border-gold/40 flex items-center justify-center">
-            <svg className="w-9 h-9 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <div className="w-16 h-16 rounded-full bg-gold/15 border-2 border-gold/40 flex items-center justify-center">
+            <svg className="w-7 h-7 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
         </div>
-
-        <h2 className="font-display text-[1.75rem] font-bold text-ink tracking-tight leading-tight">
+        <h2 className="font-display text-[1.65rem] font-bold text-ink tracking-tight leading-tight">
           {isGroup ? '¡Visita confirmada!' : '¡Cita confirmada!'}
         </h2>
-        <p className="text-ink-3 text-sm mt-2.5 max-w-[260px] leading-relaxed">
+        <p className="text-ink-3 text-sm mt-2 max-w-[240px] leading-relaxed">
           Guarda tu código — lo necesitarás para gestionar o cancelar tu {isGroup ? 'visita' : 'cita'}.
         </p>
       </div>
 
-      {/* ── Ticket card ──────────────────────────────────────────────────── */}
-      <div className="bg-card border border-edge rounded-3xl shadow-sm mb-4 overflow-hidden">
+      {/* ── Appointment card ─────────────────────────────────────────────── */}
+      <div className="card overflow-hidden mb-3">
 
-        {/* Code section */}
-        <div className="px-6 pt-6 pb-5 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-ink-3 mb-5">
-            {isGroup ? 'Código de grupo' : 'Código de confirmación'}
-          </p>
+        {/* Status accent line */}
+        <div className="h-[3px] bg-gold" />
 
-          {/* Characters */}
-          <div className="flex items-center justify-center gap-1.5 flex-wrap mb-5">
-            {displayCode?.split('').map((char, i) => (
-              <span
-                key={i}
-                className="w-10 h-12 flex items-center justify-center
-                           bg-raised border border-edge rounded-xl
-                           font-mono text-[1.35rem] font-bold text-gold
-                           tabular-nums select-all tracking-wider"
-              >
-                {char}
-              </span>
-            ))}
+        {/* Code + status badge */}
+        <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-3 border-b border-edge">
+          <div className="min-w-0">
+            <p className="font-mono text-[22px] font-bold text-gold tracking-[0.18em] leading-tight select-all">
+              {displayCode}
+            </p>
+            <p className="text-xs text-ink-3 mt-0.5 truncate">
+              {confirmation?.clientName ? `${toTitleCase(confirmation.clientName)} · ` : ''}{confirmation?.clientPhone}
+            </p>
           </div>
-
-          <CopyCodeButton code={displayCode} />
+          <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gold/12 text-gold border border-gold/25">
+            Confirmada
+          </span>
         </div>
 
-        {/* Perforated divider */}
-        <div className="relative flex items-center px-5 my-1">
-          <div className="w-full border-t-2 border-dashed border-edge/60" />
-        </div>
-
-        {/* Details section */}
-        <div className="px-6 pt-5 pb-6 space-y-3">
-          {isGroup ? (
-            <>
-              {(confirmation.appointments ?? []).map((appt, i) => {
-                const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
-                return (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-px">
-                      {specialist?.avatarUrl
-                        ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
-                        : <span className="text-[10px] font-bold text-gold leading-none">{initials(appt.specialistName)}</span>
-                      }
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-semibold text-ink leading-snug">
-                        {toTitleCase(appt.serviceName)}
-                      </p>
-                      <p className="text-[11.5px] text-ink-3 mt-0.5 leading-snug">
-                        {toTitleCase(appt.specialistName)}
-                        {' · '}
-                        <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
-                        {' · '}{appt.serviceDuration} min
-                      </p>
-                    </div>
-                    <p className="text-[12px] font-semibold text-gold tabular-nums shrink-0">
-                      {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
-                    </p>
-                  </div>
-                );
-              })}
-
-              <div className="pt-3.5 border-t border-edge space-y-2.5">
-                <DetailRow icon={<CalendarIcon />} label="Fecha"    value={formatDate(confirmation.date)} />
-                <DetailRow icon={<PhoneIcon />}    label="Teléfono" value={confirmation.clientPhone} />
-                {state.branch?.name && (
-                  <DetailRow icon={<MapPinIcon />} label="Sucursal" value={toTitleCase(state.branch.name)} />
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <DetailRow
-                icon={<ScissorsIcon />}
-                label="Servicio"
-                value={toTitleCase(confirmation?.serviceName)}
-                extra={confirmation?.priceType === 'ask' ? 'A consultar' : formatPrice(confirmation?.servicePrice)}
-              />
-              <DetailRow icon={<UserIcon />}     label="Especialista" value={toTitleCase(confirmation?.specialistName)} />
-              {state.branch?.name && (
-                <DetailRow icon={<MapPinIcon />} label="Sucursal" value={toTitleCase(state.branch.name)} />
-              )}
-              <DetailRow icon={<CalendarIcon />} label="Fecha"    value={formatDate(confirmation?.date)} />
-              <DetailRow icon={<ClockIcon />}    label="Hora"     value={formatTime(confirmation?.time, timeFmt)} />
-              <DetailRow icon={<PhoneIcon />}    label="Teléfono" value={confirmation?.clientPhone} />
-            </>
+        {/* Date + Time */}
+        <div className="px-6 py-4 flex items-center gap-4 border-b border-edge">
+          <div className="w-12 h-12 rounded-2xl bg-gold/8 border border-gold/20 flex flex-col items-center justify-center shrink-0">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
+            <span className="text-[22px] font-bold text-gold leading-tight tabular-nums">{dayNum}</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-[14px] font-semibold text-ink leading-snug">{formatDate(confirmation?.date)}</p>
+            <p className="text-[22px] font-bold text-gold tabular-nums leading-tight">
+              {formatTime(isGroup ? startTime : confirmation?.time, timeFmt)}
+            </p>
+          </div>
+          {isGroup && (
+            <div className="text-right shrink-0">
+              <p className="text-xs text-ink-3 tabular-nums">{totalDuration} min</p>
+              <p className="text-xs text-ink-3">
+                {appts.length} {appts.length === 1 ? 'servicio' : 'servicios'}
+              </p>
+            </div>
           )}
         </div>
+
+        {/* ── GROUP: services list ────────────────────────────────────────── */}
+        {isGroup ? (
+          <>
+            <div className="px-6 py-4 border-b border-edge">
+              <p className="label-section mb-3">Servicios</p>
+              <div className="space-y-2.5">
+                {appts.map((appt, i) => {
+                  const spec = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+                  return (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
+                        {spec?.avatarUrl
+                          ? <img src={spec.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
+                          : <span className="text-[11px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                        }
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold text-ink leading-snug">
+                          {toTitleCase(appt.serviceName)}
+                        </p>
+                        <p className="text-[11px] text-ink-3 mt-0.5 leading-snug">
+                          {toTitleCase(appt.specialistName)}
+                          {' · '}
+                          <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
+                          {' · '}{appt.serviceDuration} min
+                        </p>
+                      </div>
+                      <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
+                        {appt.priceType === 'ask' ? 'A consultar' : formatPrice(appt.servicePrice)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Branch (group) */}
+            {branch?.name && (
+              <div className="px-6 py-4 border-b border-edge">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full border border-edge bg-raised flex items-center justify-center shrink-0 overflow-hidden">
+                    {branch?.image_url
+                      ? <img src={branch.image_url} alt={branch.name} className="w-full h-full object-cover" />
+                      : <MapPinIcon />
+                    }
+                  </div>
+                  <div>
+                    <p className="label-section">Sucursal</p>
+                    <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(branch.name)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Total (group) */}
+            <div className="px-6 py-3.5 flex items-center justify-between bg-raised/30">
+              <span className="text-[13px] font-semibold text-ink">Total</span>
+              <span className="text-[18px] font-bold text-gold tabular-nums">
+                {hasAsk
+                  ? (totalPrice > 0 ? `${formatPrice(totalPrice)}+` : 'A consultar')
+                  : formatPrice(totalPrice)
+                }
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* ── SINGLE: service ─────────────────────────────────────────── */}
+            <div className="px-6 py-4 border-b border-edge">
+              <p className="label-section mb-3">Servicio</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-edge bg-raised flex items-center justify-center shrink-0">
+                  {service?.imageUrl
+                    ? <img src={service.imageUrl} alt={confirmation?.serviceName} className="w-full h-full object-cover" />
+                    : <span className="text-sm font-bold text-ink-2">{initials(confirmation?.serviceName)}</span>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                    {toTitleCase(confirmation?.serviceName)}
+                  </p>
+                  {confirmation?.serviceDuration && (
+                    <p className="text-xs text-ink-3 mt-0.5">{confirmation.serviceDuration} min</p>
+                  )}
+                </div>
+                <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
+                  {confirmation?.priceType === 'ask' ? 'A consultar' : formatPrice(confirmation?.servicePrice)}
+                </p>
+              </div>
+            </div>
+
+            {/* ── SINGLE: specialist ──────────────────────────────────────── */}
+            <div className={`px-6 py-4 ${branch?.name ? 'border-b border-edge' : ''}`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                  {specialist?.avatarUrl
+                    ? <img src={specialist.avatarUrl} alt={confirmation?.specialistName} className="w-full h-full object-cover" />
+                    : <span className="text-sm font-bold text-gold">{initials(confirmation?.specialistName)}</span>
+                  }
+                </div>
+                <div>
+                  <p className="label-section">Especialista</p>
+                  <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(confirmation?.specialistName)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ── SINGLE: branch ──────────────────────────────────────────── */}
+            {branch?.name && (
+              <div className="px-6 py-4 border-b border-edge">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full border border-edge bg-raised flex items-center justify-center shrink-0 overflow-hidden">
+                    {branch?.image_url
+                      ? <img src={branch.image_url} alt={branch.name} className="w-full h-full object-cover" />
+                      : <MapPinIcon />
+                    }
+                  </div>
+                  <div>
+                    <p className="label-section">Sucursal</p>
+                    <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(branch.name)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── SINGLE: total ───────────────────────────────────────────── */}
+            {confirmation?.priceType !== 'ask' && (
+              <div className="px-6 py-3.5 flex items-center justify-between bg-raised/30">
+                <span className="text-[13px] font-semibold text-ink">Total</span>
+                <span className="text-[18px] font-bold text-gold tabular-nums">
+                  {formatPrice(confirmation?.servicePrice)}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Copy code */}
+      <div className="flex justify-center mb-5">
+        <CopyCodeButton code={displayCode} />
       </div>
 
       {/* Tip */}
@@ -152,13 +267,9 @@ export default function BookingConfirmation() {
         {' '}para ver, modificar o cancelar tu {isGroup ? 'visita' : 'cita'}.
       </p>
 
-      {/* ── CTAs ─────────────────────────────────────────────────────────── */}
+      {/* CTAs */}
       <div className="flex gap-3">
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={() => dispatch({ type: 'RESET' })}
-        >
+        <Button variant="outline" className="flex-1" onClick={() => dispatch({ type: 'RESET' })}>
           Nueva cita
         </Button>
         <Link to="/gestionar" className="flex-1">
@@ -223,71 +334,11 @@ function CopyCodeButton({ code }) {
   );
 }
 
-// ── Detail row ────────────────────────────────────────────────────────────────
-
-function DetailRow({ icon, label, value, extra }) {
-  return (
-    <div className="flex items-center gap-3 min-w-0">
-      <span className="text-gold shrink-0">{icon}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-3 leading-none mb-0.5">
-          {label}
-        </p>
-        <p className="text-[13px] font-medium text-ink leading-snug truncate">{value}</p>
-      </div>
-      {extra && (
-        <p className="text-[12px] font-semibold text-gold tabular-nums shrink-0">{extra}</p>
-      )}
-    </div>
-  );
-}
-
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
-function ScissorsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 003.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 00-3.09 3.09z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-    </svg>
-  );
-}
-function UserIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-  );
-}
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4">
-      <rect x="3" y="4" width="18" height="18" rx="2"/>
-      <line x1="16" y1="2" x2="16" y2="6"/>
-      <line x1="8" y1="2" x2="8" y2="6"/>
-      <line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>
-  );
-}
-function ClockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4">
-      <circle cx="12" cy="12" r="10"/>
-      <polyline points="12,6 12,12 16,14"/>
-    </svg>
-  );
-}
-function PhoneIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.09 12a19.79 19.79 0 01-3-8.61 2 2 0 012-2.18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
-    </svg>
-  );
-}
 function MapPinIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4">
+    <svg className="w-4 h-4 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
       <circle cx="12" cy="10" r="3"/>
     </svg>
