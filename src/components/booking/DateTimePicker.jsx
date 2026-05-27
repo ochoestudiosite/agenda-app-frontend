@@ -370,7 +370,7 @@ export default function DateTimePicker() {
             <p className="label-section mb-4">Cronograma de tu visita</p>
             <div>
               {groupBreakdown.map(({ service, specialist, startMins, endMins, isLast }, i) => (
-                <div key={i} className="flex items-start gap-3">
+                <div key={service.id || i} className="flex items-start gap-3">
                   {/* Timeline dot + connector */}
                   <div className="w-5 flex flex-col items-center shrink-0 pt-1">
                     <div className="w-2.5 h-2.5 rounded-full bg-gold ring-[3px] ring-gold/20 shrink-0" />

@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
+import { useSpecialists } from '../../hooks/useSpecialists';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
-import { api } from '../../services/api';
 import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
@@ -40,11 +39,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const serviceDbId = svcData?.services?.find(s => s.id === appointment.serviceId)?.dbId ?? null;
 
   // Full data for avatar rendering in the card view
-  const { data: specialistsData } = useQuery({
-    queryKey: ['specialists'],
-    queryFn:  () => api.getSpecialists(),
-    staleTime: 300_000,
-  });
+  const { data: specialistsData } = useSpecialists();
   const allSpecialistsMain     = specialistsData?.specialists ?? [];
   const appointmentSpecialist  = allSpecialistsMain.find(s => String(s.id) === String(appointment.specialistId));
   const appointmentService     = svcData?.services?.find(s => s.id === appointment.serviceId);
@@ -380,11 +375,7 @@ function ReschedulePanel({
   const intervalMins = config?.slot_interval_mins ?? 30;
   const timeFmt      = config?.time_format        ?? '12h';
 
-  const { data: specialistsData } = useQuery({
-    queryKey: ['specialists'],
-    queryFn:  () => api.getSpecialists(),
-    staleTime: 300_000,
-  });
+  const { data: specialistsData } = useSpecialists();
   const allSpecialists = specialistsData?.specialists ?? [];
 
   // Filter by branch + by service capability when serviceDbId is known

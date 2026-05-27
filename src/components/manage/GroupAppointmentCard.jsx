@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
+import { useSpecialists } from '../../hooks/useSpecialists';
 import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../hooks/useAppointment';
 import { useToast } from '../ui/Toast';
-import { api } from '../../services/api';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 
@@ -61,11 +60,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const groupBranch     = branches.find(b => String(b.id) === String(groupBranchId));
   const groupBranchName = group.appointments?.[0]?.branchName ?? groupBranch?.name ?? null;
 
-  const { data: specialistsData } = useQuery({
-    queryKey: ['specialists'],
-    queryFn:  () => api.getSpecialists(),
-    staleTime: 300_000,
-  });
+  const { data: specialistsData } = useSpecialists();
   const allSpecialists = specialistsData?.specialists ?? [];
 
   const [mode, setMode]    = useState('view'); // 'view' | 'cancel-confirm' | 'reschedule'
@@ -374,11 +369,7 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
   })() : null;
 
   // Specialists for cronograma avatars
-  const { data: specialistsData } = useQuery({
-    queryKey: ['specialists'],
-    queryFn:  () => api.getSpecialists(),
-    staleTime: 300_000,
-  });
+  const { data: specialistsData } = useSpecialists();
   const allSpecialists = specialistsData?.specialists ?? [];
 
   async function handleConfirm() {

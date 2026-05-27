@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useBooking } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
 import { useServices } from '../../hooks/useServices';
-import { api } from '../../services/api';
+import { useSpecialists } from '../../hooks/useSpecialists';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import Button from '../ui/Button';
 
@@ -30,11 +29,7 @@ export default function BookingConfirmation() {
   const isGroup             = !!confirmation?.groupCode;
   const displayCode         = isGroup ? confirmation?.groupCode : confirmation?.code;
 
-  const { data: specialistsData } = useQuery({
-    queryKey: ['specialists'],
-    queryFn:  () => api.getSpecialists(),
-    staleTime: 300_000,
-  });
+  const { data: specialistsData } = useSpecialists();
   const allSpecialists = specialistsData?.specialists ?? [];
 
   // Single appointment lookups — prefer state objects set during flow
@@ -138,7 +133,7 @@ export default function BookingConfirmation() {
                   const spec    = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
                   const svcObj  = svcData?.services?.find(s => s.name?.toLowerCase() === appt.serviceName?.toLowerCase());
                   return (
-                    <div key={i} className="flex items-start gap-3">
+                    <div key={appt.code || appt.id || i} className="flex items-start gap-3">
                       {/* Service avatar */}
                       <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
                         {svcObj?.imageUrl
@@ -217,7 +212,7 @@ export default function BookingConfirmation() {
               {confirmation?.services?.length > 1 ? (
                 <div className="space-y-2.5">
                   {confirmation.services.map((svc, i) => (
-                    <div key={i} className="flex items-start gap-3">
+                    <div key={svc.id || svc.slug || i} className="flex items-start gap-3">
                       <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 mt-0.5">
                         {svc.imageUrl
                           ? <img src={svc.imageUrl} alt={svc.serviceName} className="w-full h-full object-cover" />
