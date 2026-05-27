@@ -55,11 +55,17 @@ function Card({ t }) {
 export default function LandingTestimonials({ items = [], title, subtitle, subtitleAccent }) {
   const base = items.length > 0 ? items : DEFAULTS;
 
-  // Duplicate so translateX(-50%) lands at the exact start → seamless loop.
-  // If we have very few items, triple to guarantee the track is wider than
-  // even a 4K monitor before duplication.
-  const source = base.length < 4 ? [...base, ...base, ...base] : base;
-  const track  = [...source, ...source];
+  // The invariant for a seamless translateX(-50%) loop is:
+  //   set_width ≥ viewport_width
+  // Each card slot = w-80 (320px) + gap-4 (16px) = 336px.
+  // We target 4096px minimum per half (covers 4K monitors).
+  // The animation duration scales proportionally so px/s stays constant.
+  const CARD_SLOT_PX = 336;
+  const MIN_HALF_PX  = 4096;
+  const copies       = Math.max(1, Math.ceil(MIN_HALF_PX / (base.length * CARD_SLOT_PX)));
+  const source       = Array.from({ length: copies }, () => base).flat();
+  const track        = [...source, ...source];
+  const animDuration = `${40 * copies}s`;
 
   return (
     <section
@@ -105,10 +111,10 @@ export default function LandingTestimonials({ items = [], title, subtitle, subti
           style={{ background: 'linear-gradient(to left, rgb(var(--section-contrast)), transparent)' }}
         />
 
-        {/* Scrolling track */}
+        {/* Scrolling track — duration scales with copies to keep constant px/s */}
         <div
           className="flex gap-4 w-max py-2 animate-scroll-left"
-          style={{ willChange: 'transform' }}
+          style={{ willChange: 'transform', animationDuration: animDuration }}
           onMouseEnter={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
           onMouseLeave={e => { e.currentTarget.style.animationPlayState = 'running'; }}
         >
