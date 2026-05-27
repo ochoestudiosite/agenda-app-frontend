@@ -179,8 +179,8 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           </p>
           {appointment.services ? (
             <div className="space-y-2.5">
-              {appointment.services.map((svc, i) => (
-                <div key={i} className="flex items-start gap-3">
+              {appointment.services.map((svc) => (
+                <div key={svc.serviceName} className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 mt-0.5">
                     {svc.imageUrl
                       ? <img src={svc.imageUrl} alt={svc.serviceName} className="w-full h-full object-cover" />
