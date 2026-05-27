@@ -116,14 +116,14 @@ export default function Home() {
   useEffect(() => {
     if (!config?.business_name) return;
     const name = config.business_name;
-    document.title = `Cita24 — ${name}`;
+    document.title = `${name} - Cita24.com`;
     const setMeta = (sel, val) => document.querySelector(sel)?.setAttribute('content', val);
     setMeta('meta[name="description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
-    setMeta('meta[property="og:title"]', `Cita24 — ${name}`);
+    setMeta('meta[property="og:title"]', `${name} - Cita24.com`);
     setMeta('meta[property="og:description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
-    setMeta('meta[name="twitter:title"]', `Cita24 — ${name}`);
+    setMeta('meta[name="twitter:title"]', `${name} - Cita24.com`);
     setMeta('meta[name="twitter:description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
-    return () => { document.title = 'Cita24 — Agenda tu Cita'; };
+    return () => { document.title = 'Agenda tu Cita - Cita24.com'; };
   }, [config?.business_name]);
 
   // Robust parsing of landing_config
