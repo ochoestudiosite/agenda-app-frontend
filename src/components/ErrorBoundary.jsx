@@ -1,17 +1,31 @@
 import { Component } from 'react';
 import { reportError } from '../utils/errorReporter';
 
+function isChunkLoadError(msg) {
+  return typeof msg === 'string' && (
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('is not a valid JavaScript MIME type') ||
+    msg.includes('error loading dynamically imported module')
+  );
+}
+
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, isChunkError: false };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return {
+      hasError:     true,
+      isChunkError: isChunkLoadError(error?.message),
+    };
   }
 
   componentDidCatch(error, info) {
+    if (isChunkLoadError(error?.message)) return;
+
     const componentStack = info?.componentStack || '';
     reportError({
       type:      'react_error',
@@ -23,6 +37,42 @@ export default class ErrorBoundary extends Component {
 
   render() {
     if (!this.state.hasError) return this.props.children;
+
+    if (this.state.isChunkError) {
+      return (
+        <div style={{
+          minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: '#FAFAFA', fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif',
+          padding: '24px',
+        }}>
+          <div style={{ textAlign: 'center', maxWidth: 360 }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: 14, margin: '0 auto 20px',
+              background: 'rgba(0,184,122,0.08)', border: '1px solid rgba(0,184,122,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+            }}>🔄</div>
+
+            <p style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px', letterSpacing: '-0.3px' }}>
+              Nueva versión disponible
+            </p>
+            <p style={{ fontSize: 13.5, color: '#6B7280', margin: '0 0 28px', lineHeight: 1.65 }}>
+              Se publicó una actualización de la página.<br/>Recarga para ver la versión más reciente.
+            </p>
+
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#00B87A', color: '#fff',
+                border: 'none', borderRadius: 9999,
+                padding: '12px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              Recargar página
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div style={{
