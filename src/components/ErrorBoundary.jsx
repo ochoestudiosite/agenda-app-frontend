@@ -40,40 +40,14 @@ export default class ErrorBoundary extends Component {
   render() {
     if (!this.state.hasError) return this.props.children;
 
+    // Booking flow is stateless — auto-reload is safe and seamless for clients.
     if (this.state.isChunkError) {
-      return (
-        <div style={{
-          minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: '#FAFAFA', fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif',
-          padding: '24px',
-        }}>
-          <div style={{ textAlign: 'center', maxWidth: 360 }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 14, margin: '0 auto 20px',
-              background: 'rgba(0,184,122,0.08)', border: '1px solid rgba(0,184,122,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-            }}>🔄</div>
-
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: '0 0 8px', letterSpacing: '-0.3px' }}>
-              Nueva versión disponible
-            </p>
-            <p style={{ fontSize: 13.5, color: '#6B7280', margin: '0 0 28px', lineHeight: 1.65 }}>
-              Se publicó una actualización de la página.<br/>Recarga para ver la versión más reciente.
-            </p>
-
-            <button
-              onClick={() => window.location.reload()}
-              style={{
-                background: '#00B87A', color: '#fff',
-                border: 'none', borderRadius: 9999,
-                padding: '12px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}
-            >
-              Recargar página
-            </button>
-          </div>
-        </div>
-      );
+      const RELOAD_KEY = 'cita24_booking_chunk_reload';
+      if (!sessionStorage.getItem(RELOAD_KEY)) {
+        sessionStorage.setItem(RELOAD_KEY, '1');
+        window.location.reload();
+        return null;
+      }
     }
 
     return (
