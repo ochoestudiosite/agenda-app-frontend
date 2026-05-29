@@ -56,23 +56,51 @@ export function reportError({ type = 'js_error', message, stack, component } = {
   }
 }
 
+function isChunkLoadError(msg) {
+  return typeof msg === 'string' && (
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('error loading dynamically imported module')
+  );
+}
+
+let _reloadBannerShown = false;
+function showReloadBanner() {
+  if (_reloadBannerShown) return;
+  _reloadBannerShown = true;
+  const bar = document.createElement('div');
+  bar.setAttribute('role', 'alert');
+  bar.style.cssText = [
+    'position:fixed;bottom:0;left:0;right:0;z-index:9999',
+    'background:#111827;color:#F9FAFB;padding:14px 20px',
+    'display:flex;align-items:center;justify-content:space-between;gap:16px',
+    'font-family:-apple-system,"Inter",sans-serif;font-size:13px',
+    'border-top:1px solid #374151',
+  ].join(';');
+  bar.innerHTML = `
+    <span>🔄 <strong>Nueva versión disponible.</strong> Recarga para continuar.</span>
+    <button onclick="window.location.reload()" style="
+      background:#00B87A;color:#0D1117;border:none;border-radius:9999px;
+      padding:7px 18px;font-size:12px;font-weight:700;cursor:pointer;
+      font-family:inherit;white-space:nowrap;
+    ">Recargar</button>
+  `;
+  document.body.appendChild(bar);
+}
+
 export function initErrorReporter() {
   if (!IS_PROD) return;
 
   window.addEventListener('error', (event) => {
-    reportError({
-      type:    'js_error',
-      message: event.message || 'Unknown error',
-      stack:   event.error?.stack,
-    });
+    const msg = event.message || 'Unknown error';
+    if (isChunkLoadError(msg)) { showReloadBanner(); reportError({ type: 'js_error', message: msg }); return; }
+    reportError({ type: 'js_error', message: msg, stack: event.error?.stack });
   });
 
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason;
-    reportError({
-      type:    'unhandled_rejection',
-      message: reason instanceof Error ? reason.message : String(reason ?? 'Unhandled rejection'),
-      stack:   reason instanceof Error ? reason.stack : undefined,
-    });
+    const msg = reason instanceof Error ? reason.message : String(reason ?? 'Unhandled rejection');
+    if (isChunkLoadError(msg)) { showReloadBanner(); reportError({ type: 'unhandled_rejection', message: msg }); return; }
+    reportError({ type: 'unhandled_rejection', message: msg, stack: reason instanceof Error ? reason.stack : undefined });
   });
 }
