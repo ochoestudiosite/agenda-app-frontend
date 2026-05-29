@@ -7,7 +7,9 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { initErrorReporter } from './utils/errorReporter';
 import './index.css';
 
-// Register global window.onerror + unhandledrejection before first render
+import { initSentry } from './sentry';
+
+initSentry();
 initErrorReporter();
 
 const queryClient = new QueryClient({

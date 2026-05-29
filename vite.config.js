@@ -1,12 +1,22 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    sentryVitePlugin({
+      org:       process.env.SENTRY_ORG,
+      project:   'cita24-frontend',
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      sourcemaps: { filesToDeleteAfterUpload: ['dist/**/*.map'] },
+      telemetry: false,
+    }),
+  ],
   build: {
     target: 'es2020',
     cssCodeSplit: true,
-    sourcemap: false,
+    sourcemap: true,
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
@@ -24,12 +34,9 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: true, // Permite conexiones en LAN (0.0.0.0)
+    host: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
+      '/api': { target: 'http://localhost:3001', changeOrigin: true },
     },
   },
 });

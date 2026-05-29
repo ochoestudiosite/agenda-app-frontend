@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { reportError } from '../utils/errorReporter';
+import { Sentry } from '../sentry';
 
 function isChunkLoadError(msg) {
   return typeof msg === 'string' && (
@@ -27,6 +28,7 @@ export default class ErrorBoundary extends Component {
     if (isChunkLoadError(error?.message)) return;
 
     const componentStack = info?.componentStack || '';
+    Sentry.captureException(error, { contexts: { react: { componentStack } } });
     reportError({
       type:      'react_error',
       message:   error.message,
