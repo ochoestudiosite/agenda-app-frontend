@@ -42,9 +42,11 @@ export default class ErrorBoundary extends Component {
 
     // Booking flow is stateless — auto-reload is safe and seamless for clients.
     if (this.state.isChunkError) {
-      const RELOAD_KEY = 'cita24_booking_chunk_reload';
-      if (!sessionStorage.getItem(RELOAD_KEY)) {
-        sessionStorage.setItem(RELOAD_KEY, '1');
+      const RELOAD_KEY  = 'cita24_booking_chunk_reload_v';
+      const myVersion   = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
+      const lastVersion = sessionStorage.getItem(RELOAD_KEY);
+      if (lastVersion !== myVersion) {
+        sessionStorage.setItem(RELOAD_KEY, myVersion);
         window.location.reload();
         return null;
       }

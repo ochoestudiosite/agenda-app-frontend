@@ -2,7 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 
+const buildVersion = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8)
+  || Date.now().toString(36);
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(buildVersion),
+  },
   plugins: [
     react(),
     sentryVitePlugin({
