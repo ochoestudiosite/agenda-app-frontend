@@ -107,7 +107,7 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
           <div className="flex md:hidden flex-col items-center gap-3 mt-6">
             <div className="flex items-center gap-1.5">
               {allStaff.map((_, i) => (
-                <button key={i} onClick={() => scrollToSlide(i)} aria-label={`Miembro ${i + 1}`}
+                <button key={i} onClick={() => scrollToSlide(i)} aria-label={`Colaborador ${i + 1}`}
                   className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-1.5 bg-gold' : 'w-1.5 h-1.5 bg-ink/15'}`} />
               ))}
             </div>

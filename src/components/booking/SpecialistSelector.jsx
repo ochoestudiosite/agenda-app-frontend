@@ -134,7 +134,7 @@ function SpecialistGrid({ specialists, emptyServiceName, onSelect, onBack, isErr
       </div>
       <p className="text-sm font-semibold text-ink">Sin especialistas disponibles</p>
       <p className="text-xs text-ink-3 mt-1 max-w-xs">
-        Ningún miembro del equipo tiene asignado el servicio &ldquo;{emptyServiceName}&rdquo;.
+        Ningún colaborador tiene asignado el servicio &ldquo;{emptyServiceName}&rdquo;.
       </p>
       <button onClick={onBack} className="mt-5 text-xs font-semibold text-gold hover:underline cursor-pointer">
         Volver a elegir servicio
