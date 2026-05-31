@@ -2,7 +2,6 @@ import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { toTitleCase } from '../../utils/formatters';
-import Spinner from '../ui/Spinner';
 
 export default function SpecialistSelector() {
   const { data, isLoading, isFetching, isError } = useServices();

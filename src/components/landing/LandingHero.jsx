@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
-import { ArrowUpRight, ShieldCheck, Clock, Star, HelpCircle, Sparkles } from 'lucide-react';
+import { ArrowUpRight, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // Premium hero. The default arrangement is editorial-asymmetric:

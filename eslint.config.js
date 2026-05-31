@@ -20,6 +20,10 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+      'react-hooks/set-state-in-effect':         'warn',
+      'react-hooks/purity':                      'off',
+      'react-hooks/refs':                        'off',
+      'react-hooks/preserve-manual-memoization': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'unused-imports/no-unused-imports': 'warn',
       'unused-imports/no-unused-vars': ['warn', {

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
 import { useConfig } from '../../hooks/useConfig';
 import { ToastProvider } from '../ui/Toast';
 import TenantNotFound from '../../pages/TenantNotFound';
