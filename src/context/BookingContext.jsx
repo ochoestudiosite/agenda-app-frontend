@@ -33,7 +33,7 @@ function loadFromSession() {
     const saved = JSON.parse(raw);
     if (saved.step === 5 || saved.confirmation) return initialState;
     return { ...initialState, ...saved };
-  } catch {
+  } catch { /* JSON parse error — devolver estado inicial */
     return initialState;
   }
 }

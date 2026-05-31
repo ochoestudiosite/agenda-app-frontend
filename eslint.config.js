@@ -14,7 +14,7 @@ export default [
       'unused-imports': unusedImports,
     },
     languageOptions: {
-      globals: { ...globals.browser, ...globals.es2020 },
+      globals: { ...globals.browser, ...globals.es2020, __APP_VERSION__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     rules: {

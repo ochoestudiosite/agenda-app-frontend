@@ -16,7 +16,7 @@ function getTenantSlug() {
     if (parts.length >= 3 && window.location.hostname.endsWith('.cita24.com')) {
       return parts[0];
     }
-  } catch {}
+  } catch { /* URL parse error */ }
   return null;
 }
 
@@ -46,13 +46,13 @@ export function reportError({ type = 'js_error', message, stack, component } = {
       body:      JSON.stringify(payload),
       keepalive: true,
     }).catch(() => {});
-  } catch {
+  } catch { /* fire-and-forget */
     try {
       navigator.sendBeacon(
         `${API_URL}/api/errors/client`,
         new Blob([JSON.stringify(payload)], { type: 'application/json' }),
       );
-    } catch {}
+    } catch { /* intentional */ }
   }
 }
 

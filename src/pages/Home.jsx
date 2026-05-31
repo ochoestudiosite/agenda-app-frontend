@@ -29,7 +29,7 @@ function isAllowedAdminOrigin(origin) {
     // Reject deep subdomains (sub.sub.cita24.com) to match backend CORS rules
     const sub = host.slice(0, -(publicDomain.length + 1));
     return sub.length > 0 && !sub.includes('.');
-  } catch {
+  } catch { /* URL parse error */
     return false;
   }
 }
@@ -43,7 +43,7 @@ function inferParentOrigin() {
       const refOrigin = `${ref.protocol}//${ref.host}`;
       if (isAllowedAdminOrigin(refOrigin)) return refOrigin;
     }
-  } catch { }
+  } catch { /* intentional */ }
   return '*';
 }
 

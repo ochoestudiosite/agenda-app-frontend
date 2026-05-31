@@ -330,7 +330,7 @@ function CopyIconButton({ code }) {
     if (!code || copied) return;
     try {
       await navigator.clipboard.writeText(code);
-    } catch {
+    } catch { /* clipboard API no disponible — fallback execCommand */
       const el = document.createElement('textarea');
       el.value = code;
       el.style.cssText = 'position:fixed;opacity:0;pointer-events:none';

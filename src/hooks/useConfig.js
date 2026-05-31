@@ -14,9 +14,9 @@ function readCache() {
 }
 
 function clearCache() {
-  try { localStorage.removeItem(CACHE_KEY); } catch {}
+  try { localStorage.removeItem(CACHE_KEY); } catch { /* storage unavailable */ }
   // Evict legacy v1 entries while we are at it.
-  try { localStorage.removeItem('biz:config:v1'); } catch {}
+  try { localStorage.removeItem('biz:config:v1'); } catch { /* storage unavailable */ }
 }
 
 export function useConfig() {
@@ -25,7 +25,7 @@ export function useConfig() {
     queryFn: async () => {
       try {
         const data = await api.getConfig();
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* storage unavailable */ }
         return data;
       } catch (err) {
         // Evict stale cache so next visit starts clean
