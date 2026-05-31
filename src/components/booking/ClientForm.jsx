@@ -134,6 +134,9 @@ export default function ClientForm() {
       } else if (err.code === 'BOOKING_QUOTA_EXCEEDED' || err.status === 503) {
         qc.invalidateQueries({ queryKey: ['config'] });
         setQuotaExceeded(true);
+      } else if (err.status === 400) {
+        toast(err.message || 'Selecciona otro horario e intenta de nuevo.', 'error');
+        dispatch({ type: 'GO_BACK' });
       } else {
         toast(err.message || 'Error al crear la cita.', 'error');
       }
