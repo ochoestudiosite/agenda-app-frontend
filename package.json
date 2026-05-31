@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js,.jsx",
+    "lint:fix": "eslint src --ext .js,.jsx --fix",
+    "analyze": "ANALYZE=true npm run build",
+    "deps:check": "depcheck"
   },
   "dependencies": {
     "@sentry/react": "^10.55.0",
@@ -19,11 +23,18 @@
     "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.19",
+    "eslint": "^10.4.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "globals": "^17.6.0",
     "postcss": "^8.4.38",
+    "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^3.4.3",
     "vite": "^8.0.9"
   }
