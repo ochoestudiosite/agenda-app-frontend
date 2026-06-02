@@ -159,7 +159,11 @@ export default function Home() {
   if (configError && !previewConfig) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '2rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
-        <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>⚠️</div>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B' }}>
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+          </svg>
+        </div>
         <div>
           <p style={{ fontWeight: 700, fontSize: 16, color: '#111', margin: '0 0 4px' }}>No se pudo cargar la página</p>
           <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>Verifica tu conexión e intenta de nuevo.</p>

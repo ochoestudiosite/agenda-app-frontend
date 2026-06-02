@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 
 const COUNTRIES = [
-  { code: '+52', flag: '🇲🇽', name: 'México' },
-  { code: '+1',  flag: '🇺🇸', name: 'USA/Canadá' },
-  { code: '+57', flag: '🇨🇴', name: 'Colombia' },
-  { code: '+54', flag: '🇦🇷', name: 'Argentina' },
-  { code: '+34', flag: '🇪🇸', name: 'España' },
-  { code: '+56', flag: '🇨🇱', name: 'Chile' },
-  { code: '+51', flag: '🇵🇪', name: 'Perú' },
+  { code: '+52', name: 'México' },
+  { code: '+1',  name: 'USA/Canadá' },
+  { code: '+57', name: 'Colombia' },
+  { code: '+54', name: 'Argentina' },
+  { code: '+34', name: 'España' },
+  { code: '+56', name: 'Chile' },
+  { code: '+51', name: 'Perú' },
 ];
 
 export default function PhoneInput({ label, error, helper, value = '', onChange, required, className = '', ...props }) {
@@ -66,7 +66,7 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
           >
             {COUNTRIES.map(c => (
               <option key={c.code} value={c.code} className="bg-card text-ink">
-                {c.flag} {c.code}
+                {c.code} {c.name}
               </option>
             ))}
           </select>
