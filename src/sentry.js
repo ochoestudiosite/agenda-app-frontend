@@ -6,7 +6,7 @@ export function initSentry() {
 
   Sentry.init({
     dsn,
-    environment: import.meta.env.MODE,
+    environment: import.meta.env.VITE_VERCEL_ENV || import.meta.env.MODE,
     sendDefaultPii: false,
     tracesSampleRate: 0,
     ignoreErrors: [
