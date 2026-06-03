@@ -9,6 +9,7 @@ import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useA
 import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
+import SummaryStrip from '../ui/SummaryStrip';
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -426,75 +427,29 @@ function RescheduleStepIndicator({ reschedStep, isMulti, onBack }) {
   );
 }
 
-// ── Reschedule summary strip — mirrors BookingSummary from /agendar ────────────
+// ── Reschedule summary strip — uses shared SummaryStrip ──────────────────────
 
 function RescheduleSummary({ appointment, reBranch, reSpecialist, newDate, newTime, timeFmt, isMulti }) {
+  const ini = name => (name || '').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
   const items = [];
 
   if (isMulti && reBranch) {
-    const initials = reBranch.name?.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
-    items.push({ id: 'branch', category: 'sucursal', avatars: [{ src: reBranch.image_url || null, initials }], label: toTitleCase(reBranch.name), sub: null });
+    items.push({ id: 'branch', category: 'sucursal', avatars: [{ src: reBranch.image_url || null, initials: ini(reBranch.name) }], label: toTitleCase(reBranch.name), sub: null });
   }
 
-  const svcInitials = appointment.serviceName?.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
-  items.push({ id: 'service', category: 'servicio', avatars: [{ src: null, initials: svcInitials }], label: toTitleCase(appointment.serviceName), sub: `${appointment.serviceDuration} min` });
+  items.push({ id: 'service', category: 'servicio', avatars: [{ src: null, initials: ini(appointment.serviceName) }], label: toTitleCase(appointment.serviceName), sub: `${appointment.serviceDuration} min` });
 
   if (reSpecialist) {
-    const spInitials = reSpecialist.initials || reSpecialist.name?.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
-    items.push({ id: 'specialist', category: 'especialista', avatars: [{ src: reSpecialist.avatarUrl || null, initials: spInitials }], label: toTitleCase(reSpecialist.name), sub: reSpecialist.specialty || null });
+    items.push({ id: 'specialist', category: 'especialista', avatars: [{ src: reSpecialist.avatarUrl || null, initials: reSpecialist.initials || ini(reSpecialist.name) }], label: toTitleCase(reSpecialist.name), sub: reSpecialist.specialty || null });
   }
 
   if (newDate && newTime) {
     const [y, m, d] = newDate.toISOString().split('T')[0].split('-').map(Number);
     const label = new Date(y, m - 1, d).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
-    items.push({ id: 'datetime', category: 'nuevo horario', icon: true, label, sub: formatTime(newTime, timeFmt) });
+    items.push({ id: 'datetime', category: 'nuevo horario', label, sub: formatTime(newTime, timeFmt) });
   }
 
-  if (items.length === 0) return null;
-
-  return (
-    <div className="mb-8 animate-fade-in" role="status" aria-label="Resumen de reagenda">
-      <div className="relative bg-card border border-edge/60 rounded-2xl shadow-xs overflow-hidden border-l-4 border-l-gold">
-        <div className="flex items-stretch overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {items.map((item, i) => (
-            <div key={item.id} className="flex items-stretch">
-              <div className="flex items-center gap-3 px-4 py-3 shrink-0">
-                {item.icon ? (
-                  <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 text-gold">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="flex items-center shrink-0" style={{ paddingRight: '4px' }}>
-                    {item.avatars.map((a, ai) => (
-                      <div key={ai} className="w-8 h-8 rounded-full border-2 border-card overflow-hidden bg-gold/10 flex items-center justify-center"
-                        style={{ marginLeft: ai > 0 ? '-8px' : '0', zIndex: item.avatars.length - ai, position: 'relative' }}>
-                        {a.src
-                          ? <img src={a.src} alt="" className="w-full h-full object-cover"/>
-                          : <span className="text-[9px] font-bold text-gold leading-none select-none">{a.initials}</span>
-                        }
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div>
-                  <p className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-gold/70 leading-none mb-1">{item.category}</p>
-                  <p className="text-[12.5px] font-semibold text-ink leading-snug whitespace-nowrap">{item.label}</p>
-                  {item.sub && <p className="text-[10.5px] text-ink-3 leading-none mt-0.5 whitespace-nowrap">{item.sub}</p>}
-                </div>
-              </div>
-              {i < items.length - 1 && (
-                <div className="self-stretch flex items-center shrink-0 py-3" aria-hidden>
-                  <div className="w-px h-full bg-edge/40" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <SummaryStrip items={items} ariaLabel="Resumen de reagenda" />;
 }
 
 // ── Back button — identical to /agendar's BackButton ──────────────────────────
