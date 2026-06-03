@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
@@ -296,6 +296,33 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
 
 // ── GroupReschedulePanel ───────────────────────────────────────────────────────
 
+// Próxima fecha con disponibilidad potencial (igual que AppointmentCard y DateTimePicker)
+function findNextAvailableDate({ bizHours = [], blockedDates = [], leadMins = 0, maxAdvanceDays = 30 }) {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const closedDays = new Set(bizHours.filter(h => !h.is_open).map(h => h.day_of_week));
+  const todayEntry = bizHours.find(h => h.day_of_week === now.getDay());
+  const closeMins  = todayEntry ? (() => {
+    const [ch, cm] = (todayEntry.close_time || '19:00').split(':').map(Number);
+    return ch * 60 + cm;
+  })() : 19 * 60;
+  const tooLate = !todayEntry || !todayEntry.is_open || (nowMins + leadMins + 30 >= closeMins);
+  const candidate = new Date(now); candidate.setHours(0, 0, 0, 0);
+  if (tooLate) candidate.setDate(candidate.getDate() + 1);
+  for (let i = 0; i <= maxAdvanceDays + 7; i++) {
+    const y = candidate.getFullYear();
+    const m = String(candidate.getMonth() + 1).padStart(2, '0');
+    const d = String(candidate.getDate()).padStart(2, '0');
+    const ds = `${y}-${m}-${d}`;
+    const dow = candidate.getDay();
+    if (!closedDays.has(dow) && !blockedDates.includes(ds) && !blockedDates.includes(`recurring:${dow}`)) {
+      return new Date(candidate);
+    }
+    candidate.setDate(candidate.getDate() + 1);
+  }
+  return null;
+}
+
 function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
   const toast        = useToast();
   const maxAdvance   = config?.max_advance_days ?? 30;
@@ -328,6 +355,19 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
   const { data: blockedData } = useBlockedDates(monthStr, assignments[0]?.specialistId ?? null);
   const blockedDates = blockedData?.blockedDates ?? [];
+
+  // Auto-selección del próximo día disponible
+  const autoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (autoSelectedRef.current || newDate || bizHoursRaw.length === 0) return;
+    const next = findNextAvailableDate({ bizHours: bizHoursRaw, blockedDates, maxAdvanceDays: maxAdvance });
+    if (next) {
+      autoSelectedRef.current = true;
+      setNewDate(next);
+      setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bizHoursRaw.length, blockedDates.length]);
 
   const rescheduleMutation = useRescheduleGroupAppointment();
 

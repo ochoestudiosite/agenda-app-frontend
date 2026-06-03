@@ -371,8 +371,39 @@ export default function DateTimePicker() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
-                    <p className="text-xs text-ink-3 mt-1">Elige otra fecha.</p>
+                    <p className="text-xs text-ink-3 mt-1">No hay horarios libres para este día.</p>
                   </div>
+                  {/* Botón para saltar al siguiente día disponible */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!selectedDate) return;
+                      const next = findNextAvailableDate({
+                        bizHours,
+                        blockedDates,
+                        leadMins,
+                        maxAdvanceDays: maxAdvance,
+                      });
+                      // Buscar el día SIGUIENTE al actual seleccionado
+                      const afterSelected = new Date(selectedDate);
+                      afterSelected.setDate(afterSelected.getDate() + 1);
+                      const nextAfter = findNextAvailableDate({
+                        bizHours,
+                        blockedDates: [...blockedDates, toDateStr(selectedDate)],
+                        leadMins: 0,
+                        maxAdvanceDays: maxAdvance,
+                      });
+                      if (nextAfter) {
+                        autoSelectedRef.current = true;
+                        setSelectedDate(nextAfter);
+                        setViewMonth(new Date(nextAfter.getFullYear(), nextAfter.getMonth(), 1));
+                        setSelectedTime(null);
+                      }
+                    }}
+                    className="text-[12px] font-semibold text-gold border border-gold/25 bg-gold/6 rounded-xl px-4 py-2 hover:bg-gold/12 transition-colors cursor-pointer"
+                  >
+                    Ver siguiente fecha disponible →
+                  </button>
                 </div>
               ) : (
                 Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
