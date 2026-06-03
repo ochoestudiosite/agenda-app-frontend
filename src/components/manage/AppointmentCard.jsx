@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
@@ -519,6 +519,30 @@ function ReBack({ onClick: handleClick, label }) {
 
 // ── ReschedulePanel ────────────────────────────────────────────────────────────
 
+// Mismo algoritmo que DateTimePicker — próxima fecha con disponibilidad potencial
+function findNextAvailableDate({ bizHours = [], blockedDates = [], leadMins = 0, maxAdvanceDays = 30 }) {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const closedDays = new Set(bizHours.filter(h => !h.is_open).map(h => h.day_of_week));
+  const todayEntry = bizHours.find(h => h.day_of_week === now.getDay());
+  const closeMins  = todayEntry ? (() => {
+    const [ch, cm] = (todayEntry.close_time || '19:00').split(':').map(Number);
+    return ch * 60 + cm;
+  })() : 19 * 60;
+  const tooLate = !todayEntry || !todayEntry.is_open || (nowMins + leadMins + 30 >= closeMins);
+  const candidate = new Date(now); candidate.setHours(0, 0, 0, 0);
+  if (tooLate) candidate.setDate(candidate.getDate() + 1);
+  for (let i = 0; i <= maxAdvanceDays + 7; i++) {
+    const ds = toDateStr(candidate);
+    const dow = candidate.getDay();
+    if (!closedDays.has(dow) && !blockedDates.includes(ds) && !blockedDates.includes(`recurring:${dow}`)) {
+      return new Date(candidate);
+    }
+    candidate.setDate(candidate.getDate() + 1);
+  }
+  return null;
+}
+
 function ReschedulePanel({
   appointment, config, branches, isMulti, serviceDbId,
   allSpecialists = [],
@@ -558,6 +582,24 @@ function ReschedulePanel({
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
   const maxDate   = new Date(todayDate); maxDate.setDate(maxDate.getDate() + maxAdvance);
   const todayStr  = toDateStr(todayDate);
+
+  // Auto-selección: cuando llega el especialista/datos, salta al próximo día disponible
+  const autoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (autoSelectedRef.current || newDate || reschedStep !== 'datetime' || !bizHoursRaw.length) return;
+    const next = findNextAvailableDate({
+      bizHours: bizHoursRaw,
+      blockedDates,
+      leadMins: 0,
+      maxAdvanceDays: maxAdvance,
+    });
+    if (next) {
+      autoSelectedRef.current = true;
+      setNewDate(next);
+      setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reschedStep, blockedDates.length, bizHoursRaw.length]);
 
   function isDisabled(d) {
     if (d < todayDate || d > maxDate) return true;

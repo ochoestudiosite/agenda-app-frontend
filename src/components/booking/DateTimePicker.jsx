@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useAvailability, useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
@@ -25,6 +25,41 @@ function minutesToSlot(mins) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
+/**
+ * Encuentra la próxima fecha con disponibilidad potencial.
+ * Salta: días pasados, días cerrados del negocio, fechas bloqueadas.
+ * "Potencialmente disponible" = no estructuralmente bloqueado.
+ * La verificación de slots ocupados ocurre al seleccionar la fecha.
+ */
+function findNextAvailableDate({ bizHours = [], blockedDates = [], leadMins = 60, maxAdvanceDays = 30 }) {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const closedDays = new Set(bizHours.filter(h => !h.is_open).map(h => h.day_of_week));
+
+  // ¿Hoy tiene tiempo restante suficiente?
+  const todayEntry = bizHours.find(h => h.day_of_week === now.getDay());
+  const closeMins  = todayEntry ? (() => {
+    const [ch, cm] = (todayEntry.close_time || '19:00').split(':').map(Number);
+    return ch * 60 + cm;
+  })() : 19 * 60;
+
+  const tooLate = !todayEntry || !todayEntry.is_open || (nowMins + leadMins + 30 >= closeMins);
+
+  const candidate = new Date(now);
+  candidate.setHours(0, 0, 0, 0);
+  if (tooLate) candidate.setDate(candidate.getDate() + 1);
+
+  for (let i = 0; i <= maxAdvanceDays + 7; i++) {
+    const ds = toDateStr(candidate);
+    const dow = candidate.getDay();
+    if (!closedDays.has(dow) && !blockedDates.includes(ds) && !blockedDates.includes(`recurring:${dow}`)) {
+      return new Date(candidate);
+    }
+    candidate.setDate(candidate.getDate() + 1);
+  }
+  return null;
+}
+
 function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins) {
   const start = slotToMinutes(slot);
   const end   = start + duration;
@@ -45,6 +80,7 @@ export default function DateTimePicker() {
   const [viewMonth,    setViewMonth]    = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
+  const autoSelectedRef = useRef(false);
 
   const timeFmt  = config?.time_format ?? '12h';
   const branchId = state.branch?.id;
@@ -136,7 +172,28 @@ export default function DateTimePicker() {
     return false;
   }
 
+  // ── Auto-selección del próximo día disponible ─────────────────────────────
+  // Se ejecuta cuando cargan bizHours y blockedDates.
+  // Si el día actual ya no tiene slots posibles (tarde + leadMins), salta al
+  // siguiente día hábil. Nunca sobreescribe una selección manual del usuario.
+  useEffect(() => {
+    if (autoSelectedRef.current || selectedDate || bizHours.length === 0) return;
+    const next = findNextAvailableDate({
+      bizHours,
+      blockedDates,
+      leadMins,
+      maxAdvanceDays: maxAdvance,
+    });
+    if (next) {
+      autoSelectedRef.current = true;
+      setSelectedDate(next);
+      setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bizHours.length, blockedDates.length, leadMins]);
+
   function handleSelectDate(date) {
+    autoSelectedRef.current = true; // usuario seleccionó manualmente
     setSelectedDate(date);
     setSelectedTime(null);
   }
