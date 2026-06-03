@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { BookingProvider, useBooking } from '../context/BookingContext';
 import { useConfig } from '../hooks/useConfig';
@@ -12,6 +13,13 @@ import BookingSummary from '../components/booking/BookingSummary';
 import BookingUnavailable from '../components/booking/BookingUnavailable';
 
 export default function Booking() {
+  // Clear saved progress when leaving /agendar so the next visit starts fresh.
+  // Page refreshes do NOT trigger this (component doesn't unmount), so
+  // sessionStorage still restores state across accidental refreshes.
+  useEffect(() => {
+    return () => sessionStorage.removeItem('cita24_booking');
+  }, []);
+
   return (
     <BookingProvider>
       <BookingFlow />
