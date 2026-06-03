@@ -364,6 +364,159 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   );
 }
 
+// ── Reschedule step indicator — mirrors StepIndicator from /agendar ───────────
+
+function RescheduleStepIndicator({ reschedStep, isMulti, onBack }) {
+  const steps = isMulti
+    ? [{ id: 'branch', label: 'Sucursal' }, { id: 'specialist', label: 'Especialista' }, { id: 'datetime', label: 'Horario' }]
+    : [{ id: 'specialist', label: 'Especialista' }, { id: 'datetime', label: 'Horario' }];
+  const currentIdx = steps.findIndex(s => s.id === reschedStep);
+
+  return (
+    <div className="mb-8 select-none animate-fade-in">
+      <div className="flex items-center">
+        {steps.map((step, idx) => {
+          const done    = idx < currentIdx;
+          const current = idx === currentIdx;
+          return (
+            <div key={step.id} className="flex items-center flex-1 last:flex-none">
+              {idx > 0 && (
+                <div className="flex-1 h-px mx-2 relative rounded-full overflow-hidden bg-edge/40">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gold/55 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: done ? '100%' : '0%' }}
+                  />
+                </div>
+              )}
+              <div className="flex flex-col items-center gap-2 shrink-0">
+                <div className={[
+                  'w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 border-2',
+                  done    ? 'bg-gold border-gold'
+                  : current ? 'bg-surface border-gold'
+                            : 'bg-surface border-edge/50',
+                ].join(' ')}>
+                  {done ? (
+                    <svg className="w-3 h-3 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  ) : (
+                    <span className={`text-[10px] font-bold tabular-nums leading-none ${current ? 'text-gold' : 'text-ink-3/40'}`}>
+                      {idx + 1}
+                    </span>
+                  )}
+                </div>
+                <span className={[
+                  'hidden sm:block text-[10px] font-medium whitespace-nowrap transition-colors duration-200',
+                  current ? 'text-ink font-semibold' : done ? 'text-ink-3' : 'text-ink-3/40',
+                ].join(' ')}>
+                  {step.label}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex items-center justify-between sm:hidden">
+        <span className="text-[11px] font-semibold text-gold uppercase tracking-widest">
+          {steps[currentIdx]?.label ?? ''}
+        </span>
+        <span className="text-[11px] text-ink-3 tabular-nums">{currentIdx + 1} de {steps.length}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Reschedule summary strip — mirrors BookingSummary from /agendar ────────────
+
+function RescheduleSummary({ appointment, reBranch, reSpecialist, newDate, newTime, timeFmt, isMulti }) {
+  const items = [];
+
+  if (isMulti && reBranch) {
+    const initials = reBranch.name?.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+    items.push({ id: 'branch', category: 'sucursal', avatars: [{ src: reBranch.image_url || null, initials }], label: toTitleCase(reBranch.name), sub: null });
+  }
+
+  const svcInitials = appointment.serviceName?.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+  items.push({ id: 'service', category: 'servicio', avatars: [{ src: null, initials: svcInitials }], label: toTitleCase(appointment.serviceName), sub: `${appointment.serviceDuration} min` });
+
+  if (reSpecialist) {
+    const spInitials = reSpecialist.initials || reSpecialist.name?.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+    items.push({ id: 'specialist', category: 'especialista', avatars: [{ src: reSpecialist.avatarUrl || null, initials: spInitials }], label: toTitleCase(reSpecialist.name), sub: reSpecialist.specialty || null });
+  }
+
+  if (newDate && newTime) {
+    const [y, m, d] = newDate.toISOString().split('T')[0].split('-').map(Number);
+    const label = new Date(y, m - 1, d).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
+    items.push({ id: 'datetime', category: 'nuevo horario', icon: true, label, sub: formatTime(newTime, timeFmt) });
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-8 animate-fade-in" role="status" aria-label="Resumen de reagenda">
+      <div className="relative bg-card border border-edge/60 rounded-2xl shadow-xs overflow-hidden border-l-4 border-l-gold">
+        <div className="flex items-stretch overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {items.map((item, i) => (
+            <div key={item.id} className="flex items-stretch">
+              <div className="flex items-center gap-3 px-4 py-3 shrink-0">
+                {item.icon ? (
+                  <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0 text-gold">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="flex items-center shrink-0" style={{ paddingRight: '4px' }}>
+                    {item.avatars.map((a, ai) => (
+                      <div key={ai} className="w-8 h-8 rounded-full border-2 border-card overflow-hidden bg-gold/10 flex items-center justify-center"
+                        style={{ marginLeft: ai > 0 ? '-8px' : '0', zIndex: item.avatars.length - ai, position: 'relative' }}>
+                        {a.src
+                          ? <img src={a.src} alt="" className="w-full h-full object-cover"/>
+                          : <span className="text-[9px] font-bold text-gold leading-none select-none">{a.initials}</span>
+                        }
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div>
+                  <p className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-gold/70 leading-none mb-1">{item.category}</p>
+                  <p className="text-[12.5px] font-semibold text-ink leading-snug whitespace-nowrap">{item.label}</p>
+                  {item.sub && <p className="text-[10.5px] text-ink-3 leading-none mt-0.5 whitespace-nowrap">{item.sub}</p>}
+                </div>
+              </div>
+              {i < items.length - 1 && (
+                <div className="self-stretch flex items-center shrink-0 py-3" aria-hidden>
+                  <div className="w-px h-full bg-edge/40" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Back button — identical to /agendar's BackButton ──────────────────────────
+
+function ReBack({ onClick: handleClick, label }) {
+  return (
+    <button type="button" onClick={handleClick}
+      className="group inline-flex items-center gap-2.5 px-3 py-2.5 -mx-3 rounded-xl
+                 text-sm font-medium text-ink-2 hover:text-ink hover:bg-raised/70
+                 transition-all duration-200 cursor-pointer active:scale-[0.98] mb-6">
+      <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30 group-hover:bg-card
+                       flex items-center justify-center shrink-0 transition-all duration-200">
+        <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </span>
+      {label}
+    </button>
+  );
+}
+
 // ── ReschedulePanel ────────────────────────────────────────────────────────────
 
 function ReschedulePanel({
@@ -382,12 +535,9 @@ function ReschedulePanel({
   const intervalMins = config?.slot_interval_mins ?? 30;
   const timeFmt      = config?.time_format        ?? '12h';
 
-  // Filter by branch + service — use Number() comparison (matching /agendar logic)
-  // to avoid type mismatches where branchIds/serviceIds are numbers but IDs are strings.
   const filteredSpecialists = allSpecialists.filter(s => {
     if (effectiveBranchId && s.branchIds?.length) {
-      const inBranch = s.branchIds.some(id => Number(id) === Number(effectiveBranchId));
-      if (!inBranch) return false;
+      if (!s.branchIds.some(id => Number(id) === Number(effectiveBranchId))) return false;
     }
     if (serviceDbId && s.serviceIds?.length) {
       return s.serviceIds.some(id => Number(id) === Number(serviceDbId));
@@ -405,12 +555,12 @@ function ReschedulePanel({
   const { data: blockedData } = useBlockedDates(monthStr, effectiveSpecialistId);
   const blockedDates = blockedData?.blockedDates ?? [];
 
-  const today   = new Date(); today.setHours(0, 0, 0, 0);
-  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
-  const todayStr = toDateStr(today);
+  const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+  const maxDate   = new Date(todayDate); maxDate.setDate(maxDate.getDate() + maxAdvance);
+  const todayStr  = toDateStr(todayDate);
 
   function isDisabled(d) {
-    if (d < today || d > maxDate) return true;
+    if (d < todayDate || d > maxDate) return true;
     if (daysClosed.includes(d.getDay())) return true;
     const ds = toDateStr(d);
     if (blockedDates.includes(ds)) return true;
@@ -430,59 +580,32 @@ function ReschedulePanel({
   const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
   const grouped   = groupSlots(allSlots);
 
-  const specialistName = reSpecialist?.name ?? null;
-  const branchName     = reBranch?.name     ?? null;
-
-  // Close × button — reused in all steps
-  function CloseBtn() {
-    return (
-      <button onClick={onCancel} aria-label="Cerrar"
-        className="w-8 h-8 flex items-center justify-center rounded-xl text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer shrink-0">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    );
-  }
-
-  // Back button — same style as /agendar SpecialistSelector
-  function ReBack({ onClick: handleClick, label }) {
-    return (
-      <button type="button" onClick={handleClick}
-        className="group inline-flex items-center gap-2.5 px-3 py-2.5 -mx-3 rounded-xl
-                   text-sm font-medium text-ink-2 hover:text-ink hover:bg-raised/70
-                   transition-all duration-200 cursor-pointer active:scale-[0.98]">
-        <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30 group-hover:bg-card
-                         flex items-center justify-center shrink-0 transition-all duration-200">
-          <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
-               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-          </svg>
-        </span>
-        {label}
-      </button>
-    );
-  }
-
   return (
     <div className="animate-fade-in">
 
+      {/* ── Step indicator — identical pattern to /agendar StepIndicator ──── */}
+      <RescheduleStepIndicator reschedStep={reschedStep} isMulti={isMulti} />
+
+      {/* ── Selection summary strip — identical pattern to /agendar BookingSummary ── */}
+      <RescheduleSummary
+        appointment={appointment}
+        reBranch={reBranch}
+        reSpecialist={reSpecialist}
+        newDate={newDate}
+        newTime={newTime}
+        timeFmt={timeFmt}
+        isMulti={isMulti}
+      />
+
       {/* ── Step: Branch ── */}
       {reschedStep === 'branch' && (
-        <div className="card p-5 sm:p-6 animate-fade-up">
-          <div className="flex items-start justify-between mb-7">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-gold/70 mb-0.5">Reagendando</p>
-              <h3 className="font-display text-xl font-semibold text-ink tracking-tight leading-tight">
-                {toTitleCase(appointment.serviceName)}
-              </h3>
-            </div>
-            <CloseBtn />
-          </div>
-          <div className="mb-6">
-            <h4 className="font-display text-[1.1rem] font-semibold text-ink tracking-tight">Elige tu sucursal</h4>
-            <p className="text-ink-3 text-sm mt-0.5">¿En cuál ubicación deseas tu nueva cita?</p>
-          </div>
+        <div className="animate-fade-up">
+          <ReBack
+            onClick={onCancel}
+            label="Cancelar"
+          />
+          <h3 className="font-display text-2xl font-semibold text-ink tracking-tight mb-1">Elige tu sucursal</h3>
+          <p className="text-ink-3 text-sm mb-6">¿En cuál ubicación deseas tu nueva cita?</p>
           <div className="space-y-2.5">
             {branches.map((b, i) => (
               <button
@@ -490,11 +613,11 @@ function ReschedulePanel({
                 onClick={() => { setReBranch(b); setReSpecialist(null); setNewDate(null); setNewTime(null); setReschedStep('specialist'); }}
                 className="w-full text-left group flex items-center gap-4 p-5 rounded-2xl border border-edge bg-card
                            hover:border-gold/40 hover:shadow-card active:scale-[0.99]
-                           transition-all duration-240 cursor-pointer animate-fade-up"
+                           transition-all duration-200 cursor-pointer animate-fade-up"
                 style={{ animationDelay: `${i * 40}ms`, animationFillMode: 'both' }}
               >
                 <div className="shrink-0 w-14 h-14 rounded-full overflow-hidden flex items-center justify-center
-                                bg-raised border-2 border-edge group-hover:border-gold/50 transition-all duration-240">
+                                bg-raised border-2 border-edge group-hover:border-gold/50 transition-all duration-200">
                   {b.image_url
                     ? <img src={b.image_url} alt={b.name} className="w-full h-full object-cover"/>
                     : <span className="text-[1.125rem] font-bold text-gold/80 select-none">
@@ -503,26 +626,10 @@ function ReschedulePanel({
                   }
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160 truncate">
+                  <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-150 truncate">
                     {toTitleCase(b.name)}
                   </p>
-                  {b.address && (
-                    <div className="flex items-start gap-1.5 mt-1">
-                      <svg className="w-3.5 h-3.5 text-ink-3 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
-                      </svg>
-                      <p className="text-xs text-ink-3 leading-snug line-clamp-2">{b.address}</p>
-                    </div>
-                  )}
-                  {b.phone && (
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <svg className="w-3.5 h-3.5 text-ink-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
-                      </svg>
-                      <p className="text-xs text-ink-3">{b.phone}</p>
-                    </div>
-                  )}
+                  {b.address && <p className="text-xs text-ink-3 mt-0.5 line-clamp-1">{b.address}</p>}
                 </div>
                 <svg className="w-4 h-4 text-ink-3 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
@@ -535,20 +642,16 @@ function ReschedulePanel({
 
       {/* ── Step: Specialist ── */}
       {reschedStep === 'specialist' && (
-        <div className="card p-5 sm:p-6 animate-fade-up">
-          <div className="flex items-center justify-between mb-7">
-            <ReBack
-              onClick={isMulti ? () => setReschedStep('branch') : onCancel}
-              label={isMulti ? 'Cambiar sucursal' : 'Cancelar'}
-            />
-            <CloseBtn />
-          </div>
-          <div className="mb-6">
-            <h4 className="font-display text-[1.1rem] font-semibold text-ink tracking-tight">Elige tu especialista</h4>
-            <p className="text-ink-3 text-sm mt-0.5">
-              Para <span className="text-ink font-medium">{toTitleCase(appointment.serviceName)}</span>
-            </p>
-          </div>
+        <div className="animate-fade-up">
+          <ReBack
+            onClick={isMulti ? () => setReschedStep('branch') : onCancel}
+            label={isMulti ? 'Cambiar sucursal' : 'Cancelar'}
+          />
+          <h3 className="font-display text-2xl font-semibold text-ink tracking-tight mb-1">Elige tu especialista</h3>
+          <p className="text-ink-3 text-sm mb-6">
+            Para <span className="text-ink font-medium">{toTitleCase(appointment.serviceName)}</span>
+            {reBranch && <> en <span className="text-ink font-medium">{toTitleCase(reBranch.name)}</span></>}
+          </p>
           {filteredSpecialists.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 text-center card">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center mb-3">
@@ -567,26 +670,22 @@ function ReschedulePanel({
                   onClick={() => { setReSpecialist(s); setNewDate(null); setNewTime(null); setReschedStep('datetime'); }}
                   className="group flex sm:flex-col items-start sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge bg-card
                              text-left sm:text-center hover:border-gold/40 hover:shadow-card
-                             active:scale-[0.99] transition-all duration-240 cursor-pointer animate-fade-up"
+                             active:scale-[0.99] transition-all duration-200 cursor-pointer animate-fade-up"
                   style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}
                 >
                   <div className="shrink-0 w-14 h-14 rounded-full bg-raised border-2 border-edge mt-0.5 sm:mt-0
-                                  group-hover:border-gold/50 flex items-center justify-center transition-all duration-240 overflow-hidden">
+                                  group-hover:border-gold/50 flex items-center justify-center transition-all duration-200 overflow-hidden">
                     {s.avatarUrl
                       ? <img src={s.avatarUrl} alt={s.name} className="w-full h-full object-cover"/>
                       : <span className="font-display text-xl font-bold text-gold">{s.initials}</span>
                     }
                   </div>
                   <div className="flex-1 sm:flex-none min-w-0">
-                    <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160">
+                    <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-150 truncate">
                       {toTitleCase(s.name)}
                     </p>
-                    {s.specialty && (
-                      <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{s.specialty}</p>
-                    )}
-                    {s.bio && (
-                      <p className="text-xs text-ink-3/70 mt-1.5 leading-relaxed line-clamp-2 sm:line-clamp-3">{s.bio}</p>
-                    )}
+                    {s.specialty && <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{s.specialty}</p>}
+                    {s.bio && <p className="text-xs text-ink-3/70 mt-1.5 leading-relaxed line-clamp-2 sm:line-clamp-3">{s.bio}</p>}
                   </div>
                   <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
@@ -598,27 +697,18 @@ function ReschedulePanel({
         </div>
       )}
 
-      {/* ── Step: Date + Time ── identical layout to /agendar DateTimePicker */}
+      {/* ── Step: Date + Time — identical layout to /agendar DateTimePicker ── */}
       {reschedStep === 'datetime' && (
         <div className="animate-fade-up">
+          <ReBack onClick={() => setReschedStep('specialist')} label="Cambiar especialista" />
+          <h3 className="font-display text-2xl font-semibold text-ink tracking-tight mb-1">Elige fecha y hora</h3>
+          <p className="text-ink-3 text-sm mb-6">
+            {reSpecialist && <>Con <span className="text-ink font-medium">{toTitleCase(reSpecialist.name)}</span></>}
+            {reBranch && reSpecialist && <span className="text-ink-3/50"> · </span>}
+            {reBranch && <span className="text-ink font-medium">{toTitleCase(reBranch.name)}</span>}
+          </p>
 
-          {/* Back + close row */}
-          <div className="flex items-center justify-between mb-5">
-            <ReBack onClick={() => setReschedStep('specialist')} label="Cambiar especialista" />
-            <CloseBtn />
-          </div>
-
-          {/* Title */}
-          <div className="mb-5">
-            <h3 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige fecha y hora</h3>
-            <p className="text-ink-3 text-sm mt-1">
-              {specialistName && <>Con <span className="text-ink font-medium">{toTitleCase(specialistName)}</span></>}
-              {branchName && specialistName && <span className="text-ink-3/50"> · </span>}
-              {branchName && <span className="text-ink font-medium">{toTitleCase(branchName)}</span>}
-            </p>
-          </div>
-
-          {/* Two-column grid: calendar left, slots right — same as DateTimePicker */}
+          {/* Two-column grid: calendar left, slots right */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
 
             {/* Calendar */}
@@ -654,12 +744,12 @@ function ReschedulePanel({
                   return (
                     <button key={toDateStr(date)} disabled={disabled} onClick={() => setNewDate(date)}
                       className={[
-                        'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-160',
+                        'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-150',
                         disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
                         isSel    ? 'bg-gold text-on-gold shadow-xs' : '',
                         !isSel && isT && !disabled ? 'text-gold font-semibold' : '',
                         !isSel && !disabled ? 'hover:bg-raised text-ink' : '',
-                      ].join(' ')}
+                      ].filter(Boolean).join(' ')}
                     >
                       {date.getDate()}
                       {isT && !isSel && (
@@ -702,7 +792,7 @@ function ReschedulePanel({
               {newDate && !isFetching && !staffBlocked && (
                 <div className="space-y-4 flex-1">
                   {allSlots.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
+                    <div className="flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                       <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                         <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -734,11 +824,11 @@ function ReschedulePanel({
                               return (
                                 <button key={slot} disabled={busy} onClick={() => setNewTime(slot)}
                                   className={[
-                                    'py-2.5 rounded-xl text-sm font-medium transition-all duration-160',
+                                    'py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
                                     busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : 'cursor-pointer',
                                     sel  ? 'bg-gold text-on-gold shadow-xs'
                                          : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]' : '',
-                                  ].join(' ')}>
+                                  ].filter(Boolean).join(' ')}>
                                   {formatTime(slot, timeFmt)}
                                 </button>
                               );
@@ -753,7 +843,7 @@ function ReschedulePanel({
             </div>
           </div>
 
-          {/* Confirm */}
+          {/* Confirm button — same placement as /agendar DateTimePicker */}
           {newDate && newTime && (
             <div className="mt-4">
               <Button onClick={onConfirm} loading={isLoading} className="w-full sm:w-auto">
