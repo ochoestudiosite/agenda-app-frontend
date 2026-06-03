@@ -387,50 +387,64 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
   }
 
   return (
-    <div className="card p-5 animate-fade-in">
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-[15px] font-semibold text-ink">Reagendar visita</h3>
-        <button
-          onClick={onCancel}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
-          aria-label="Cerrar"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+    <div className="animate-fade-in">
+      {/* Back — mismo patrón que /agendar */}
+      <button
+        onClick={onCancel}
+        className="group inline-flex items-center gap-2.5 px-3 py-2.5 -mx-3 rounded-xl
+                   text-sm font-medium text-ink-2 hover:text-ink hover:bg-raised/70
+                   transition-all duration-200 cursor-pointer active:scale-[0.98] mb-6"
+      >
+        <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30 group-hover:bg-card
+                         flex items-center justify-center shrink-0 transition-all duration-200">
+          <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
           </svg>
-        </button>
-      </div>
+        </span>
+        Volver
+      </button>
 
-      <div className="space-y-4">
-        {/* Mini calendar */}
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-3">
+      <h3 className="font-display text-2xl font-semibold text-ink tracking-tight mb-1">Elige nueva fecha y hora</h3>
+      <p className="text-ink-3 text-sm mb-6">
+        Para tu visita de <span className="text-ink font-medium">{totalDuration} min</span>
+        {' · '}{group.appointments?.length} {group.appointments?.length === 1 ? 'servicio' : 'servicios'}
+      </p>
+
+      {/* Calendar + Slots — mismo grid que /agendar DateTimePicker */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
+
+        {/* Calendar */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-5">
             <button
               onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1))}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
+              aria-label="Mes anterior"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
               </svg>
             </button>
-            <span className="text-xs font-semibold text-ink capitalize">
+            <span className="text-sm font-semibold text-ink capitalize">
               {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
             </span>
             <button
               onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1))}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
+              aria-label="Mes siguiente"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
               </svg>
             </button>
           </div>
-          <div className="grid grid-cols-7 mb-1.5">
+          <div className="grid grid-cols-7 mb-2">
             {DAYS_ES.map(d => (
-              <div key={d} className="text-center text-[0.625rem] font-medium text-ink-3 py-0.5">{d}</div>
+              <div key={d} className="text-center text-[0.6875rem] font-medium text-ink-3 py-1">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-y-0.5">
+          <div className="grid grid-cols-7 gap-y-1">
             {cells.map((date, i) => {
               if (!date) return <div key={`e-${i}`} />;
               const disabled = isDisabled(date);
@@ -442,16 +456,16 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
                   disabled={disabled}
                   onClick={() => { setNewDate(date); setNewTime(null); }}
                   className={[
-                    'relative h-8 text-xs rounded-lg font-medium transition-all duration-160',
+                    'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-150',
                     disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
-                    isSel ? 'bg-gold text-on-gold shadow-xs' : '',
+                    isSel    ? 'bg-gold text-on-gold shadow-xs' : '',
                     !isSel && isT && !disabled ? 'text-gold font-semibold' : '',
                     !isSel && !disabled ? 'hover:bg-raised text-ink' : '',
-                  ].join(' ')}
+                  ].filter(Boolean).join(' ')}
                 >
                   {date.getDate()}
                   {isT && !isSel && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold" />
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold" />
                   )}
                 </button>
               );
@@ -459,35 +473,52 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
           </div>
         </div>
 
-        {/* Available slots */}
-        {newDate && (
-          isFetching ? (
-            <div className="flex justify-center py-6"><Spinner size="sm" /></div>
-          ) : availableSlots.length === 0 ? (
-            <div className="flex items-center justify-center gap-2 py-5 rounded-xl bg-raised border border-edge">
-              <p className="text-xs text-ink-3">Sin horarios disponibles. Elige otro día.</p>
+        {/* Slots */}
+        <div className="card p-5 min-h-[280px] flex flex-col">
+          {!newDate && (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
+              <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                </svg>
+              </div>
+              <p className="text-sm text-ink-3">Selecciona una fecha</p>
             </div>
-          ) : (
-            <div className="space-y-3">
+          )}
+          {newDate && isFetching && (
+            <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
+          )}
+          {newDate && !isFetching && availableSlots.length === 0 && (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
+              <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
+                <p className="text-xs text-ink-3 mt-1">Elige otro día.</p>
+              </div>
+            </div>
+          )}
+          {newDate && !isFetching && availableSlots.length > 0 && (
+            <div className="space-y-4 flex-1">
               {[['morning','Mañana'], ['afternoon','Tarde'], ['evening','Noche']].map(([key, label]) => {
                 const slots = groupedSlots[key];
                 if (!slots?.length) return null;
                 return (
                   <div key={key}>
                     <p className="label-section mb-2">{label}</p>
-                    <div className="grid grid-cols-4 gap-1.5">
+                    <div className="grid grid-cols-3 gap-2">
                       {slots.map(slot => {
                         const sel = newTime === slot;
                         return (
-                          <button
-                            key={slot}
-                            onClick={() => setNewTime(slot)}
+                          <button key={slot} onClick={() => setNewTime(slot)}
                             className={[
-                              'py-2 rounded-xl text-xs font-medium transition-all duration-160 cursor-pointer',
+                              'py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer',
                               sel ? 'bg-gold text-on-gold shadow-xs'
                                   : 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]',
-                            ].join(' ')}
-                          >
+                            ].join(' ')}>
                             {formatTime(slot, timeFmt)}
                           </button>
                         );
@@ -497,77 +528,71 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
                 );
               })}
             </div>
-          )
-        )}
+          )}
+        </div>
+      </div>
 
-        {/* Cronograma breakdown */}
-        {cronograma && (
-          <div className="bg-raised rounded-xl border border-edge px-4 py-3.5">
-            <p className="label-section mb-3">Cronograma</p>
-            <div className="space-y-2">
-              {cronograma.map((appt, i) => {
-                const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
-                return (
-                  <div key={appt.code} className="flex items-center gap-3">
-                    <div className="flex flex-col items-center self-stretch">
-                      <div className="w-2 h-2 rounded-full bg-gold border-2 border-card mt-1 shrink-0" />
-                      {i < cronograma.length - 1 && <div className="w-px flex-1 bg-gold/30 my-0.5" />}
-                    </div>
-                    <div className="flex-1 pb-2">
-                      <div className="flex items-center gap-2.5 justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-7 h-7 rounded-full border border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                            {specialist?.avatarUrl
-                              ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
-                              : <span className="text-[9px] font-bold text-gold">{initials(appt.specialistName)}</span>
-                            }
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[12px] font-semibold text-ink leading-snug truncate">
-                              {toTitleCase(appt.serviceName)}
-                            </p>
-                            <p className="text-[10px] text-ink-3 truncate">{toTitleCase(appt.specialistName)}</p>
-                          </div>
+      {/* Cronograma — aparece cuando se selecciona hora */}
+      {cronograma && (
+        <div className="mt-4 card px-4 py-3.5">
+          <p className="label-section mb-3">Cronograma del nuevo horario</p>
+          <div className="space-y-2">
+            {cronograma.map((appt, i) => {
+              const specialist = allSpecialists.find(s => String(s.id) === String(appt.specialistId));
+              return (
+                <div key={appt.code} className="flex items-center gap-3">
+                  <div className="flex flex-col items-center self-stretch">
+                    <div className="w-2 h-2 rounded-full bg-gold border-2 border-card mt-1 shrink-0" />
+                    {i < cronograma.length - 1 && <div className="w-px flex-1 bg-gold/30 my-0.5" />}
+                  </div>
+                  <div className="flex-1 pb-2">
+                    <div className="flex items-center gap-2.5 justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-full border border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
+                          {specialist?.avatarUrl
+                            ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover"/>
+                            : <span className="text-[9px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                          }
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-[11px] font-bold text-gold tabular-nums">
-                            {formatTime(appt.startStr, timeFmt)}
-                          </p>
-                          <p className="text-[10px] text-ink-3">{appt.serviceDuration} min</p>
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-semibold text-ink leading-snug truncate">{toTitleCase(appt.serviceName)}</p>
+                          <p className="text-[10px] text-ink-3 truncate">{toTitleCase(appt.specialistName)}</p>
                         </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[11px] font-bold text-gold tabular-nums">{formatTime(appt.startStr, timeFmt)}</p>
+                        <p className="text-[10px] text-ink-3">{appt.serviceDuration} min</p>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-            <div className="pt-2.5 border-t border-edge flex justify-between text-xs">
-              <span className="text-ink-3">Total</span>
-              <span className="font-semibold text-ink tabular-nums">
-                {totalDuration} min · {(() => {
-                  const appts = group.appointments ?? [];
-                  const allAsk = appts.every(a => a.priceType === 'ask');
-                  const hasVariable = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
-                  if (allAsk) return 'A consultar';
-                  if (hasVariable) return `${formatPrice(group.totalPrice)}+`;
-                  return formatPrice(group.totalPrice);
-                })()}
-              </span>
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+          <div className="pt-2.5 border-t border-edge flex justify-between text-xs">
+            <span className="text-ink-3">Total</span>
+            <span className="font-semibold text-ink tabular-nums">
+              {totalDuration} min · {(() => {
+                const appts = group.appointments ?? [];
+                const allAsk = appts.every(a => a.priceType === 'ask');
+                const hasVar = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
+                if (allAsk) return 'A consultar';
+                if (hasVar) return `${formatPrice(group.totalPrice)}+`;
+                return formatPrice(group.totalPrice);
+              })()}
+            </span>
+          </div>
+        </div>
+      )}
 
-        <div className="flex gap-2.5 pt-1">
-          <Button
-            onClick={handleConfirm}
-            disabled={!newDate || !newTime}
-            loading={rescheduleMutation.isPending}
-          >
+      {/* Confirm — mismo lugar que /agendar */}
+      {newDate && newTime && (
+        <div className="mt-4">
+          <Button onClick={handleConfirm} loading={rescheduleMutation.isPending} className="w-full sm:w-auto">
             Confirmar nuevo horario
           </Button>
-          <Button variant="ghost" onClick={onCancel}>Volver</Button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
