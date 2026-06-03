@@ -537,8 +537,28 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
               </div>
               <div>
                 <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
-                <p className="text-xs text-ink-3 mt-1">Elige otro día.</p>
+                <p className="text-xs text-ink-3 mt-1">No hay horarios libres para este día.</p>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newDate) return;
+                  const next = findNextAvailableDate({
+                    bizHours: bizHoursRaw,
+                    blockedDates: [...blockedDates, toDateStr(newDate)],
+                    maxAdvanceDays: maxAdvance,
+                  });
+                  if (next) {
+                    autoSelectedRef.current = true;
+                    setNewDate(next);
+                    setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+                    setNewTime(null);
+                  }
+                }}
+                className="text-[12px] font-semibold text-gold border border-gold/25 bg-gold/6 rounded-xl px-4 py-2 hover:bg-gold/12 transition-colors cursor-pointer"
+              >
+                Ver siguiente fecha disponible →
+              </button>
             </div>
           )}
           {newDate && !isFetching && availableSlots.length > 0 && (
