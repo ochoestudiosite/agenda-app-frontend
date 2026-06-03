@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
@@ -29,6 +30,7 @@ function toDateStr(d) {
 
 export default function AppointmentCard({ appointment, onUpdated }) {
   const toast             = useToast();
+  const queryClient       = useQueryClient();
   const { data: config }  = useConfig();
   const { data: svcData } = useServices();
   const timeFmt   = config?.time_format ?? '12h';
@@ -89,6 +91,9 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const dayNum     = appointment.date.split('-')[2];
 
   function openReschedule() {
+    // Force fresh specialist + service data so changes made in admin-app are reflected.
+    queryClient.invalidateQueries({ queryKey: ['specialists'] });
+    queryClient.invalidateQueries({ queryKey: ['services'] });
     const initBranch = branches.find(b => b.id === appointment.branchId) || null;
     setReBranch(initBranch);
     setReSpecialist(null);
@@ -336,6 +341,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           branches={branches}
           isMulti={isMulti}
           serviceDbId={serviceDbId}
+          allSpecialists={allSpecialistsMain}
           reschedStep={reschedStep}    setReschedStep={setReschedStep}
           reBranch={reBranch}          setReBranch={setReBranch}
           reSpecialist={reSpecialist}  setReSpecialist={setReSpecialist}
@@ -362,6 +368,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
 function ReschedulePanel({
   appointment, config, branches, isMulti, serviceDbId,
+  allSpecialists = [],
   reschedStep, setReschedStep,
   reBranch, setReBranch, reSpecialist, setReSpecialist,
   effectiveSpecialistId, effectiveBranchId,
@@ -375,12 +382,9 @@ function ReschedulePanel({
   const intervalMins = config?.slot_interval_mins ?? 30;
   const timeFmt      = config?.time_format        ?? '12h';
 
-  const { data: specialistsData } = useSpecialists();
-  const allSpecialists = specialistsData?.specialists ?? [];
-
   // Filter by branch + by service capability when serviceDbId is known
   const filteredSpecialists = allSpecialists.filter(s => {
-    if (effectiveBranchId && s.branchIds?.length && !s.branchIds.includes(effectiveBranchId)) return false;
+    if (effectiveBranchId && s.branchIds?.length && !s.branchIds.includes(String(effectiveBranchId))) return false;
     if (serviceDbId && s.serviceIds?.length) {
       return s.serviceIds.some(id => Number(id) === Number(serviceDbId));
     }
@@ -429,12 +433,19 @@ function ReschedulePanel({
   ];
 
   return (
-    <div className="card p-5 animate-fade-in">
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-[15px] font-semibold text-ink">Reagendar cita</h3>
+    <div className="card p-5 sm:p-6 animate-fade-in">
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-gold/70 mb-0.5">Reagendando</p>
+          <h3 className="font-display text-xl font-semibold text-ink tracking-tight leading-tight">
+            {toTitleCase(appointment.serviceName)}
+          </h3>
+        </div>
         <button
           onClick={onCancel}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer shrink-0 mt-0.5"
           aria-label="Cerrar"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -444,20 +455,18 @@ function ReschedulePanel({
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center mb-6">
+      <div className="flex items-center mb-7">
         {steps.map((s, i) => {
           const currentIdx = steps.findIndex(x => x.key === reschedStep);
-          const done       = i < currentIdx;
-          const active     = s.key === reschedStep;
-          const clickable  = done;
+          const done    = i < currentIdx;
+          const active  = s.key === reschedStep;
+          const clickable = done;
           return (
             <div key={s.key} className="flex items-center flex-1 last:flex-none">
               {i > 0 && (
                 <div className="flex-1 h-px mx-2 relative rounded-full overflow-hidden bg-edge/40">
-                  <div
-                    className="absolute inset-y-0 left-0 bg-gold/55 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: currentIdx >= i ? '100%' : '0%' }}
-                  />
+                  <div className="absolute inset-y-0 left-0 bg-gold/55 rounded-full transition-all duration-500 ease-out"
+                       style={{ width: currentIdx >= i ? '100%' : '0%' }} />
                 </div>
               )}
               <div className="flex flex-col items-center gap-1.5 shrink-0">
@@ -465,20 +474,17 @@ function ReschedulePanel({
                   type="button"
                   onClick={clickable ? () => setReschedStep(s.key) : undefined}
                   disabled={!clickable}
-                  title={clickable ? `Volver a ${s.label}` : undefined}
                   className={[
-                    'w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 border-2',
+                    'w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 border-2',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1',
-                    done
-                      ? 'bg-gold border-gold cursor-pointer hover:scale-110 hover:shadow-[0_0_0_4px_rgba(0,184,122,0.2)] active:scale-[0.97]'
-                      : active
-                        ? 'bg-surface border-gold cursor-default'
-                        : 'bg-surface border-edge/50 cursor-default',
+                    done    ? 'bg-gold border-gold cursor-pointer hover:scale-110 active:scale-[0.97]'
+                    : active ? 'bg-surface border-gold cursor-default'
+                             : 'bg-surface border-edge/50 cursor-default',
                   ].join(' ')}
                 >
                   {done ? (
-                    <svg className="w-2.5 h-2.5 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    <svg className="w-3 h-3 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                   ) : (
                     <span className={`text-[10px] font-bold tabular-nums leading-none ${active ? 'text-gold' : 'text-ink-3/40'}`}>
@@ -498,74 +504,134 @@ function ReschedulePanel({
         })}
       </div>
 
-      {/* ── Step: Branch ── */}
+      {/* ── Step: Branch ── matches BranchSelector design from /agendar */}
       {reschedStep === 'branch' && (
-        <div className="space-y-2.5">
-          <p className="text-[13px] font-medium text-ink mb-1">¿En qué sucursal?</p>
-          {branches.map(b => (
-            <button
-              key={b.id}
-              onClick={() => { setReBranch(b); setReSpecialist(null); setNewDate(null); setNewTime(null); setReschedStep('specialist'); }}
-              className={[
-                'w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer',
-                reBranch?.id === b.id
-                  ? 'border-gold bg-gold/6 shadow-xs'
-                  : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
-              ].join(' ')}
-            >
-              <div className="w-9 h-9 rounded-full border border-edge overflow-hidden flex items-center justify-center shrink-0">
-                {b.image_url
-                  ? <img src={b.image_url} alt={b.name} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full bg-gold/10 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
+        <div className="animate-fade-up">
+          <div className="mb-6">
+            <h4 className="font-display text-[1.1rem] font-semibold text-ink tracking-tight">Elige tu sucursal</h4>
+            <p className="text-ink-3 text-sm mt-0.5">¿En cuál ubicación deseas tu nueva cita?</p>
+          </div>
+          <div className="space-y-2.5">
+            {branches.map((b, i) => (
+              <button
+                key={b.id}
+                onClick={() => { setReBranch(b); setReSpecialist(null); setNewDate(null); setNewTime(null); setReschedStep('specialist'); }}
+                className="w-full text-left group flex items-center gap-4 p-5 rounded-2xl border border-edge bg-card
+                           hover:border-gold/40 hover:shadow-card active:scale-[0.99]
+                           transition-all duration-240 cursor-pointer animate-fade-up"
+                style={{ animationDelay: `${i * 40}ms`, animationFillMode: 'both' }}
+              >
+                <div className="shrink-0 w-14 h-14 rounded-full overflow-hidden flex items-center justify-center
+                                bg-raised border-2 border-edge group-hover:border-gold/50 transition-all duration-240">
+                  {b.image_url
+                    ? <img src={b.image_url} alt={b.name} className="w-full h-full object-cover"/>
+                    : <span className="text-[1.125rem] font-bold text-gold/80 select-none">
+                        {b.name?.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}
+                      </span>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160 truncate">
+                    {toTitleCase(b.name)}
+                  </p>
+                  {b.address && (
+                    <div className="flex items-start gap-1.5 mt-1">
+                      <svg className="w-3.5 h-3.5 text-ink-3 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
                       </svg>
+                      <p className="text-xs text-ink-3 leading-snug line-clamp-2">{b.address}</p>
                     </div>
-                }
-              </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink truncate">{toTitleCase(b.name)}</p>
-                {b.address && <p className="text-xs text-ink-3 truncate">{b.address}</p>}
-              </div>
-            </button>
-          ))}
+                  )}
+                  {b.phone && (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <svg className="w-3.5 h-3.5 text-ink-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+                      </svg>
+                      <p className="text-xs text-ink-3">{b.phone}</p>
+                    </div>
+                  )}
+                </div>
+                <svg className="w-4 h-4 text-ink-3 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* ── Step: Specialist ── */}
+      {/* ── Step: Specialist ── matches SpecialistCard grid from /agendar */}
       {reschedStep === 'specialist' && (
-        <div className="space-y-2.5">
-          <p className="text-[13px] font-medium text-ink mb-1">¿Con quién?</p>
+        <div className="animate-fade-up">
+          <div className="mb-6">
+            {isMulti && (
+              <button
+                onClick={() => setReschedStep('branch')}
+                className="group inline-flex items-center gap-2.5 mb-5 px-3 py-2.5 -mx-3 rounded-xl
+                           text-sm font-medium text-ink-2 hover:text-ink hover:bg-raised/70
+                           transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              >
+                <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30 group-hover:bg-card
+                                 flex items-center justify-center shrink-0 transition-all duration-200">
+                  <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </span>
+                Cambiar sucursal
+              </button>
+            )}
+            <h4 className="font-display text-[1.1rem] font-semibold text-ink tracking-tight">Elige tu especialista</h4>
+            <p className="text-ink-3 text-sm mt-0.5">
+              Para <span className="text-ink font-medium">{toTitleCase(appointment.serviceName)}</span>
+            </p>
+          </div>
           {filteredSpecialists.length === 0 ? (
-            <p className="text-xs text-ink-3 text-center py-4">Sin especialistas disponibles.</p>
-          ) : filteredSpecialists.map(s => (
-            <button
-              key={s.id}
-              onClick={() => { setReSpecialist(s); setNewDate(null); setNewTime(null); setReschedStep('datetime'); }}
-              className={[
-                'w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
-                reSpecialist?.id === s.id
-                  ? 'border-gold bg-gold/6 shadow-xs'
-                  : 'border-edge bg-card hover:border-gold/40 hover:bg-raised',
-              ].join(' ')}
-            >
-              <div className="w-9 h-9 rounded-full bg-raised border border-edge flex items-center justify-center shrink-0 overflow-hidden">
-                {s.avatarUrl
-                  ? <img src={s.avatarUrl} alt={s.name} className="w-full h-full object-cover" />
-                  : <span className="text-xs font-bold text-gold">{s.initials}</span>
-                }
+            <div className="flex flex-col items-center justify-center py-14 text-center card">
+              <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+                </svg>
               </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink truncate">{toTitleCase(s.name)}</p>
-                {s.specialty && <p className="text-xs text-ink-3 truncate">{s.specialty}</p>}
-              </div>
-            </button>
-          ))}
-          {isMulti && (
-            <button onClick={() => setReschedStep('branch')} className="text-xs text-ink-3 hover:text-ink mt-1 cursor-pointer">
-              ← Cambiar sucursal
-            </button>
+              <p className="text-sm font-semibold text-ink">Sin especialistas disponibles</p>
+              <p className="text-xs text-ink-3 mt-1 max-w-xs">Ningún colaborador tiene asignado este servicio.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {filteredSpecialists.map((s, i) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setReSpecialist(s); setNewDate(null); setNewTime(null); setReschedStep('datetime'); }}
+                  className="group flex sm:flex-col items-start sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge bg-card
+                             text-left sm:text-center hover:border-gold/40 hover:shadow-card
+                             active:scale-[0.99] transition-all duration-240 cursor-pointer animate-fade-up"
+                  style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}
+                >
+                  <div className="shrink-0 w-14 h-14 rounded-full bg-raised border-2 border-edge mt-0.5 sm:mt-0
+                                  group-hover:border-gold/50 flex items-center justify-center transition-all duration-240 overflow-hidden">
+                    {s.avatarUrl
+                      ? <img src={s.avatarUrl} alt={s.name} className="w-full h-full object-cover"/>
+                      : <span className="font-display text-xl font-bold text-gold">{s.initials}</span>
+                    }
+                  </div>
+                  <div className="flex-1 sm:flex-none min-w-0">
+                    <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160">
+                      {toTitleCase(s.name)}
+                    </p>
+                    {s.specialty && (
+                      <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{s.specialty}</p>
+                    )}
+                    {s.bio && (
+                      <p className="text-xs text-ink-3/70 mt-1.5 leading-relaxed line-clamp-2 sm:line-clamp-3">{s.bio}</p>
+                    )}
+                  </div>
+                  <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
