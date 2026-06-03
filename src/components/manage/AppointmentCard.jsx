@@ -382,9 +382,13 @@ function ReschedulePanel({
   const intervalMins = config?.slot_interval_mins ?? 30;
   const timeFmt      = config?.time_format        ?? '12h';
 
-  // Filter by branch + by service capability when serviceDbId is known
+  // Filter by branch + service — use Number() comparison (matching /agendar logic)
+  // to avoid type mismatches where branchIds/serviceIds are numbers but IDs are strings.
   const filteredSpecialists = allSpecialists.filter(s => {
-    if (effectiveBranchId && s.branchIds?.length && !s.branchIds.includes(String(effectiveBranchId))) return false;
+    if (effectiveBranchId && s.branchIds?.length) {
+      const inBranch = s.branchIds.some(id => Number(id) === Number(effectiveBranchId));
+      if (!inBranch) return false;
+    }
     if (serviceDbId && s.serviceIds?.length) {
       return s.serviceIds.some(id => Number(id) === Number(serviceDbId));
     }
