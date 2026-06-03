@@ -14,6 +14,14 @@ export function initSentry() {
       /Importing a module script failed/,
       /is not a valid JavaScript MIME type/,
       /error loading dynamically imported module/,
+      /ResizeObserver loop/,
+    ],
+    denyUrls: [
+      /extensions\//i,
+      /^chrome:\/\//i,
+      /^chrome-extension:\/\//i,
+      /^moz-extension:\/\//i,
+      /^safari-extension:\/\//i,
     ],
   });
 }
