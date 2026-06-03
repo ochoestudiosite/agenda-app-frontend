@@ -430,87 +430,55 @@ function ReschedulePanel({
   const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
   const grouped   = groupSlots(allSlots);
 
-  const steps = [
-    ...(isMulti ? [{ key: 'branch', label: 'Sucursal' }] : []),
-    { key: 'specialist', label: 'Especialista' },
-    { key: 'datetime',   label: 'Fecha y hora' },
-  ];
+  const specialistName = reSpecialist?.name ?? null;
+  const branchName     = reBranch?.name     ?? null;
+
+  // Close × button — reused in all steps
+  function CloseBtn() {
+    return (
+      <button onClick={onCancel} aria-label="Cerrar"
+        className="w-8 h-8 flex items-center justify-center rounded-xl text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer shrink-0">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    );
+  }
+
+  // Back button — same style as /agendar SpecialistSelector
+  function ReBack({ onClick: handleClick, label }) {
+    return (
+      <button type="button" onClick={handleClick}
+        className="group inline-flex items-center gap-2.5 px-3 py-2.5 -mx-3 rounded-xl
+                   text-sm font-medium text-ink-2 hover:text-ink hover:bg-raised/70
+                   transition-all duration-200 cursor-pointer active:scale-[0.98]">
+        <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30 group-hover:bg-card
+                         flex items-center justify-center shrink-0 transition-all duration-200">
+          <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </span>
+        {label}
+      </button>
+    );
+  }
 
   return (
-    <div className="card p-5 sm:p-6 animate-fade-in">
+    <div className="animate-fade-in">
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-gold/70 mb-0.5">Reagendando</p>
-          <h3 className="font-display text-xl font-semibold text-ink tracking-tight leading-tight">
-            {toTitleCase(appointment.serviceName)}
-          </h3>
-        </div>
-        <button
-          onClick={onCancel}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer shrink-0 mt-0.5"
-          aria-label="Cerrar"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      {/* Step indicator */}
-      <div className="flex items-center mb-7">
-        {steps.map((s, i) => {
-          const currentIdx = steps.findIndex(x => x.key === reschedStep);
-          const done    = i < currentIdx;
-          const active  = s.key === reschedStep;
-          const clickable = done;
-          return (
-            <div key={s.key} className="flex items-center flex-1 last:flex-none">
-              {i > 0 && (
-                <div className="flex-1 h-px mx-2 relative rounded-full overflow-hidden bg-edge/40">
-                  <div className="absolute inset-y-0 left-0 bg-gold/55 rounded-full transition-all duration-500 ease-out"
-                       style={{ width: currentIdx >= i ? '100%' : '0%' }} />
-                </div>
-              )}
-              <div className="flex flex-col items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={clickable ? () => setReschedStep(s.key) : undefined}
-                  disabled={!clickable}
-                  className={[
-                    'w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 border-2',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-1',
-                    done    ? 'bg-gold border-gold cursor-pointer hover:scale-110 active:scale-[0.97]'
-                    : active ? 'bg-surface border-gold cursor-default'
-                             : 'bg-surface border-edge/50 cursor-default',
-                  ].join(' ')}
-                >
-                  {done ? (
-                    <svg className="w-3 h-3 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-                    </svg>
-                  ) : (
-                    <span className={`text-[10px] font-bold tabular-nums leading-none ${active ? 'text-gold' : 'text-ink-3/40'}`}>
-                      {i + 1}
-                    </span>
-                  )}
-                </button>
-                <span className={[
-                  'text-[9.5px] font-medium whitespace-nowrap transition-colors duration-200',
-                  active ? 'text-ink font-semibold' : done ? 'text-ink-3' : 'text-ink-3/40',
-                ].join(' ')}>
-                  {s.label}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── Step: Branch ── matches BranchSelector design from /agendar */}
+      {/* ── Step: Branch ── */}
       {reschedStep === 'branch' && (
-        <div className="animate-fade-up">
+        <div className="card p-5 sm:p-6 animate-fade-up">
+          <div className="flex items-start justify-between mb-7">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gold/70 mb-0.5">Reagendando</p>
+              <h3 className="font-display text-xl font-semibold text-ink tracking-tight leading-tight">
+                {toTitleCase(appointment.serviceName)}
+              </h3>
+            </div>
+            <CloseBtn />
+          </div>
           <div className="mb-6">
             <h4 className="font-display text-[1.1rem] font-semibold text-ink tracking-tight">Elige tu sucursal</h4>
             <p className="text-ink-3 text-sm mt-0.5">¿En cuál ubicación deseas tu nueva cita?</p>
@@ -565,27 +533,17 @@ function ReschedulePanel({
         </div>
       )}
 
-      {/* ── Step: Specialist ── matches SpecialistCard grid from /agendar */}
+      {/* ── Step: Specialist ── */}
       {reschedStep === 'specialist' && (
-        <div className="animate-fade-up">
+        <div className="card p-5 sm:p-6 animate-fade-up">
+          <div className="flex items-center justify-between mb-7">
+            <ReBack
+              onClick={isMulti ? () => setReschedStep('branch') : onCancel}
+              label={isMulti ? 'Cambiar sucursal' : 'Cancelar'}
+            />
+            <CloseBtn />
+          </div>
           <div className="mb-6">
-            {isMulti && (
-              <button
-                onClick={() => setReschedStep('branch')}
-                className="group inline-flex items-center gap-2.5 mb-5 px-3 py-2.5 -mx-3 rounded-xl
-                           text-sm font-medium text-ink-2 hover:text-ink hover:bg-raised/70
-                           transition-all duration-200 cursor-pointer active:scale-[0.98]"
-              >
-                <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30 group-hover:bg-card
-                                 flex items-center justify-center shrink-0 transition-all duration-200">
-                  <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
-                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-                  </svg>
-                </span>
-                Cambiar sucursal
-              </button>
-            )}
             <h4 className="font-display text-[1.1rem] font-semibold text-ink tracking-tight">Elige tu especialista</h4>
             <p className="text-ink-3 text-sm mt-0.5">
               Para <span className="text-ink font-medium">{toTitleCase(appointment.serviceName)}</span>
@@ -640,167 +598,169 @@ function ReschedulePanel({
         </div>
       )}
 
-      {/* ── Step: Date + Time ── */}
+      {/* ── Step: Date + Time ── identical layout to /agendar DateTimePicker */}
       {reschedStep === 'datetime' && (
-        <div className="space-y-4">
-          {/* Context pills */}
-          {(reBranch || reSpecialist) && (
-            <div className="flex flex-wrap gap-1.5">
-              {reBranch && (
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2 py-1 rounded-full">
-                  <div className="w-4 h-4 rounded-full overflow-hidden border border-edge bg-gold/10 flex items-center justify-center shrink-0">
-                    {reBranch.image_url
-                      ? <img src={reBranch.image_url} className="w-full h-full object-cover" alt="" />
-                      : <svg className="w-2.5 h-2.5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/>
-                          <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                    }
-                  </div>
-                  {toTitleCase(reBranch.name)}
-                </span>
-              )}
-              {reSpecialist && (
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-2 bg-raised border border-edge px-2 py-1 rounded-full">
-                  <div className="w-4 h-4 rounded-full overflow-hidden border border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
-                    {reSpecialist.avatarUrl
-                      ? <img src={reSpecialist.avatarUrl} className="w-full h-full object-cover" alt="" />
-                      : <span className="text-[7px] font-bold text-gold leading-none">{initials(reSpecialist.name)}</span>
-                    }
-                  </div>
-                  {toTitleCase(reSpecialist.name)}
-                </span>
-              )}
-            </div>
-          )}
+        <div className="animate-fade-up">
 
-          {/* Mini calendar */}
-          <div className="card p-4">
-            <div className="flex items-center justify-between mb-3">
-              <button
-                onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1))}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </button>
-              <span className="text-xs font-semibold text-ink capitalize">
-                {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
-              </span>
-              <button
-                onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1))}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-              </button>
-            </div>
-            <div className="grid grid-cols-7 mb-1.5">
-              {DAYS_ES.map(d => (
-                <div key={d} className="text-center text-[0.625rem] font-medium text-ink-3 py-0.5">{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-y-0.5">
-              {cells.map((date, i) => {
-                if (!date) return <div key={`e-${i}`} />;
-                const disabled = isDisabled(date);
-                const isT      = toDateStr(date) === todayStr;
-                const isSel    = newDate && toDateStr(date) === toDateStr(newDate);
-                return (
-                  <button
-                    key={toDateStr(date)}
-                    disabled={disabled}
-                    onClick={() => setNewDate(date)}
-                    className={[
-                      'relative h-8 text-xs rounded-lg font-medium transition-all duration-160',
-                      disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
-                      isSel    ? 'bg-gold text-on-gold shadow-xs' : '',
-                      !isSel && isT && !disabled ? 'text-gold font-semibold' : '',
-                      !isSel && !disabled ? 'hover:bg-raised text-ink' : '',
-                    ].join(' ')}
-                  >
-                    {date.getDate()}
-                    {isT && !isSel && (
-                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+          {/* Back + close row */}
+          <div className="flex items-center justify-between mb-5">
+            <ReBack onClick={() => setReschedStep('specialist')} label="Cambiar especialista" />
+            <CloseBtn />
           </div>
 
-          {/* Time slots */}
-          {newDate && (
-            isFetching ? (
-              <div className="flex justify-center py-6"><Spinner size="sm" /></div>
-            ) : staffBlocked ? (
-              <div className="flex flex-col items-center gap-2 py-5 text-center rounded-xl bg-raised border border-edge">
-                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                </svg>
-                <div>
-                  <p className="text-sm font-medium text-ink">Día no disponible</p>
-                  <p className="text-xs text-ink-3 mt-0.5">
-                    {staffBlocked.reason || 'El especialista no estará disponible este día.'}
-                  </p>
-                </div>
+          {/* Title */}
+          <div className="mb-5">
+            <h3 className="font-display text-2xl font-semibold text-ink tracking-tight">Elige fecha y hora</h3>
+            <p className="text-ink-3 text-sm mt-1">
+              {specialistName && <>Con <span className="text-ink font-medium">{toTitleCase(specialistName)}</span></>}
+              {branchName && specialistName && <span className="text-ink-3/50"> · </span>}
+              {branchName && <span className="text-ink font-medium">{toTitleCase(branchName)}</span>}
+            </p>
+          </div>
+
+          {/* Two-column grid: calendar left, slots right — same as DateTimePicker */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
+
+            {/* Calendar */}
+            <div className="card p-5">
+              <div className="flex items-center justify-between mb-5">
+                <button onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer" aria-label="Mes anterior">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+                <span className="text-sm font-semibold text-ink capitalize">
+                  {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
+                </span>
+                <button onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer" aria-label="Mes siguiente">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
               </div>
-            ) : allSlots.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 py-5 rounded-xl bg-raised border border-edge">
-                <p className="text-xs text-ink-3">Sin horarios disponibles. Elige otro día.</p>
+              <div className="grid grid-cols-7 mb-2">
+                {DAYS_ES.map(d => (
+                  <div key={d} className="text-center text-[0.6875rem] font-medium text-ink-3 py-1">{d}</div>
+                ))}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
-                  const slots = grouped[key];
-                  if (!slots?.length) return null;
-                  const [cH, cM] = closeTime.split(':').map(Number);
-                  const closeMins = cH * 60 + cM;
+              <div className="grid grid-cols-7 gap-y-1">
+                {cells.map((date, i) => {
+                  if (!date) return <div key={`e-${i}`} />;
+                  const disabled = isDisabled(date);
+                  const isT      = toDateStr(date) === todayStr;
+                  const isSel    = newDate && toDateStr(date) === toDateStr(newDate);
                   return (
-                    <div key={key}>
-                      <p className="label-section mb-2">{label}</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {slots.map(slot => {
-                          const [sh, sm]  = slot.split(':').map(Number);
-                          const slotStart = sh * 60 + sm;
-                          const slotEnd   = slotStart + appointment.serviceDuration;
-                          const isPast    = isToday && slotStart <= cutoffMins;
-                          const busy      = isPast
-                            || slotEnd > closeMins
-                            || appointmentIntervals.some(({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin);
-                          const sel = newTime === slot;
-                          return (
-                            <button
-                              key={slot}
-                              disabled={busy}
-                              onClick={() => setNewTime(slot)}
-                              className={[
-                                'py-2 rounded-xl text-xs font-medium transition-all duration-160',
-                                busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : 'cursor-pointer',
-                                sel  ? 'bg-gold text-on-gold shadow-xs'
-                                     : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]' : '',
-                              ].join(' ')}
-                            >
-                              {formatTime(slot, timeFmt)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <button key={toDateStr(date)} disabled={disabled} onClick={() => setNewDate(date)}
+                      className={[
+                        'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-160',
+                        disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
+                        isSel    ? 'bg-gold text-on-gold shadow-xs' : '',
+                        !isSel && isT && !disabled ? 'text-gold font-semibold' : '',
+                        !isSel && !disabled ? 'hover:bg-raised text-ink' : '',
+                      ].join(' ')}
+                    >
+                      {date.getDate()}
+                      {isT && !isSel && (
+                        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold" />
+                      )}
+                    </button>
                   );
                 })}
               </div>
-            )
-          )}
+            </div>
 
-          <div className="flex gap-2.5 pt-1">
-            <Button onClick={onConfirm} disabled={!newDate || !newTime} loading={isLoading}>
-              Confirmar nuevo horario
-            </Button>
-            <Button variant="ghost" onClick={() => setReschedStep('specialist')}>Atrás</Button>
+            {/* Time slots */}
+            <div className="card p-5 min-h-[280px] flex flex-col">
+              {!newDate && (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                  </div>
+                  <p className="text-sm text-ink-3">Selecciona una fecha</p>
+                </div>
+              )}
+              {newDate && isFetching && (
+                <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
+              )}
+              {newDate && !isFetching && staffBlocked && (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
+                  <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-ink">Día no disponible</p>
+                    <p className="text-xs text-ink-3 mt-1">{staffBlocked.reason || 'El especialista no estará disponible este día.'}</p>
+                  </div>
+                </div>
+              )}
+              {newDate && !isFetching && !staffBlocked && (
+                <div className="space-y-4 flex-1">
+                  {allSlots.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
+                      <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                        <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
+                        <p className="text-xs text-ink-3 mt-1">Elige otra fecha.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
+                      const slots = grouped[key];
+                      if (!slots?.length) return null;
+                      const [cH, cM] = closeTime.split(':').map(Number);
+                      const closeMins = cH * 60 + cM;
+                      return (
+                        <div key={key}>
+                          <p className="label-section mb-2">{label}</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {slots.map(slot => {
+                              const [sh, sm]  = slot.split(':').map(Number);
+                              const slotStart = sh * 60 + sm;
+                              const slotEnd   = slotStart + appointment.serviceDuration;
+                              const isPast    = isToday && slotStart <= cutoffMins;
+                              const busy      = isPast || slotEnd > closeMins
+                                || appointmentIntervals.some(({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin);
+                              const sel = newTime === slot;
+                              return (
+                                <button key={slot} disabled={busy} onClick={() => setNewTime(slot)}
+                                  className={[
+                                    'py-2.5 rounded-xl text-sm font-medium transition-all duration-160',
+                                    busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : 'cursor-pointer',
+                                    sel  ? 'bg-gold text-on-gold shadow-xs'
+                                         : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]' : '',
+                                  ].join(' ')}>
+                                  {formatTime(slot, timeFmt)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Confirm */}
+          {newDate && newTime && (
+            <div className="mt-4">
+              <Button onClick={onConfirm} loading={isLoading} className="w-full sm:w-auto">
+                Confirmar nuevo horario
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

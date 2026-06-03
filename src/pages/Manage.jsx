@@ -17,16 +17,21 @@ export default function Manage() {
   const rawParam   = (searchParams.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const activeCode = CODE_RE.test(rawParam) ? rawParam : '';
 
-  // Fire both lookups in parallel — only one will return data, the other 404s silently.
+  // Try individual lookup first. Only fall back to the group endpoint when the
+  // single one 404s — avoids a noisy /appointments/group/:code 404 on every
+  // normal individual booking.
   const singleQuery = useAppointmentLookup(activeCode);
-  const groupQuery  = useGroupAppointmentLookup(activeCode);
+  const singleMissing = singleQuery.isError && singleQuery.error?.status === 404;
+  const groupQuery  = useGroupAppointmentLookup(activeCode, singleMissing);
 
   const isGroup     = !singleQuery.data && !!groupQuery.data;
   const data        = singleQuery.data ?? groupQuery.data ?? null;
-  const isLoading   = singleQuery.isLoading || groupQuery.isLoading;
-  // Show error only when both queries have settled and neither returned data.
-  const isError     = !isLoading && !!activeCode && !data && (singleQuery.isError || groupQuery.isError);
-  const error       = singleQuery.error ?? groupQuery.error ?? null;
+  const isLoading   = singleQuery.isLoading || (singleMissing && groupQuery.isLoading);
+  // Error only when the single lookup failed for a non-404 reason, or the group
+  // fallback also failed to find the code.
+  const isError     = !isLoading && !!activeCode && !data &&
+    ((singleQuery.isError && !singleMissing) || (singleMissing && groupQuery.isError));
+  const error       = (singleMissing ? groupQuery.error : singleQuery.error) ?? null;
 
   const appointment = localAppt || data;
 

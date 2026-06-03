@@ -10,11 +10,13 @@ export function useAppointmentLookup(code) {
   });
 }
 
-export function useGroupAppointmentLookup(code) {
+// Only fired as a fallback when the single-appointment lookup 404s, so a normal
+// individual booking never triggers a noisy 404 on /appointments/group/:code.
+export function useGroupAppointmentLookup(code, enabled = true) {
   return useQuery({
     queryKey: ['groupAppointment', code],
     queryFn: () => api.getGroupAppointment(code),
-    enabled: !!code,
+    enabled: !!code && enabled,
     retry: false,
   });
 }
