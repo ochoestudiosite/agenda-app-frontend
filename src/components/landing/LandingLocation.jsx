@@ -68,17 +68,21 @@ function buildHoursDisplay(hours, hoursTextOverride) {
   if (!hours || !hours.length) return { display: '', closedDays: [] };
 
   const open   = hours.filter(h => h.is_open);
-  const closed = hours.filter(h => !h.is_open).map(h => DAY_NAMES[h.day_of_week]);
+  // Sort closed days Mon-first so "Cerrado: X, Y" lists in Mon-Sun order
+  const closed = [...hours.filter(h => !h.is_open)]
+    .sort((a, b) => ((a.day_of_week + 6) % 7) - ((b.day_of_week + 6) % 7))
+    .map(h => DAY_NAMES[h.day_of_week]);
   if (!open.length) return { display: '', closedDays: closed };
 
   // Sort Mon-first: map 0=Sun→6, 1=Mon→0 … 6=Sat→5
   const sorted = [...open].sort((a, b) => ((a.day_of_week + 6) % 7) - ((b.day_of_week + 6) % 7));
 
-  // Group consecutive days that share identical open/close times
+  // Group consecutive days that share identical open/close times.
+  // Use (lastDow + 1) % 7 so Sáb(6)→Dom(0) is treated as consecutive.
   const groups = [];
   for (const day of sorted) {
     const prev      = groups[groups.length - 1];
-    const adjacent  = prev && prev.lastDow + 1 === day.day_of_week;
+    const adjacent  = prev && (prev.lastDow + 1) % 7 === day.day_of_week;
     const sameTimes = prev
       && prev.openTime  === (day.open_time?.slice(0, 5)  ?? '')
       && prev.closeTime === (day.close_time?.slice(0, 5) ?? '');
