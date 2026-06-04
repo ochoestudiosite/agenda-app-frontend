@@ -246,7 +246,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
 
             {/* ── Map column ── */}
             <div className="lg:col-span-7">
-              <div className="relative aspect-[5/6] sm:aspect-[4/3] lg:aspect-[5/6] rounded-[36px] overflow-hidden bg-raised border border-edge/40 shadow-[0_24px_60px_rgba(0,0,0,0.10)]">
+              <div className="relative aspect-[16/9] sm:aspect-[4/3] rounded-[36px] overflow-hidden bg-raised border border-edge/40 shadow-[0_24px_60px_rgba(0,0,0,0.10)]">
                 {loc.map_embed_url ? (
                   <iframe
                     src={loc.map_embed_url}
