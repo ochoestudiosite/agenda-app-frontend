@@ -131,7 +131,6 @@ function ServiceCard({ service, i, buttonText }) {
   const duration  = service.duration || service.duration_mins;
   const priceType = service.priceType || service.price_type || 'fixed';
   const showPrice = priceType !== 'ask' && service.price != null;
-  // Accepts both camelCase (API/serviceCache) and snake_case (custom editor items)
   const imageUrl  = service.imageUrl || service.image_url || null;
 
   return (
@@ -140,87 +139,87 @@ function ServiceCard({ service, i, buttonText }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ delay: Math.min(i * 0.05, 0.3), duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative flex flex-col h-full"
+      className="group"
     >
-      <Link to="/agendar" className="block">
-        {/* Image with floating price chip */}
-        <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] overflow-hidden bg-raised">
+      <Link to="/agendar" className="block rounded-[28px] overflow-hidden">
+        <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full bg-raised">
+
+          {/* Background — imagen o placeholder premium */}
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={service.name}
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
+              className="absolute inset-0 w-full h-full object-cover
+                         transition-transform duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)]
+                         group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised text-gold/30 group-hover:text-gold/60 transition-colors duration-700">
-              <IconComp size={56} strokeWidth={1.2} />
+            <div className="absolute inset-0 bg-gradient-to-br from-raised via-card to-raised">
+              <div className="absolute inset-0 opacity-[0.035]"
+                style={{ backgroundImage: 'radial-gradient(rgb(var(--ink)) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
+              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full opacity-[0.12]"
+                style={{ background: 'radial-gradient(circle, rgb(var(--gold)) 0%, transparent 70%)' }} />
+              {/* Icono en la mitad superior (por encima de la zona de texto) */}
+              <div className="absolute inset-x-0 top-0 bottom-[48%] flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-gold/[0.08] border border-gold/15 flex items-center justify-center">
+                  <IconComp size={26} strokeWidth={1.2} className="text-gold/45 group-hover:text-gold/65 transition-colors duration-500" />
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Bottom dark fade for overlay legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-transparent" />
+          {/* Gradiente oscuro — cubre el 55% inferior para legibilidad */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 via-[42%] to-transparent" />
 
-          {/* Floating price chip */}
+          {/* Price badge */}
           {showPrice && (
-            <div className="absolute top-4 right-4 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-card/85 backdrop-blur-md border border-edge/50 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-              <span className="text-[14px] font-bold text-ink tabular-nums">
+            <div className="absolute top-4 right-4 inline-flex items-center px-3 py-1.5 rounded-full
+                            bg-card/85 backdrop-blur-md border border-edge/50
+                            shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+              <span className="text-[13px] font-bold text-ink tabular-nums">
                 {formatServicePrice(service)}
               </span>
             </div>
           )}
 
-          {/* Title overlaid at bottom for image-rich cards */}
-          {imageUrl && (
-            <div className="absolute inset-x-0 bottom-0 p-5 lg:p-6">
-              <h3 className="text-white text-xl lg:text-2xl font-semibold tracking-tight drop-shadow-md">
-                {service.name}
-              </h3>
-              {duration && (
-                <span className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-white/85">
-                  <Clock size={11} />
-                  {duration} min
-                </span>
-              )}
+          {/* Todo el contenido dentro de la card */}
+          <div className="absolute inset-x-0 bottom-0 p-5 lg:p-6">
+
+            {/* Descripción — sutil, 2 líneas */}
+            {service.description && (
+              <p className="text-[0.8rem] text-white/55 leading-snug line-clamp-2 mb-2.5">
+                {service.description}
+              </p>
+            )}
+
+            {/* Nombre del servicio */}
+            <h3 className="text-white text-xl lg:text-2xl font-semibold tracking-tight leading-snug drop-shadow-md">
+              {service.name}
+            </h3>
+
+            {/* Duración */}
+            {duration && (
+              <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">
+                <Clock size={10} strokeWidth={2} />
+                {duration} min
+              </span>
+            )}
+
+            {/* CTA — siempre dentro de la card */}
+            <div className="mt-4 pt-3.5 border-t border-white/[0.12] flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-white/75 group-hover:text-white transition-colors duration-200">
+                {service.button_text || buttonText || 'Reservar'}
+              </span>
+              <div className="w-7 h-7 rounded-full bg-white/[0.10] border border-white/20
+                             flex items-center justify-center
+                             group-hover:bg-gold group-hover:border-gold
+                             transition-all duration-300">
+                <ArrowUpRight size={13} strokeWidth={2.4} className="text-white" />
+              </div>
             </div>
-          )}
+          </div>
         </div>
-      </Link>
-
-      {/* Below-image content. Title + duration only render when there is no
-          image (image-rich cards already show those over the image). The
-          description is always shown so admins can use the Studio Editor's
-          description field to add context on every card style. */}
-      {(!imageUrl || service.description) && (
-        <div className="mt-5 px-1 flex-1 flex flex-col">
-          {!imageUrl && (
-            <>
-              <h3 className="text-xl font-semibold text-ink tracking-tight">{service.name}</h3>
-              {duration && (
-                <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-3">
-                  <Clock size={11} />
-                  {duration} min
-                </span>
-              )}
-            </>
-          )}
-          {service.description && (
-            <p className={`text-sm text-ink-2 leading-relaxed line-clamp-2 ${!imageUrl ? 'mt-3' : ''}`}>
-              {service.description}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* CTA — minimal line that fills on hover */}
-      <Link to="/agendar" className="mt-5 group/cta">
-        <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-ink">
-          {service.button_text || buttonText || 'Reservar'}
-          <span className="relative inline-block w-8 h-px bg-edge overflow-hidden">
-            <span className="absolute inset-0 bg-gold scale-x-0 origin-left group-hover/cta:scale-x-100 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" />
-          </span>
-          <ArrowUpRight size={13} strokeWidth={2.4} className="text-ink-3 group-hover/cta:text-gold transition-colors" />
-        </span>
       </Link>
     </motion.div>
   );
