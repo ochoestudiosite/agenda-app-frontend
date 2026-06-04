@@ -184,10 +184,10 @@ function StaffCard({ member, services, i }) {
             </div>
           </div>
 
-          {/* Bio */}
-          {member.bio && (
+          {/* Specialty */}
+          {member.specialty && (
             <p className="mt-2.5 text-[0.8125rem] text-ink-2 leading-relaxed line-clamp-2">
-              {member.bio}
+              {member.specialty}
             </p>
           )}
 
