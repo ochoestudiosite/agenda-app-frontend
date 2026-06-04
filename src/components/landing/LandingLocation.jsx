@@ -71,8 +71,8 @@ function buildHoursDisplay(hours, hoursTextOverride) {
   const closed = hours.filter(h => !h.is_open).map(h => DAY_NAMES[h.day_of_week]);
   if (!open.length) return { display: '', closedDays: closed };
 
-  // Sort ascending by day_of_week (0=Sun … 6=Sat)
-  const sorted = [...open].sort((a, b) => a.day_of_week - b.day_of_week);
+  // Sort Mon-first: map 0=Sun→6, 1=Mon→0 … 6=Sat→5
+  const sorted = [...open].sort((a, b) => ((a.day_of_week + 6) % 7) - ((b.day_of_week + 6) % 7));
 
   // Group consecutive days that share identical open/close times
   const groups = [];

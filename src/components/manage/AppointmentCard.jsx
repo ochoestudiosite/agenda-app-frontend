@@ -13,7 +13,7 @@ import SummaryStrip from '../ui/SummaryStrip';
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const DAYS_ES     = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+const DAYS_ES     = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
 
 function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
@@ -565,7 +565,7 @@ function ReschedulePanel({
     return false;
   }
 
-  const firstDay    = viewMonth.getDay();
+  const firstDay    = (viewMonth.getDay() + 6) % 7; // 0=Lunes … 6=Domingo
   const daysInMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);

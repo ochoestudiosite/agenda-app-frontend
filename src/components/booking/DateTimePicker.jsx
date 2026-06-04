@@ -9,7 +9,7 @@ import Button from '../ui/Button';
 import { BackButton } from './SpecialistSelector';
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DAYS_ES   = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+const DAYS_ES   = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
 
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -157,7 +157,7 @@ export default function DateTimePicker() {
     isSlotPast(s) || (!groupMode && isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust))
   );
 
-  const firstDay    = viewMonth.getDay();
+  const firstDay    = (viewMonth.getDay() + 6) % 7; // 0=Lunes … 6=Domingo
   const daysInMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
