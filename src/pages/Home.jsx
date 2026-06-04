@@ -202,8 +202,6 @@ export default function Home() {
         {(bc.services_section?.visible !== false) && (
           <LandingServices
             services={services}
-            customServices={bc.services_section?.custom_items}
-            useCustom={bc.services_section?.use_custom === true}
             title={bc.services_section?.title}
             subtitle={bc.services_section?.subtitle}
             subtitleAccent={bc.services_section?.subtitle_accent}
@@ -216,8 +214,6 @@ export default function Home() {
           <LandingStaff
             staff={staff}
             services={services}
-            customStaff={bc.staff_section?.custom_items}
-            useCustom={bc.staff_section?.use_custom === true}
             title={bc.staff_section?.title}
             subtitle={bc.staff_section?.subtitle}
             subtitleAccent={bc.staff_section?.subtitle_accent}
