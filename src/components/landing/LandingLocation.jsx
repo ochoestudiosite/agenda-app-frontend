@@ -289,7 +289,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                       href={effectiveDirectionsUrl || '#ubicacion'}
                       target={effectiveDirectionsUrl ? '_blank' : undefined}
                       rel={effectiveDirectionsUrl ? 'noopener noreferrer' : undefined}
-                      className="inline-flex items-center gap-1.5 bg-ink text-card px-3.5 h-10 rounded-full text-[12px] font-semibold hover:bg-gold hover:text-on-gold transition-colors shrink-0"
+                      className="inline-flex items-center gap-1.5 bg-gold text-on-gold px-3.5 h-10 rounded-full text-[12px] font-semibold hover:opacity-90 active:scale-[0.97] transition-all shrink-0"
                     >
                       <Navigation size={12} strokeWidth={2.4} />
                       {loc.directions_text || 'Cómo llegar'}

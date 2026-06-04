@@ -105,7 +105,7 @@ export default function LandingContact({ businessName, socials = {}, config = {}
               <button
                 type="submit"
                 aria-label="Suscribirme"
-                className="absolute right-1.5 top-1.5 w-9 h-9 rounded-full bg-ink text-card hover:bg-gold hover:text-on-gold flex items-center justify-center transition-colors"
+                className="absolute right-1.5 top-1.5 w-9 h-9 rounded-full bg-gold text-on-gold hover:opacity-90 active:scale-[0.97] flex items-center justify-center transition-all"
               >
                 <Send size={13} strokeWidth={2.2} />
               </button>
