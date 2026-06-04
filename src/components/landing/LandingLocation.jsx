@@ -143,6 +143,11 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
     } : null,
   ].filter(Boolean);
 
+  // Auto-generate a Google Maps search URL when the branch has an address but no
+  // explicit directions_url (e.g. auto-populated from catalogue without Landing Editor config).
+  const effectiveDirectionsUrl = loc.directions_url
+    || (loc.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.address)}` : '');
+
   return (
     <section id="ubicacion" className="relative py-24 lg:py-32 overflow-hidden">
       <div className="section-container">
@@ -278,9 +283,9 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                       </p>
                     </div>
                     <a
-                      href={loc.directions_url || '#ubicacion'}
-                      target={loc.directions_url ? '_blank' : undefined}
-                      rel={loc.directions_url ? 'noopener noreferrer' : undefined}
+                      href={effectiveDirectionsUrl || '#ubicacion'}
+                      target={effectiveDirectionsUrl ? '_blank' : undefined}
+                      rel={effectiveDirectionsUrl ? 'noopener noreferrer' : undefined}
                       className="inline-flex items-center gap-1.5 bg-ink text-card px-3.5 h-10 rounded-full text-[12px] font-semibold hover:bg-gold hover:text-on-gold transition-colors shrink-0"
                     >
                       <Navigation size={12} strokeWidth={2.4} />
