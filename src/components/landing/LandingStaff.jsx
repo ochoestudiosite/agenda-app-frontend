@@ -9,7 +9,7 @@ const MAX_PILLS = 2;
 
 export default function LandingStaff({ staff = [], services = [], customStaff, useCustom, title, subtitle, subtitleAccent }) {
   const allStaff = (useCustom && customStaff?.length > 0)
-    ? customStaff
+    ? customStaff.filter(s => s.is_active !== false)
     : staff.length > 0
       ? staff.map(s => ({
           name: s.name,

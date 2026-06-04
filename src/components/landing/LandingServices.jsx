@@ -9,7 +9,7 @@ const VISIBLE_DESKTOP = 6;
 
 export default function LandingServices({ services = [], customServices, useCustom, title, subtitle, subtitleAccent, buttonText, linkText }) {
   const allServices = (useCustom && customServices?.length > 0)
-    ? customServices
+    ? customServices.filter(s => s.is_active !== false)
     : services.length > 0 ? services : [
         { name: 'Corte Premium',      duration: 45, price: 450, description: 'Servicio de corte completo con lavado y estilizado.' },
         { name: 'Barba de Lujo',      duration: 30, price: 300, description: 'Perfilado de barba con toalla caliente y aceites esenciales.' },
