@@ -197,9 +197,6 @@ function SpecialistCard({ specialist, onSelect, delay }) {
         {specialist.specialty && (
           <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{specialist.specialty}</p>
         )}
-        {specialist.bio && (
-          <p className="text-xs text-ink-3/70 mt-1.5 leading-relaxed line-clamp-2 sm:line-clamp-3">{specialist.bio}</p>
-        )}
       </div>
       <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
