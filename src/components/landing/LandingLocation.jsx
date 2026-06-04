@@ -5,12 +5,34 @@ import { MapPin, Phone, Clock, Mail, Navigation } from 'lucide-react';
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 // Normalize config into a flat array of location objects (1 per branch).
-// New format: locationConfig.locations[]
-// Legacy format: flat address/phone/email/etc. on locationConfig
+// Priority:
+//  1. locationConfig.locations[] — Landing Editor customization (highest)
+//  2. config.branches[]          — catalogue data from admin (auto, like Services/Staff)
+//  3. Legacy flat fields          — business_settings address/phone/email fallback
 function resolveLocations(config, locationConfig) {
+  // 1. Landing Editor has explicit location config → use it as-is
   if (Array.isArray(locationConfig?.locations) && locationConfig.locations.length > 0) {
     return locationConfig.locations;
   }
+
+  // 2. Auto-populate from catalogue branches (same pattern as LandingServices/LandingStaff)
+  if (Array.isArray(config?.branches) && config.branches.length > 0) {
+    return config.branches.map(b => ({
+      branch_id:       b.id,
+      name:            b.name            || '',
+      address:         b.address         || '',
+      phone:           b.phone           || '',
+      email:           '',
+      image_url:       b.image_url       || null,
+      hours_text:      '',
+      map_embed_url:   '',
+      directions_url:  '',
+      open_now_text:   'Estamos listos para recibirte',
+      directions_text: 'Cómo llegar',
+    }));
+  }
+
+  // 3. Legacy fallback: flat fields on locationConfig / business_settings
   const address        = locationConfig?.address        || config.business_address || '';
   const phone          = locationConfig?.phone          || config.business_phone   || '';
   const email          = locationConfig?.email          || config.business_email   || '';
@@ -178,7 +200,22 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
           >
             {/* ── Info column ── */}
             <div className="lg:col-span-5 flex flex-col">
-              {isMulti && loc.name && (
+              {/* Branch image (from catalogue) or name pill (multi-branch) */}
+              {loc.image_url ? (
+                <div className="mb-6 relative aspect-[16/7] w-full rounded-[24px] overflow-hidden bg-raised">
+                  <img
+                    src={loc.image_url}
+                    alt={loc.name || 'Sucursal'}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  {loc.name && (
+                    <div className="absolute inset-x-0 bottom-0 px-5 py-4 bg-gradient-to-t from-black/60 to-transparent">
+                      <p className="text-white text-[16px] font-semibold leading-tight drop-shadow-md">{loc.name}</p>
+                    </div>
+                  )}
+                </div>
+              ) : isMulti && loc.name && (
                 <div className="mb-6 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-gold/10 flex items-center justify-center shrink-0">
                     <MapPin size={14} className="text-gold" />
