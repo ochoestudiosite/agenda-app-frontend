@@ -53,6 +53,7 @@ export default function Home() {
     queryFn: api.getConfig,
     staleTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     retry: 2,
   });
 
@@ -61,6 +62,7 @@ export default function Home() {
     queryFn: api.getServices,
     staleTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     retry: 2,
   });
 
@@ -69,6 +71,7 @@ export default function Home() {
     queryFn: api.getSpecialists,
     staleTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     retry: 2,
   });
 
