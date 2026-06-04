@@ -135,16 +135,16 @@ function StaffCard({ member, services, i }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ delay: Math.min(i * 0.05, 0.3), duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="group"
+      className="group h-full"
     >
       <Link
         to="/agendar"
-        className="block rounded-[28px] overflow-hidden border border-edge bg-card
+        className="flex flex-col h-full rounded-[28px] overflow-hidden border border-edge bg-card
                    hover:border-gold/30 hover:shadow-[0_12px_48px_rgb(0_184_122/0.07)]
                    transition-all duration-300"
       >
         {/* Photo */}
-        <div className="relative aspect-square overflow-hidden bg-raised">
+        <div className="relative aspect-square shrink-0 overflow-hidden bg-raised">
           {member.image ? (
             <img
               src={member.image}
@@ -166,7 +166,7 @@ function StaffCard({ member, services, i }) {
         </div>
 
         {/* Info panel */}
-        <div className="px-5 pt-3.5 pb-5">
+        <div className="flex flex-col flex-1 px-5 pt-3.5 pb-5">
 
           {/* Name row */}
           <div className="flex items-start justify-between gap-2">
@@ -175,11 +175,6 @@ function StaffCard({ member, services, i }) {
                              group-hover:text-gold transition-colors duration-200">
                 {member.name}
               </h3>
-              {member.specialty && (
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-gold/75">
-                  {member.specialty}
-                </p>
-              )}
             </div>
             <div className="shrink-0 w-7 h-7 rounded-full bg-surface flex items-center justify-center mt-0.5
                            opacity-0 translate-y-0.5
@@ -196,9 +191,12 @@ function StaffCard({ member, services, i }) {
             </p>
           )}
 
+          {/* Spacer — empuja las pills al fondo de la card */}
+          <div className="flex-1 min-h-[12px]" />
+
           {/* Service pills — max 2 visible + overflow count */}
           {memberServices.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-3.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {memberServices.map(svc => (
                 <span
                   key={svc.id}
