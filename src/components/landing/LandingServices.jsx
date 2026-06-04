@@ -84,12 +84,6 @@ export default function LandingServices({ services = [], customServices, useCust
                   </IconNav>
                 </div>
               )}
-              <Link to="/agendar" className="text-[13px] font-semibold text-ink inline-flex items-center gap-2 group">
-                <span className="hidden sm:inline">{linkText || 'Ver todos'}</span>
-                <span className="w-9 h-9 rounded-full border border-edge group-hover:bg-ink group-hover:border-ink group-hover:text-card flex items-center justify-center transition-colors">
-                  <ArrowUpRight size={14} strokeWidth={2.4} />
-                </span>
-              </Link>
             </div>
           }
         />
