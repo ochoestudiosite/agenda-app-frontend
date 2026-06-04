@@ -58,7 +58,7 @@ export default function LandingServices({ services = [], customServices, useCust
   }, [handleScroll]);
 
   return (
-    <section id="servicios" className="relative py-24 lg:py-32 overflow-hidden">
+    <section id="servicios" className="relative py-24 lg:py-32 overflow-hidden bg-card">
       {/* Subtle section accent */}
       <div aria-hidden className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-edge to-transparent" />
 

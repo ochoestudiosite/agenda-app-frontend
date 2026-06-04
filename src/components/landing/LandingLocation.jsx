@@ -153,7 +153,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
     || (loc.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.address)}` : '');
 
   return (
-    <section id="ubicacion" className="relative py-24 lg:py-32 overflow-hidden">
+    <section id="ubicacion" className="relative py-24 lg:py-32 overflow-hidden bg-card">
       <div className="section-container">
 
         {/* ── Section header + branch tabs ── */}

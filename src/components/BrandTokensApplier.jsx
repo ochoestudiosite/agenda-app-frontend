@@ -112,17 +112,7 @@ export default function BrandTokensApplier() {
       const g = parseInt(primary.slice(3, 5), 16);
       const b = parseInt(primary.slice(5, 7), 16);
 
-      let dr = r, dg = g, db = b;
-      if (isDark) {
-        // Solo aclara colores muy oscuros (lum < 0.12) que serían invisibles
-        // en fondos dark. Colores ya saturados (rojo, teal, azul) se respetan.
-        const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        if (lum < 0.12) {
-          dr = Math.min(255, r + 68);
-          dg = Math.min(255, g + 68);
-          db = Math.min(255, b + 68);
-        }
-      }
+      const dr = r, dg = g, db = b;
       const rl = Math.min(255, dr + 20);
       const gl = Math.min(255, dg + 20);
       const bl = Math.min(255, db + 20);

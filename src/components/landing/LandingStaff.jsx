@@ -67,7 +67,7 @@ export default function LandingStaff({ staff = [], services = [], customStaff, u
   }, [handleScroll]);
 
   return (
-    <section id="equipo" className="relative py-24 lg:py-32 overflow-hidden bg-card/30">
+    <section id="equipo" className="relative py-24 lg:py-32 overflow-hidden bg-surface">
       <div className="section-container">
         <SectionHeader
           eyebrow={title || 'Nuestro equipo'}
