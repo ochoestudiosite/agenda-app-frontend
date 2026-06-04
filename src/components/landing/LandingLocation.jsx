@@ -215,28 +215,27 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
             {/* ── Info column ── */}
             <div className="lg:col-span-5 flex flex-col">
               {/* Branch image (from catalogue) or name pill (multi-branch) */}
-              {loc.image_url ? (
-                <div className="mb-6 relative aspect-[16/7] w-full rounded-[24px] overflow-hidden bg-raised">
+              <div className="mb-6 relative aspect-[16/7] w-full rounded-[24px] overflow-hidden bg-raised">
+                {loc.image_url ? (
                   <img
                     src={loc.image_url}
                     alt={loc.name || 'Sucursal'}
                     loading="lazy"
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  {loc.name && (
-                    <div className="absolute inset-x-0 bottom-0 px-5 py-4 bg-gradient-to-t from-black/60 to-transparent">
-                      <p className="text-white text-[16px] font-semibold leading-tight drop-shadow-md">{loc.name}</p>
-                    </div>
-                  )}
-                </div>
-              ) : isMulti && loc.name && (
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gold/10 flex items-center justify-center shrink-0">
-                    <MapPin size={14} className="text-gold" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
+                    <span className="font-display text-6xl font-bold text-gold/20 select-none tracking-tight">
+                      {loc.name ? loc.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                    </span>
                   </div>
-                  <p className="text-[15px] font-semibold text-ink leading-tight">{loc.name}</p>
-                </div>
-              )}
+                )}
+                {loc.name && (
+                  <div className="absolute inset-x-0 bottom-0 px-5 py-4 bg-gradient-to-t from-black/60 to-transparent">
+                    <p className="text-white text-[16px] font-semibold leading-tight drop-shadow-md">{loc.name}</p>
+                  </div>
+                )}
+              </div>
               <div className="flex flex-col">
                 {infoRows.map((row, i) => (
                   <InfoRow key={row.label} {...row} isLast={i === infoRows.length - 1} />

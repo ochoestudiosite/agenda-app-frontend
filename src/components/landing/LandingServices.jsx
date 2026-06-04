@@ -155,17 +155,10 @@ function ServiceCard({ service, i, buttonText }) {
                          group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-raised via-card to-raised">
-              <div className="absolute inset-0 opacity-[0.035]"
-                style={{ backgroundImage: 'radial-gradient(rgb(var(--ink)) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 rounded-full opacity-[0.12]"
-                style={{ background: 'radial-gradient(circle, rgb(var(--gold)) 0%, transparent 70%)' }} />
-              {/* Icono en la mitad superior (por encima de la zona de texto) */}
-              <div className="absolute inset-x-0 top-0 bottom-[48%] flex items-center justify-center">
-                <div className="w-14 h-14 rounded-2xl bg-gold/[0.08] border border-gold/15 flex items-center justify-center">
-                  <IconComp size={26} strokeWidth={1.2} className="text-gold/45 group-hover:text-gold/65 transition-colors duration-500" />
-                </div>
-              </div>
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
+              <span className="font-display text-7xl font-bold text-gold/20 select-none tracking-tight">
+                {service.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+              </span>
             </div>
           )}
 
