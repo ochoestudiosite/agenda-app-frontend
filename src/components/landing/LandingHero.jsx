@@ -25,7 +25,7 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
 
       <div className="section-container relative w-full">
         {/* pt-20 = offset del navbar fijo (~80px). pb-12 = aire inferior. */}
-        <div className="max-w-5xl mx-auto text-center pt-20 pb-12">
+        <div className="max-w-5xl mx-auto text-center pt-20 pb-20">
 
           {/* Eyebrow */}
           <motion.div
