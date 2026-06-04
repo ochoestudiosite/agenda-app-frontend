@@ -3,12 +3,6 @@ import * as LucideIcons from 'lucide-react';
 import { ArrowUpRight, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// Premium hero. The default arrangement is editorial-asymmetric:
-//   - Display-weight headline left-aligned on desktop, centred on mobile
-//   - Slim eyebrow → headline → subtitle → CTA row → trust strip
-//   - Background uses subtle radial gradient + a faint grid pattern so
-//     the canvas reads as crafted rather than empty.
-// All props are kept compatible with the existing landing editor.
 export default function LandingHero({ title, titleAccent, subtitle, cta, secondaryCta, features, showFeatures = true }) {
   const defaults = [
     { icon: 'ShieldCheck', text: 'Pago Seguro' },
@@ -17,10 +11,6 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
   ];
   const displayFeatures = (features?.length === 3) ? features : defaults;
 
-  // Default headline mirrors the original frontend design: a main line plus a
-  // softer accent line below. The admin can recreate this pattern by filling
-  // in the "Título" (main) and "Título acento" (secondary) inputs in the
-  // Landing Editor.
   const headlineFallback = (
     <>
       Tu tiempo es lo más valioso
@@ -30,12 +20,13 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
   );
 
   return (
-    <section className="relative pt-32 sm:pt-36 lg:pt-40 pb-20 lg:pb-28 overflow-hidden">
-      {/* Background: faint radial glow + grid */}
+    <section className="relative min-h-[100dvh] flex flex-col justify-center overflow-hidden">
       <BackgroundDecoration />
 
-      <div className="section-container relative">
-        <div className="max-w-5xl mx-auto text-center">
+      <div className="section-container relative w-full">
+        {/* pt-20 = offset del navbar fijo (~80px). pb-12 = aire inferior. */}
+        <div className="max-w-5xl mx-auto text-center pt-20 pb-12">
+
           {/* Eyebrow */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -50,12 +41,13 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
             Reserva en línea · Sin esperas
           </motion.div>
 
-          {/* Headline */}
+          {/* Headline — clamp() para escalar fluidamente en cualquier pantalla */}
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-            className="font-display text-[44px] sm:text-6xl lg:text-[88px] font-semibold text-ink leading-[1.02] tracking-[-0.03em] text-balance"
+            className="font-display font-semibold text-ink leading-[1.02] tracking-[-0.03em] text-balance"
+            style={{ fontSize: 'clamp(2.25rem, 3.5vw + 1.5rem, 5.5rem)' }}
           >
             {(title || titleAccent) ? (
               <>
@@ -70,7 +62,8 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.15 }}
-            className="mt-7 max-w-2xl mx-auto text-base sm:text-lg lg:text-[19px] text-ink-2 leading-relaxed text-balance"
+            className="mt-6 sm:mt-7 max-w-2xl mx-auto text-ink-2 leading-relaxed text-balance"
+            style={{ fontSize: 'clamp(1rem, 0.75vw + 0.875rem, 1.1875rem)' }}
           >
             {subtitle || 'Reserva servicios de alta calidad con los mejores profesionales. Sin llamadas, sin esperas — sólo la mejor atención personalizada.'}
           </motion.p>
@@ -104,10 +97,10 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.45 }}
-              className="mt-16 sm:mt-20 pt-8 border-t border-edge/40 flex flex-wrap items-center justify-center gap-x-8 sm:gap-x-12 gap-y-4"
+              className="mt-14 sm:mt-16 pt-8 border-t border-edge/40 flex flex-wrap items-center justify-center gap-x-8 sm:gap-x-12 gap-y-4"
             >
               {displayFeatures.map((feat, idx) => {
-                const isObj = typeof feat === 'object';
+                const isObj    = typeof feat === 'object';
                 const iconName = isObj ? feat.icon : defaults[idx]?.icon;
                 const text     = isObj ? feat.text : (feat || defaults[idx]?.text);
                 const Icon     = LucideIcons[iconName] || HelpCircle;
@@ -134,16 +127,20 @@ function BackgroundDecoration() {
   return (
     <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden">
       {/* Soft radial glow tied to brand */}
-      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full opacity-[0.18] dark:opacity-[0.12]"
-           style={{ background: 'radial-gradient(circle at center, rgb(var(--gold) / 0.5) 0%, transparent 60%)' }} />
+      <div
+        className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full opacity-[0.18] dark:opacity-[0.12]"
+        style={{ background: 'radial-gradient(circle at center, rgb(var(--gold) / 0.5) 0%, transparent 60%)' }}
+      />
       {/* Faint dot grid for editorial texture */}
-      <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]"
-           style={{
-             backgroundImage: 'radial-gradient(rgb(var(--ink)) 1px, transparent 1px)',
-             backgroundSize: '28px 28px',
-             maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 100%)',
-             WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 100%)',
-           }} />
+      <div
+        className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]"
+        style={{
+          backgroundImage: 'radial-gradient(rgb(var(--ink)) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+          maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 100%)',
+        }}
+      />
     </div>
   );
 }
