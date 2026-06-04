@@ -212,6 +212,7 @@ export default function Home() {
         {(bc.staff_section?.visible !== false) && (
           <LandingStaff
             staff={staff}
+            services={services}
             customStaff={bc.staff_section?.custom_items}
             useCustom={bc.staff_section?.use_custom === true}
             title={bc.staff_section?.title}

@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { User, ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SectionHeader } from './LandingServices';
 
 const VISIBLE_DESKTOP = 6;
+const MAX_PILLS = 2;
 
-export default function LandingStaff({ staff = [], customStaff, useCustom, title, subtitle, subtitleAccent }) {
+export default function LandingStaff({ staff = [], services = [], customStaff, useCustom, title, subtitle, subtitleAccent }) {
   const allStaff = (useCustom && customStaff?.length > 0)
     ? customStaff
     : staff.length > 0
@@ -14,11 +15,14 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
           name: s.name,
           specialty: s.specialty || s.specialties || '',
           image: s.image || s.avatarUrl || s.avatar_url || null,
+          bio: s.bio || null,
+          initials: s.initials || (s.name ? s.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '??'),
+          serviceIds: s.serviceIds || s.service_ids || [],
         }))
       : [
-          { name: 'Ricardo Islas', specialty: 'Master Barber & Founder', image: null },
-          { name: 'Ana González',  specialty: 'Color Expert',            image: null },
-          { name: 'Carlos Reyes',  specialty: 'Stylist Senior',          image: null },
+          { name: 'Ricardo Islas', specialty: 'Master Barber & Founder', image: null, bio: 'Más de 15 años transformando estilos con técnica y pasión.', initials: 'RI', serviceIds: [] },
+          { name: 'Ana González',  specialty: 'Color Expert',            image: null, bio: 'Especialista en colorimetría, balayage y mechas de alta precisión.', initials: 'AG', serviceIds: [] },
+          { name: 'Carlos Reyes',  specialty: 'Stylist Senior',          image: null, bio: 'Cortes de alta precisión y estilizado para cualquier tipo de cabello.', initials: 'CR', serviceIds: [] },
         ];
 
   const needsPagination = allStaff.length > VISIBLE_DESKTOP;
@@ -90,7 +94,7 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
         {/* Desktop grid */}
         <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mt-14 lg:mt-16">
           {displayStaff.map((member, i) => (
-            <StaffCard key={page * VISIBLE_DESKTOP + i} member={member} i={i} />
+            <StaffCard key={page * VISIBLE_DESKTOP + i} member={member} services={services} i={i} />
           ))}
         </div>
 
@@ -98,7 +102,7 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
         <div ref={scrollRef} className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 mt-10">
           {allStaff.map((member, i) => (
             <div key={(member.name || '') + i} className="snap-center shrink-0 w-[72vw] max-w-[300px] first:ml-[14vw] last:mr-[14vw]">
-              <StaffCard member={member} i={i} />
+              <StaffCard member={member} services={services} i={i} />
             </div>
           ))}
         </div>
@@ -118,7 +122,13 @@ export default function LandingStaff({ staff = [], customStaff, useCustom, title
   );
 }
 
-function StaffCard({ member, i }) {
+function StaffCard({ member, services, i }) {
+  const allMemberServices = services.filter(s =>
+    (member.serviceIds || []).some(id => Number(id) === Number(s.dbId))
+  );
+  const memberServices = allMemberServices.slice(0, MAX_PILLS);
+  const extraCount = Math.max(0, allMemberServices.length - MAX_PILLS);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -127,38 +137,88 @@ function StaffCard({ member, i }) {
       transition={{ delay: Math.min(i * 0.05, 0.3), duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       className="group"
     >
-      <Link to="/agendar" className="block">
-        <div className="relative aspect-[3/4] rounded-[28px] overflow-hidden bg-raised">
+      <Link
+        to="/agendar"
+        className="block rounded-[28px] overflow-hidden border border-edge bg-card
+                   hover:border-gold/30 hover:shadow-[0_12px_48px_rgb(0_184_122/0.07)]
+                   transition-all duration-300"
+      >
+        {/* Photo */}
+        <div className="relative aspect-square overflow-hidden bg-raised">
           {member.image ? (
             <img
               src={member.image}
               alt={member.name}
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
+              className="absolute inset-0 w-full h-full object-cover object-top
+                         transition-transform duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)]
+                         group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised to-card">
-              <User size={64} strokeWidth={0.9} className="text-ink/10" />
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
+              <span className="font-display text-6xl font-bold text-gold/20 select-none tracking-tight">
+                {member.initials}
+              </span>
             </div>
           )}
+          {/* Gradient blends photo into card panel */}
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent pointer-events-none" />
+        </div>
 
-          {/* Dark fade bottom for name legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/0 to-transparent" />
+        {/* Info panel */}
+        <div className="px-5 pt-3.5 pb-5">
 
-          {/* Name + specialty overlay */}
-          <div className="absolute inset-x-0 bottom-0 p-5 lg:p-6">
-            <h3 className="text-white text-lg lg:text-xl font-semibold tracking-tight">{member.name}</h3>
-            {member.specialty && (
-              <p className="mt-1 text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.18em] text-white/70">
-                {member.specialty}
-              </p>
-            )}
+          {/* Name row */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-ink text-[1rem] font-semibold tracking-tight leading-snug
+                             group-hover:text-gold transition-colors duration-200">
+                {member.name}
+              </h3>
+              {member.specialty && (
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-gold/75">
+                  {member.specialty}
+                </p>
+              )}
+            </div>
+            <div className="shrink-0 w-7 h-7 rounded-full bg-surface flex items-center justify-center mt-0.5
+                           opacity-0 translate-y-0.5
+                           group-hover:opacity-100 group-hover:translate-y-0
+                           transition-all duration-300">
+              <ArrowUpRight size={12} strokeWidth={2.5} className="text-gold" />
+            </div>
           </div>
 
-          {/* Hover affordance */}
-          <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-card/85 backdrop-blur-md text-ink flex items-center justify-center opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-            <ArrowUpRight size={14} strokeWidth={2.4} />
-          </div>
+          {/* Bio */}
+          {member.bio && (
+            <p className="mt-2.5 text-[0.8125rem] text-ink-2 leading-relaxed line-clamp-2">
+              {member.bio}
+            </p>
+          )}
+
+          {/* Service pills — max 2 visible + overflow count */}
+          {memberServices.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-3.5 flex-wrap">
+              {memberServices.map(svc => (
+                <span
+                  key={svc.id}
+                  className="inline-flex items-center px-2.5 py-1 rounded-full
+                             bg-gold/[0.07] text-gold border border-gold/20
+                             text-[10px] font-semibold tracking-[0.06em]
+                             max-w-[110px] truncate"
+                >
+                  {svc.name}
+                </span>
+              ))}
+              {extraCount > 0 && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full
+                                 border border-edge text-ink-3
+                                 text-[10px] font-medium tabular-nums shrink-0">
+                  +{extraCount}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </Link>
     </motion.div>
@@ -170,7 +230,9 @@ function IconNav({ children, onClick, disabled }) {
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-9 h-9 rounded-full border border-edge flex items-center justify-center text-ink-2 hover:bg-ink hover:border-ink hover:text-card disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+      className="w-9 h-9 rounded-full border border-edge flex items-center justify-center
+                 text-ink-2 hover:bg-ink hover:border-ink hover:text-card
+                 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
     >
       {children}
     </button>
