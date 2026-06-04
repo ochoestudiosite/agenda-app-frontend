@@ -20,12 +20,12 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
   );
 
   return (
-    <section className="relative min-h-[100dvh] flex flex-col justify-center overflow-hidden">
+    <section className="relative min-h-[100dvh] flex flex-col overflow-hidden">
       <BackgroundDecoration />
 
-      <div className="section-container relative w-full">
-        {/* pt-20 = offset del navbar fijo (~80px). pb-12 = aire inferior. */}
-        <div className="max-w-5xl mx-auto text-center pt-20 pb-20">
+      {/* Contenido principal — centrado en el espacio disponible */}
+      <div className="flex-1 flex flex-col justify-center section-container relative w-full pt-20">
+        <div className="max-w-5xl mx-auto text-center">
 
           {/* Eyebrow */}
           <motion.div
@@ -41,7 +41,7 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
             Reserva en línea · Sin esperas
           </motion.div>
 
-          {/* Headline — clamp() para escalar fluidamente en cualquier pantalla */}
+          {/* Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -91,34 +91,37 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
             </Link>
           </motion.div>
 
-          {/* Trust strip */}
-          {showFeatures && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.45 }}
-              className="mt-14 sm:mt-16 pt-8 border-t border-edge/40 flex flex-wrap items-center justify-center gap-x-8 sm:gap-x-12 gap-y-4"
-            >
-              {displayFeatures.map((feat, idx) => {
-                const isObj    = typeof feat === 'object';
-                const iconName = isObj ? feat.icon : defaults[idx]?.icon;
-                const text     = isObj ? feat.text : (feat || defaults[idx]?.text);
-                const Icon     = LucideIcons[iconName] || HelpCircle;
-                return (
-                  <div key={idx} className="flex items-center gap-2.5">
-                    <span className="w-7 h-7 rounded-full bg-gold/10 text-gold flex items-center justify-center">
-                      <Icon size={13} strokeWidth={2.2} />
-                    </span>
-                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-ink-2">
-                      {text}
-                    </span>
-                  </div>
-                );
-              })}
-            </motion.div>
-          )}
         </div>
       </div>
+
+      {/* Trust strip — anclado al fondo del hero */}
+      {showFeatures && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.45 }}
+          className="section-container relative pb-10 sm:pb-12"
+        >
+          <div className="max-w-5xl mx-auto pt-8 border-t border-edge/40 flex flex-wrap items-center justify-center gap-x-8 sm:gap-x-12 gap-y-4">
+            {displayFeatures.map((feat, idx) => {
+              const isObj    = typeof feat === 'object';
+              const iconName = isObj ? feat.icon : defaults[idx]?.icon;
+              const text     = isObj ? feat.text : (feat || defaults[idx]?.text);
+              const Icon     = LucideIcons[iconName] || HelpCircle;
+              return (
+                <div key={idx} className="flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-full bg-gold/10 text-gold flex items-center justify-center">
+                    <Icon size={13} strokeWidth={2.2} />
+                  </span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-ink-2">
+                    {text}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
     </section>
   );
 }
@@ -126,12 +129,10 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
 function BackgroundDecoration() {
   return (
     <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden">
-      {/* Soft radial glow tied to brand */}
       <div
         className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full opacity-[0.18] dark:opacity-[0.12]"
         style={{ background: 'radial-gradient(circle at center, rgb(var(--gold) / 0.5) 0%, transparent 60%)' }}
       />
-      {/* Faint dot grid for editorial texture */}
       <div
         className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]"
         style={{
