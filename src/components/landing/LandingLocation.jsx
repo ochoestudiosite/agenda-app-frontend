@@ -15,21 +15,26 @@ function resolveLocations(config, locationConfig) {
     return locationConfig.locations;
   }
 
-  // 2. Auto-populate from catalogue branches (same pattern as LandingServices/LandingStaff)
+  // 2. Auto-populate from catalogue branches (same pattern as LandingServices/LandingStaff).
+  // Only include branches that have at least one displayable field — otherwise fall through
+  // to the legacy path so a freshly-created business with no location data hides the section.
   if (Array.isArray(config?.branches) && config.branches.length > 0) {
-    return config.branches.map(b => ({
-      branch_id:       b.id,
-      name:            b.name            || '',
-      address:         b.address         || '',
-      phone:           b.phone           || '',
-      email:           '',
-      image_url:       b.image_url       || null,
-      hours_text:      '',
-      map_embed_url:   '',
-      directions_url:  '',
-      open_now_text:   'Estamos listos para recibirte',
-      directions_text: 'Cómo llegar',
-    }));
+    const withData = config.branches.filter(b => b.address || b.phone || b.image_url);
+    if (withData.length > 0) {
+      return withData.map(b => ({
+        branch_id:       b.id,
+        name:            b.name            || '',
+        address:         b.address         || '',
+        phone:           b.phone           || '',
+        email:           '',
+        image_url:       b.image_url       || null,
+        hours_text:      '',
+        map_embed_url:   '',
+        directions_url:  '',
+        open_now_text:   'Estamos listos para recibirte',
+        directions_text: 'Cómo llegar',
+      }));
+    }
   }
 
   // 3. Legacy fallback: flat fields on locationConfig / business_settings
