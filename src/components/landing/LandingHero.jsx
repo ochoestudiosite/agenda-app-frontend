@@ -76,9 +76,16 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
             className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <Link to="/agendar" className="w-full sm:w-auto">
-              <button className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-ink text-card pl-7 pr-5 h-14 rounded-full text-[15px] font-semibold hover:bg-gold hover:text-on-gold transition-colors duration-300">
+              <button
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 pl-7 pr-5 h-14 rounded-full text-[15px] font-bold transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{
+                  background: 'linear-gradient(135deg, rgb(var(--gold-light)), rgb(var(--gold)))',
+                  color: 'rgb(var(--on-gold))',
+                  boxShadow: '0 4px 20px rgb(var(--gold) / 0.28)',
+                }}
+              >
                 {cta || 'Reservar cita'}
-                <span className="w-7 h-7 rounded-full bg-card/15 group-hover:bg-on-gold/15 flex items-center justify-center transition-colors">
+                <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgb(255 255 255 / 0.18)' }}>
                   <ArrowUpRight size={14} strokeWidth={2.4} />
                 </span>
               </button>

@@ -121,14 +121,9 @@ export default function BrandTokensApplier() {
       root.style.setProperty('--gold-light', `${rl} ${gl} ${bl}`);
       root.style.setProperty('--gold-muted', isDark ? darkenHex(primary, 80) : lightenHex(primary, 100));
 
-      // On-gold: pick text colour with highest WCAG contrast against the applied gold.
-      // Computed from the dark-mode-adjusted (dr,dg,db), not the original hex, so
-      // the lightened dark-mode gold (~#44FCbe) correctly gets dark text instead of white.
-      const _lin = c => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); };
-      const goldLum  = 0.2126 * _lin(dr) + 0.7152 * _lin(dg) + 0.0722 * _lin(db);
-      const contrast = (l1, l2) => { const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1]; return (hi + 0.05) / (lo + 0.05); };
-      const useDark  = contrast(goldLum, 0.018) >= contrast(goldLum, 1.0); // 0.018 ≈ lum of rgb(28,28,30)
-      root.style.setProperty('--on-gold', useDark ? '28 28 30' : '255 255 255');
+      // On-gold: siempre blanco — el admin elige su color de marca sabiendo
+      // que el texto sobre el botón será blanco.
+      root.style.setProperty('--on-gold', '255 255 255');
     }
 
     // ── Surface / text tokens ────────────────────────────────────────────
