@@ -114,9 +114,14 @@ export default function BrandTokensApplier() {
 
       let dr = r, dg = g, db = b;
       if (isDark) {
-        dr = Math.min(255, r + 68);
-        dg = Math.min(255, g + 68);
-        db = Math.min(255, b + 68);
+        // Solo aclara colores muy oscuros (lum < 0.12) que serían invisibles
+        // en fondos dark. Colores ya saturados (rojo, teal, azul) se respetan.
+        const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        if (lum < 0.12) {
+          dr = Math.min(255, r + 68);
+          dg = Math.min(255, g + 68);
+          db = Math.min(255, b + 68);
+        }
       }
       const rl = Math.min(255, dr + 20);
       const gl = Math.min(255, dg + 20);
