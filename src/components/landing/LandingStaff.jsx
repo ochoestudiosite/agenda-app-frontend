@@ -135,16 +135,12 @@ function StaffCard({ member, services, i }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ delay: Math.min(i * 0.05, 0.3), duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="group h-full"
+      className="group"
     >
-      <Link
-        to="/agendar"
-        className="flex flex-col h-full rounded-[28px] overflow-hidden border border-edge bg-card
-                   hover:border-gold/30 hover:shadow-[0_12px_48px_rgb(0_184_122/0.07)]
-                   transition-all duration-300"
-      >
-        {/* Photo */}
-        <div className="relative aspect-square shrink-0 overflow-hidden bg-raised">
+      <Link to="/agendar" className="block">
+        <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] overflow-hidden bg-raised">
+
+          {/* Photo */}
           {member.image ? (
             <img
               src={member.image}
@@ -155,68 +151,65 @@ function StaffCard({ member, services, i }) {
                          group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
-              <span className="font-display text-6xl font-bold text-gold/20 select-none tracking-tight">
+            <div className="absolute inset-0 flex items-center justify-center
+                            bg-gradient-to-br from-raised via-card to-raised">
+              <span className="font-display text-7xl font-bold text-ink/10 select-none tracking-tight">
                 {member.initials}
               </span>
             </div>
           )}
-          {/* Gradient blends photo into card panel */}
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent pointer-events-none" />
-        </div>
 
-        {/* Info panel */}
-        <div className="flex flex-col flex-1 px-5 pt-3.5 pb-5">
+          {/* Dark gradient for text legibility — stronger than services to cubrir specialty + pills */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
-          {/* Name row */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-ink text-[1rem] font-semibold tracking-tight leading-snug
-                             group-hover:text-gold transition-colors duration-200">
-                {member.name}
-              </h3>
-            </div>
-            <div className="shrink-0 w-7 h-7 rounded-full bg-surface flex items-center justify-center mt-0.5
-                           opacity-0 translate-y-0.5
-                           group-hover:opacity-100 group-hover:translate-y-0
-                           transition-all duration-300">
-              <ArrowUpRight size={12} strokeWidth={2.5} className="text-gold" />
-            </div>
+          {/* Hover arrow */}
+          <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-card/85 backdrop-blur-md
+                         flex items-center justify-center text-ink
+                         opacity-0 -translate-y-1
+                         group-hover:opacity-100 group-hover:translate-y-0
+                         transition-all duration-300">
+            <ArrowUpRight size={14} strokeWidth={2.4} />
           </div>
 
-          {/* Specialty */}
-          {member.specialty && (
-            <p className="mt-2.5 text-[0.8125rem] text-ink-2 leading-relaxed line-clamp-2">
-              {member.specialty}
-            </p>
-          )}
+          {/* Text overlay */}
+          <div className="absolute inset-x-0 bottom-0 p-5 lg:p-6">
 
-          {/* Spacer — empuja las pills al fondo de la card */}
-          <div className="flex-1 min-h-[12px]" />
+            {/* Service pills */}
+            {memberServices.length > 0 && (
+              <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                {memberServices.map(svc => (
+                  <span
+                    key={svc.id}
+                    className="inline-flex items-center px-2.5 py-1 rounded-full
+                               bg-white/[0.12] border border-white/20 text-white/85
+                               text-[10px] font-semibold tracking-[0.06em] backdrop-blur-sm
+                               max-w-[110px] truncate"
+                  >
+                    {svc.name}
+                  </span>
+                ))}
+                {extraCount > 0 && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full
+                                   border border-white/20 text-white/50
+                                   text-[10px] font-medium tabular-nums shrink-0">
+                    +{extraCount}
+                  </span>
+                )}
+              </div>
+            )}
 
-          {/* Service pills — max 2 visible + overflow count */}
-          {memberServices.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {memberServices.map(svc => (
-                <span
-                  key={svc.id}
-                  className="inline-flex items-center px-2.5 py-1 rounded-full
-                             bg-gold/[0.07] text-gold border border-gold/20
-                             text-[10px] font-semibold tracking-[0.06em]
-                             max-w-[110px] truncate"
-                >
-                  {svc.name}
-                </span>
-              ))}
-              {extraCount > 0 && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full
-                                 border border-edge text-ink-3
-                                 text-[10px] font-medium tabular-nums shrink-0">
-                  +{extraCount}
-                </span>
-              )}
-            </div>
-          )}
+            {/* Name */}
+            <h3 className="text-white text-xl lg:text-2xl font-semibold tracking-tight drop-shadow-md">
+              {member.name}
+            </h3>
+
+            {/* Specialty */}
+            {member.specialty && (
+              <p className="mt-1 text-[0.8125rem] text-white/65 leading-snug line-clamp-2">
+                {member.specialty}
+              </p>
+            )}
+          </div>
         </div>
       </Link>
     </motion.div>
