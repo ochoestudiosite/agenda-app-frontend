@@ -139,22 +139,25 @@ function StaffCard({ member, services, i }) {
         <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] overflow-hidden bg-raised">
 
           {/* Photo */}
-          {member.image ? (
+          {/* Placeholder — siempre visible mientras carga o si no hay imagen */}
+          <div className="absolute inset-0 flex items-center justify-center
+                          bg-gradient-to-br from-raised via-card to-raised">
+            <span className="font-display text-7xl font-bold text-ink/10 select-none tracking-tight">
+              {member.initials}
+            </span>
+          </div>
+
+          {/* Imagen encima — fade-in al cargar */}
+          {member.image && (
             <img
               src={member.image}
               alt={member.name}
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover object-top
-                         transition-transform duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)]
-                         group-hover:scale-[1.04]"
+              className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-[1.04]"
+              style={{ opacity: 0, transition: 'opacity 200ms ease, transform 800ms cubic-bezier(0.16,1,0.3,1)' }}
+              onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
+              onError={e => { e.currentTarget.style.display = 'none'; }}
             />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center
-                            bg-gradient-to-br from-raised via-card to-raised">
-              <span className="font-display text-7xl font-bold text-ink/10 select-none tracking-tight">
-                {member.initials}
-              </span>
-            </div>
           )}
 
           {/* Dark gradient for text legibility — stronger than services to cubrir specialty + pills */}

@@ -213,19 +213,24 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
             <div className="lg:col-span-5 flex flex-col">
               {/* Branch image (from catalogue) or name pill (multi-branch) */}
               <div className="mb-6 relative aspect-[16/7] w-full rounded-[24px] overflow-hidden bg-raised">
-                {loc.image_url ? (
+                {/* Placeholder — siempre visible mientras carga o si no hay imagen */}
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
+                  <span className="font-display text-6xl font-bold text-gold/20 select-none tracking-tight">
+                    {loc.name ? loc.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                  </span>
+                </div>
+
+                {/* Imagen encima — fade-in al cargar */}
+                {loc.image_url && (
                   <img
                     src={loc.image_url}
                     alt={loc.name || 'Sucursal'}
                     loading="lazy"
                     className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: 0, transition: 'opacity 200ms ease' }}
+                    onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
+                    onError={e => { e.currentTarget.style.display = 'none'; }}
                   />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
-                    <span className="font-display text-6xl font-bold text-gold/20 select-none tracking-tight">
-                      {loc.name ? loc.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?'}
-                    </span>
-                  </div>
                 )}
                 {loc.name && (
                   <div className="absolute inset-x-0 bottom-0 px-5 py-4 bg-gradient-to-t from-black/60 to-transparent">

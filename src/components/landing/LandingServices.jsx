@@ -136,22 +136,24 @@ function ServiceCard({ service, i, buttonText }) {
       <Link to="/agendar" className="block rounded-[28px] overflow-hidden">
         <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full bg-raised">
 
-          {/* Background — imagen o placeholder premium */}
-          {imageUrl ? (
+          {/* Placeholder — siempre visible mientras carga o si no hay imagen */}
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
+            <span className="font-display text-7xl font-bold text-gold/20 select-none tracking-tight">
+              {service.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+            </span>
+          </div>
+
+          {/* Imagen encima — fade-in al cargar */}
+          {imageUrl && (
             <img
               src={imageUrl}
               alt={service.name}
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover
-                         transition-transform duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)]
-                         group-hover:scale-[1.04]"
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.04]"
+              style={{ opacity: 0, transition: 'opacity 200ms ease, transform 800ms cubic-bezier(0.16,1,0.3,1)' }}
+              onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
+              onError={e => { e.currentTarget.style.display = 'none'; }}
             />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
-              <span className="font-display text-7xl font-bold text-gold/20 select-none tracking-tight">
-                {service.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-              </span>
-            </div>
           )}
 
           {/* Gradiente oscuro — cubre el 55% inferior para legibilidad */}
