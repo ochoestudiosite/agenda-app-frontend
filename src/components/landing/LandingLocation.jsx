@@ -19,7 +19,7 @@ function resolveLocations(config, locationConfig) {
   // Only include branches that have at least one displayable field — otherwise fall through
   // to the legacy path so a freshly-created business with no location data hides the section.
   if (Array.isArray(config?.branches) && config.branches.length > 0) {
-    const withData = config.branches.filter(b => b.address || b.phone || b.image_url);
+    const withData = config.branches.filter(b => b.address || b.phone || b.email || b.image_url);
     if (withData.length > 0) {
       return withData.map(b => ({
         branch_id:     b.id,
