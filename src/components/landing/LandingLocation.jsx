@@ -22,17 +22,14 @@ function resolveLocations(config, locationConfig) {
     const withData = config.branches.filter(b => b.address || b.phone || b.image_url);
     if (withData.length > 0) {
       return withData.map(b => ({
-        branch_id:       b.id,
-        name:            b.name            || '',
-        address:         b.address         || '',
-        phone:           b.phone           || '',
-        email:           '',
-        image_url:       b.image_url       || null,
-        hours_text:      '',
-        map_embed_url:   '',
-        directions_url:  '',
-        open_now_text:   'Estamos listos para recibirte',
-        directions_text: 'Cómo llegar',
+        branch_id:     b.id,
+        name:          b.name      || '',
+        address:       b.address   || '',
+        phone:         b.phone     || '',
+        email:         b.email     || '',
+        image_url:     b.image_url || null,
+        map_embed_url: '',
+        directions_url: '',
       }));
     }
   }
@@ -133,7 +130,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
   const isMulti = locations.length > 1;
   const loc     = locations[Math.min(activeIdx, locations.length - 1)];
   const hours   = getBranchHours(config, loc.branch_id);
-  const { display: hoursDisplay, closedDays } = buildHoursDisplay(hours, loc.hours_text);
+  const { display: hoursDisplay, closedDays } = buildHoursDisplay(hours, '');
   const openNow = isOpenNow(hours);
 
   const infoRows = [
@@ -280,7 +277,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                       )}
                       <p className="mt-1 text-sm font-semibold text-ink truncate">
                         {openNow
-                          ? (loc.open_now_text || 'Estamos listos para recibirte')
+                          ? (locationConfig?.open_now_text || 'Estamos listos para recibirte')
                           : 'Reserva tu cita cuando quieras'
                         }
                       </p>
@@ -292,7 +289,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                       className="inline-flex items-center gap-1.5 bg-gold text-on-gold px-3.5 h-10 rounded-full text-[12px] font-semibold hover:opacity-90 active:scale-[0.97] transition-all shrink-0"
                     >
                       <Navigation size={12} strokeWidth={2.4} />
-                      {loc.directions_text || 'Cómo llegar'}
+                      {locationConfig?.directions_text || 'Cómo llegar'}
                     </a>
                   </div>
                 </div>
