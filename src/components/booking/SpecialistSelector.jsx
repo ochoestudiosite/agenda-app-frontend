@@ -189,8 +189,9 @@ function SpecialistCard({ specialist, onSelect, delay }) {
           <img
             src={specialist.avatarUrl}
             alt={specialist.name}
-            className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-200"
-            onLoad={e  => e.currentTarget.classList.replace('opacity-0', 'opacity-100')}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ opacity: 0, transition: 'opacity 200ms ease' }}
+            onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
             onError={e => { e.currentTarget.style.display = 'none'; }}
           />
         )}
