@@ -48,8 +48,8 @@ export default function LandingNavbar({ businessName, config = {} }) {
   const handleLogoClick = () => {
     setMobileMenu(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Strip hash from URL so the address bar stays clean
-    if (window.location.hash) window.history.pushState(null, '', window.location.pathname);
+    // No pushState manual — React Router's Link to="/" limpia el hash
+    // automáticamente. El pushState creaba una entrada extra en el historial.
   };
 
   const LogoEl = (

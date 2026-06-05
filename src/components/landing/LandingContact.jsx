@@ -45,7 +45,7 @@ export default function LandingContact({ businessName, socials = {}, config = {}
           <div className="md:col-span-5 lg:col-span-6">
             <a
               href="/"
-              onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); if (window.location.hash) window.history.pushState(null, '', window.location.pathname); }}
+              onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className="inline-block hover:opacity-75 transition-opacity"
             >
               <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-ink tracking-[-0.025em] leading-tight">

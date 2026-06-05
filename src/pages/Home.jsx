@@ -87,8 +87,14 @@ export default function Home() {
     const hash = window.location.hash;
     if (!hash) return;
     const timer = setTimeout(() => {
-      const el = document.querySelector(hash);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      try {
+        const el = document.querySelector(hash);
+        // 'instant' evita que IntersectionObserver dispare whileInView en
+        // secciones intermedias durante el scroll programático, lo que haría
+        // que Framer Motion (once:true) las marque como vistas y no las
+        // anime cuando el usuario llegue a ellas de forma orgánica.
+        if (el) el.scrollIntoView({ behavior: 'instant' });
+      } catch (_) {}
     }, 150);
     return () => clearTimeout(timer);
   }, [isLoading]);
