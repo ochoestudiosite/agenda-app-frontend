@@ -10,9 +10,16 @@ const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Vierne
 //  2. config.branches[]          — catalogue data from admin (auto, like Services/Staff)
 //  3. Legacy flat fields          — business_settings address/phone/email fallback
 function resolveLocations(config, locationConfig) {
-  // 1. Landing Editor has explicit location config → use it as-is
+  // 1. Landing Editor has explicit location config → use it, but overlay
+  //    image_url from the live catalogue so branch image updates are
+  //    reflected immediately without requiring a re-publish.
   if (Array.isArray(locationConfig?.locations) && locationConfig.locations.length > 0) {
-    return locationConfig.locations;
+    const branchMap = new Map((config?.branches || []).map(b => [b.id, b]));
+    return locationConfig.locations.map(loc => {
+      if (!loc.branch_id) return loc;
+      const branch = branchMap.get(loc.branch_id);
+      return branch?.image_url ? { ...loc, image_url: branch.image_url } : loc;
+    });
   }
 
   // 2. Auto-populate from catalogue branches (same pattern as LandingServices/LandingStaff).
