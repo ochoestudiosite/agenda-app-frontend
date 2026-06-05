@@ -24,12 +24,19 @@ export default function BranchSelector({ branches }) {
                        transition-all duration-240 cursor-pointer animate-fade-up"
             style={{ animationDelay: `${i * 40}ms`, animationFillMode: 'both' }}
           >
-            <div className="shrink-0 w-14 h-14 rounded-full overflow-hidden flex items-center justify-center
+            <div className="relative shrink-0 w-14 h-14 rounded-full overflow-hidden flex items-center justify-center
                             bg-raised border-2 border-edge group-hover:border-gold/50 transition-all duration-240">
-              {branch.image_url
-                ? <img src={branch.image_url} alt={branch.name} className="w-full h-full object-cover" />
-                : <BranchInitials name={branch.name} />
-              }
+              <BranchInitials name={branch.name} />
+              {branch.image_url && (
+                <img
+                  src={branch.image_url}
+                  alt={branch.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ opacity: 0, transition: 'opacity 200ms ease' }}
+                  onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
+                  onError={e => { e.currentTarget.style.display = 'none'; }}
+                />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160 truncate">

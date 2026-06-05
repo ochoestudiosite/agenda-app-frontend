@@ -110,18 +110,22 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
       {/* Circular avatar — image when available, duration fallback otherwise */}
-      <div className={`shrink-0 w-14 h-14 rounded-full overflow-hidden flex flex-col items-center justify-center
+      <div className={`relative shrink-0 w-14 h-14 rounded-full overflow-hidden flex flex-col items-center justify-center
                        border-2 transition-all duration-240
                        ${isSelected
                          ? 'border-gold/60 bg-gold/10'
                          : 'border-edge bg-raised group-hover:border-gold/40 group-hover:bg-gold/5'}`}>
-        {hasImage ? (
-          <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
-        ) : (
-          <>
-            <span className="font-display text-sm font-bold text-gold leading-none">{service.duration}</span>
-            <span className="text-[0.5625rem] text-ink-3 font-medium mt-0.5">min</span>
-          </>
+        <span className="font-display text-sm font-bold text-gold leading-none">{service.duration}</span>
+        <span className="text-[0.5625rem] text-ink-3 font-medium mt-0.5">min</span>
+        {hasImage && (
+          <img
+            src={service.imageUrl}
+            alt={service.name}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ opacity: 0, transition: 'opacity 200ms ease' }}
+            onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
+            onError={e => { e.currentTarget.style.display = 'none'; }}
+          />
         )}
       </div>
 
