@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
@@ -76,6 +76,22 @@ export default function Home() {
   });
 
   const isLoading = loadingConfig || loadingServices || loadingStaff;
+
+  // Hash navigation on hard refresh: the browser tries to scroll to #section
+  // before React has rendered the sections. Once loading completes and the DOM
+  // is ready, we scroll to the target element exactly once.
+  const hashHandled = useRef(false);
+  useEffect(() => {
+    if (isLoading || hashHandled.current) return;
+    hashHandled.current = true;
+    const hash = window.location.hash;
+    if (!hash) return;
+    const timer = setTimeout(() => {
+      const el = document.querySelector(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   const [previewConfig, setPreviewConfig] = useState(null);
   const { isDark, toggle } = useTheme();

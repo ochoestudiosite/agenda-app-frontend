@@ -45,8 +45,15 @@ export default function LandingNavbar({ businessName, config = {} }) {
   ];
   const navLinks = allLinks.filter(l => config[l.configKey]?.visible !== false);
 
+  const handleLogoClick = () => {
+    setMobileMenu(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Strip hash from URL so the address bar stays clean
+    if (window.location.hash) window.history.pushState(null, '', window.location.pathname);
+  };
+
   const LogoEl = (
-    <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+    <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2.5 shrink-0 group">
       {useImage ? (
         <img
           src={logoUrl}

@@ -20,7 +20,7 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
   );
 
   return (
-    <section className="relative min-h-[100dvh] flex flex-col overflow-hidden">
+    <section id="inicio" className="relative min-h-[100dvh] flex flex-col overflow-hidden">
       <BackgroundDecoration />
 
       {/* Contenido principal — centrado en el espacio disponible */}

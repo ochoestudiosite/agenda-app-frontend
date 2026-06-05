@@ -43,9 +43,15 @@ export default function LandingContact({ businessName, socials = {}, config = {}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12">
           {/* Brand column */}
           <div className="md:col-span-5 lg:col-span-6">
-            <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-ink tracking-[-0.025em] leading-tight">
-              {brandTitle}
-            </h3>
+            <a
+              href="/"
+              onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); if (window.location.hash) window.history.pushState(null, '', window.location.pathname); }}
+              className="inline-block hover:opacity-75 transition-opacity"
+            >
+              <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-ink tracking-[-0.025em] leading-tight">
+                {brandTitle}
+              </h3>
+            </a>
             <p className="mt-5 text-ink-2 text-[15px] leading-relaxed max-w-md">
               {tagline}
             </p>
