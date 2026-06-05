@@ -182,12 +182,17 @@ function SpecialistCard({ specialist, onSelect, delay }) {
                  active:scale-[0.99] transition-all duration-240 cursor-pointer animate-fade-up"
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
-      <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-raised border-2 border-edge mt-0.5 sm:mt-0
+      <div className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-raised border-2 border-edge mt-0.5 sm:mt-0
                       group-hover:border-gold/50 flex items-center justify-center transition-all duration-240 overflow-hidden">
-        {specialist.avatarUrl ? (
-          <img src={specialist.avatarUrl} alt={specialist.name} className="w-full h-full object-cover" />
-        ) : (
-          <span className="font-display text-xl font-bold text-gold">{specialist.initials}</span>
+        <span className="font-display text-xl font-bold text-gold">{specialist.initials}</span>
+        {specialist.avatarUrl && (
+          <img
+            src={specialist.avatarUrl}
+            alt={specialist.name}
+            className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-200"
+            onLoad={e  => e.currentTarget.classList.replace('opacity-0', 'opacity-100')}
+            onError={e => { e.currentTarget.style.display = 'none'; }}
+          />
         )}
       </div>
       <div className="flex-1 sm:flex-none min-w-0">
