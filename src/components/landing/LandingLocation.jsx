@@ -34,23 +34,8 @@ function resolveLocations(config, locationConfig) {
     }
   }
 
-  // 3. Legacy fallback: flat fields on locationConfig / business_settings
-  const address        = locationConfig?.address        || config.business_address || '';
-  const phone          = locationConfig?.phone          || config.business_phone   || '';
-  const email          = locationConfig?.email          || config.business_email   || '';
-  const map_embed_url  = locationConfig?.map_embed_url  || '';
-  const directions_url = locationConfig?.directions_url || '';
-  if (!address && !phone && !email && !map_embed_url) return [];
-  return [{
-    branch_id:      config.branches?.[0]?.id   ?? null,
-    name:           config.branches?.[0]?.name ?? null,
-    address, phone, email,
-    hours_text:      locationConfig?.hours_text      || '',
-    map_embed_url,
-    directions_url,
-    open_now_text:   locationConfig?.open_now_text   || 'Estamos listos para recibirte',
-    directions_text: locationConfig?.directions_text || 'Cómo llegar',
-  }];
+  // Siempre hay al menos 1 sucursal (el backend lo garantiza).
+  return [];
 }
 
 function getBranchHours(config, branchId) {
