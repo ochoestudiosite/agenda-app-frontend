@@ -249,15 +249,23 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
             <div className="lg:col-span-7">
               <div className="relative aspect-[16/9] sm:aspect-[4/3] rounded-[36px] overflow-hidden bg-raised border border-edge/40 shadow-[0_24px_60px_rgba(0,0,0,0.10)]">
                 {loc.map_embed_url ? (
-                  <iframe
-                    src={loc.map_embed_url}
-                    className="absolute inset-0 w-full h-full border-none pointer-events-none select-none"
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title={`Ubicación${loc.name ? `: ${loc.name}` : ''}`}
-                    tabIndex={-1}
-                  />
+                  <a
+                    href={effectiveDirectionsUrl || '#ubicacion'}
+                    target={effectiveDirectionsUrl ? '_blank' : undefined}
+                    rel={effectiveDirectionsUrl ? 'noopener noreferrer' : undefined}
+                    className="absolute inset-0 block"
+                    title="Ver en Google Maps"
+                  >
+                    <img
+                      src={loc.map_embed_url}
+                      alt={`Mapa${loc.name ? ` de ${loc.name}` : ''}`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ opacity: 0, transition: 'opacity 300ms ease' }}
+                      onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
+                      onError={e => { e.currentTarget.style.display = 'none'; }}
+                      loading="lazy"
+                    />
+                  </a>
                 ) : (
                   <MapPlaceholder />
                 )}
