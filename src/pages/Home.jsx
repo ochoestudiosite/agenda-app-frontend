@@ -13,26 +13,7 @@ import LandingContact from '../components/landing/LandingContact';
 import LandingSkeleton from '../components/landing/LandingSkeleton';
 import LandingBottomBar from '../components/landing/LandingBottomBar';
 
-// ── postMessage origin allowlist (mirrors backend CORS policy) ──────────────
-// Allows: localhost in dev, exact PUBLIC_DOMAIN, any single-level subdomain.
-function isAllowedAdminOrigin(origin) {
-  if (!origin || typeof origin !== 'string') return false;
-  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return true;
-
-  const publicDomain = (import.meta.env.VITE_PUBLIC_DOMAIN || 'cita24.com').toLowerCase();
-  try {
-    const url = new URL(origin);
-    if (url.protocol !== 'https:') return false;
-    const host = url.hostname.toLowerCase();
-    if (host === publicDomain) return true;
-    if (!host.endsWith(`.${publicDomain}`)) return false;
-    // Reject deep subdomains (sub.sub.cita24.com) to match backend CORS rules
-    const sub = host.slice(0, -(publicDomain.length + 1));
-    return sub.length > 0 && !sub.includes('.');
-  } catch { /* URL parse error */
-    return false;
-  }
-}
+import { isAllowedAdminOrigin } from '../utils/originUtils';
 
 // Best-effort parent origin inference for the LANDING_READY signal.
 // Falls back to '*' when document.referrer is unavailable (cross-origin block).

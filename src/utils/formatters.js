@@ -31,7 +31,9 @@ export function formatPrice(price) {
 export function formatServicePrice(service) {
   switch (service.priceType) {
     case 'starting_from': return `Desde ${formatPrice(service.price)}`;
-    case 'range':         return `${formatPrice(service.price)} – ${formatPrice(service.priceMax)}`;
+    case 'range':         return service.priceMax != null
+                            ? `${formatPrice(service.price)} – ${formatPrice(service.priceMax)}`
+                            : `${formatPrice(service.price)}+`;
     case 'ask':           return 'Consultar';
     default:              return formatPrice(service.price);
   }
