@@ -1,4 +1,4 @@
-import { Send, Instagram, Facebook, MessageSquare, Youtube, Linkedin, ArrowUpRight } from 'lucide-react';
+import { Send, Instagram, Facebook, MessageSquare, Linkedin, ArrowUpRight } from 'lucide-react';
 
 function TikTokIcon({ size = 18 }) {
   return (
@@ -8,12 +8,20 @@ function TikTokIcon({ size = 18 }) {
   );
 }
 
+function YoutubeIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M23.5 6.19a3.02 3.02 0 00-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 00.5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 002.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 002.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z" />
+    </svg>
+  );
+}
+
 const SOCIAL_CONFIG = [
   { key: 'instagram', label: 'Instagram', Icon: Instagram, urlFn: v => `https://instagram.com/${v}` },
   { key: 'facebook', label: 'Facebook', Icon: Facebook, urlFn: v => `https://facebook.com/${v}` },
   { key: 'whatsapp', label: 'WhatsApp', Icon: MessageSquare, urlFn: v => `https://wa.me/${v}` },
   { key: 'tiktok', label: 'TikTok', Icon: TikTokIcon, urlFn: v => `https://tiktok.com/@${v}` },
-  { key: 'youtube', label: 'YouTube', Icon: Youtube, urlFn: v => `https://youtube.com/@${v}` },
+  { key: 'youtube', label: 'YouTube', Icon: YoutubeIcon, urlFn: v => `https://youtube.com/@${v}` },
   { key: 'linkedin', label: 'LinkedIn', Icon: Linkedin, urlFn: v => `https://linkedin.com/in/${v}` },
 ];
 
