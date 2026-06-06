@@ -23,22 +23,21 @@ function resolveLocations(config, locationConfig) {
   }
 
   // 2. Auto-populate from catalogue branches (same pattern as LandingServices/LandingStaff).
-  // Only include branches that have at least one displayable field — otherwise fall through
-  // to the legacy path so a freshly-created business with no location data hides the section.
+  // All active branches are included — hours are always set by the backend on creation,
+  // so even a new branch with only a name will show useful schedule information.
+  // Individual empty fields (address, phone) are already handled gracefully by the
+  // component's infoRows filter, so no pre-filtering is needed here.
   if (Array.isArray(config?.branches) && config.branches.length > 0) {
-    const withData = config.branches.filter(b => b.address || b.phone || b.email || b.image_url);
-    if (withData.length > 0) {
-      return withData.map(b => ({
-        branch_id:     b.id,
-        name:          b.name      || '',
-        address:       b.address   || '',
-        phone:         b.phone     || '',
-        email:         b.email     || '',
-        image_url:     b.image_url || null,
-        map_embed_url: '',
-        directions_url: '',
-      }));
-    }
+    return config.branches.map(b => ({
+      branch_id:      b.id,
+      name:           b.name      || '',
+      address:        b.address   || '',
+      phone:          b.phone     || '',
+      email:          b.email     || '',
+      image_url:      b.image_url || null,
+      map_embed_url:  '',
+      directions_url: '',
+    }));
   }
 
   // Siempre hay al menos 1 sucursal (el backend lo garantiza).
