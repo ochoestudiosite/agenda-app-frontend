@@ -41,17 +41,19 @@
   /* pure black OLED          #000000  */
   --card: 28 28 30;
   /* secondarySystemBg dark   #1C1C1E  */
-  --raised: 44 44 46;
-  /* tertiarySystemBg dark    #2C2C2E  */
-  --edge: 58 58 60;
-  /* separator dark           #3A3A3C  */
+  --raised: 54 54 56;
+  /* tertiarySystemBg dark+   #363638  — brighter than stock #2C2C2E so the
+     skeleton shimmer (raised→edge gradient) is visible in dark mode         */
+  --edge: 72 72 74;
+  /* separator dark+          #48484A  */
   --edge-strong: 99 99 102;
   /* systemGray dark          #636366  */
   --ink: 255 255 255;
   --ink-2: 174 174 178;
   /* systemGray2 dark         #AEAEB2  */
-  --ink-3: 99 99 102;
-  /* systemGray dark          #636366  */
+  --ink-3: 142 142 147;
+  /* systemGray dark (≥3.5:1 on #1C1C1E) — replaces #636366 which gave
+     only 2.5:1 contrast against card surfaces, failing WCAG level AA     */
   --gold: 0 184 122;
   /* brand teal — works on dark bg     */
   --gold-light: 0 210 142;
