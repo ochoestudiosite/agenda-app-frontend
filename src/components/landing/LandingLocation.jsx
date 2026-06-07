@@ -55,7 +55,16 @@ function resolveLocations(config, locationConfig) {
         directions_url: '',
       }));
 
-    const all = [...merged, ...newBranches];
+    // Re-sort to match the live catalogue order (backend returns branches
+    // ordered by sort_order, id) so admin reordering is reflected immediately
+    // without requiring a re-publish. New branches land in their correct
+    // position instead of always being appended at the end.
+    const branchOrder = new Map(liveBranches.map((b, i) => [b.id, i]));
+    const all = [...merged, ...newBranches].sort((a, b) => {
+      const ai = a.branch_id != null ? (branchOrder.get(a.branch_id) ?? Infinity) : Infinity;
+      const bi = b.branch_id != null ? (branchOrder.get(b.branch_id) ?? Infinity) : Infinity;
+      return ai - bi;
+    });
     if (all.length) return all;
     // Fall through if all branches were deleted
   }
