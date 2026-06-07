@@ -57,6 +57,11 @@ function darkenHex(hex, amount = 40) {
   const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount);
   return `${r} ${g} ${b}`;
 }
+// Relative luminance (WCAG 2.1). Returns 0 (black) – 1 (white).
+function relativeLuminance(r, g, b) {
+  const lin = c => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
 
 export default function BrandTokensApplier() {
   const { data: config } = useConfig();
@@ -121,9 +126,10 @@ export default function BrandTokensApplier() {
       root.style.setProperty('--gold-light', `${rl} ${gl} ${bl}`);
       root.style.setProperty('--gold-muted', isDark ? darkenHex(primary, 80) : lightenHex(primary, 100));
 
-      // On-gold: siempre blanco — el admin elige su color de marca sabiendo
-      // que el texto sobre el botón será blanco.
-      root.style.setProperty('--on-gold', '255 255 255');
+      // On-gold: computed from brand luminance so WCAG AA (4.5:1) is always met.
+      // L > 0.179 → white text would give < 4.5:1 → use near-black ink instead.
+      const brandLum = relativeLuminance(dr, dg, db);
+      root.style.setProperty('--on-gold', brandLum > 0.179 ? '15 15 15' : '255 255 255');
     }
 
     // ── Surface / text tokens ────────────────────────────────────────────
