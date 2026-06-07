@@ -26,11 +26,14 @@ function resolveLocations(config, locationConfig) {
         // Landing-specific fields (map_embed_url, directions_url) are preserved.
         return {
           ...loc,
-          name:      branch.name      || loc.name      || '',
-          address:   branch.address   || loc.address   || '',
-          phone:     branch.phone     || loc.phone     || '',
-          email:     branch.email     || loc.email     || '',
-          image_url: branch.image_url || loc.image_url || null,
+          // ?? instead of || so that the admin explicitly clearing a field
+          // (DB returns "") is honoured — || would treat "" as falsy and
+          // fall back to the stale JSONB value, keeping the old text visible.
+          name:      branch.name      ?? loc.name      ?? '',
+          address:   branch.address   ?? loc.address   ?? '',
+          phone:     branch.phone     ?? loc.phone     ?? '',
+          email:     branch.email     ?? loc.email     ?? '',
+          image_url: branch.image_url ?? loc.image_url ?? null,
         };
       });
 
