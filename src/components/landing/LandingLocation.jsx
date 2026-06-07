@@ -5,30 +5,61 @@ import { MapPin, Phone, Clock, Mail, Navigation } from 'lucide-react';
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 // Normalize config into a flat array of location objects (1 per branch).
-// Priority:
-//  1. locationConfig.locations[] — Landing Editor customization (highest)
-//  2. config.branches[]          — catalogue data from admin (auto, like Services/Staff)
-//  3. Legacy flat fields          — business_settings address/phone/email fallback
+// Strategy: landing_config.location_section.locations[] stores ONLY landing-specific
+// overrides (map_embed_url, directions_url, hours text). All catalogue fields
+// (name, address, phone, email, image_url) are ALWAYS taken from the live
+// config.branches[] so that admin changes are reflected immediately without
+// requiring a re-publish of the landing.
 function resolveLocations(config, locationConfig) {
-  // 1. Landing Editor has explicit location config → use it, but overlay
-  //    image_url from the live catalogue so branch image updates are
-  //    reflected immediately without requiring a re-publish.
+  const liveBranches = config?.branches || [];
+  const branchMap    = new Map(liveBranches.map(b => [b.id, b]));
+
   if (Array.isArray(locationConfig?.locations) && locationConfig.locations.length > 0) {
-    const branchMap = new Map((config?.branches || []).map(b => [b.id, b]));
-    return locationConfig.locations.map(loc => {
-      if (!loc.branch_id) return loc;
-      const branch = branchMap.get(loc.branch_id);
-      return branch?.image_url ? { ...loc, image_url: branch.image_url } : loc;
-    });
+    // Keep only locations whose branch still exists (inactive/deleted branches
+    // are absent from config.branches[], so we drop them automatically).
+    const merged = locationConfig.locations
+      .filter(loc => !loc.branch_id || branchMap.has(loc.branch_id))
+      .map(loc => {
+        if (!loc.branch_id) return loc;
+        const branch = branchMap.get(loc.branch_id);
+        // Catalogue fields always win so admin edits are live instantly.
+        // Landing-specific fields (map_embed_url, directions_url) are preserved.
+        return {
+          ...loc,
+          name:      branch.name      || loc.name      || '',
+          address:   branch.address   || loc.address   || '',
+          phone:     branch.phone     || loc.phone     || '',
+          email:     branch.email     || loc.email     || '',
+          image_url: branch.image_url || loc.image_url || null,
+        };
+      });
+
+    // Auto-include branches added after the last landing publish so the admin
+    // doesn't need to re-publish just to make a new location appear.
+    const configuredIds = new Set(
+      locationConfig.locations.map(l => l.branch_id).filter(Boolean)
+    );
+    const newBranches = liveBranches
+      .filter(b => !configuredIds.has(b.id))
+      .map(b => ({
+        branch_id:      b.id,
+        name:           b.name      || '',
+        address:        b.address   || '',
+        phone:          b.phone     || '',
+        email:          b.email     || '',
+        image_url:      b.image_url || null,
+        map_embed_url:  '',
+        directions_url: '',
+      }));
+
+    const all = [...merged, ...newBranches];
+    if (all.length) return all;
+    // Fall through if all branches were deleted
   }
 
-  // 2. Auto-populate from catalogue branches (same pattern as LandingServices/LandingStaff).
-  // All active branches are included — hours are always set by the backend on creation,
-  // so even a new branch with only a name will show useful schedule information.
-  // Individual empty fields (address, phone) are already handled gracefully by the
-  // component's infoRows filter, so no pre-filtering is needed here.
-  if (Array.isArray(config?.branches) && config.branches.length > 0) {
-    return config.branches.map(b => ({
+  // No custom config (or all branches deleted) — use live catalogue directly.
+  if (liveBranches.length > 0) {
+    return liveBranches.map(b => ({
       branch_id:      b.id,
       name:           b.name      || '',
       address:        b.address   || '',
@@ -40,7 +71,6 @@ function resolveLocations(config, locationConfig) {
     }));
   }
 
-  // Siempre hay al menos 1 sucursal (el backend lo garantiza).
   return [];
 }
 
