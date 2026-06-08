@@ -19,13 +19,13 @@ function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
 }
 
-function personNameErr(v) {
+function namePartErr(label, v) {
   const s = (v || '').trim();
-  if (!s) return 'Ingresa tu nombre completo.';
+  if (!s) return `Ingresa tu ${label}.`;
+  if (s.length > 50) return 'Máximo 50 caracteres.';
   const words = s.split(/\s+/).filter(w => w.length > 0);
-  if (words.length < 2) return 'Ingresa al menos un nombre y un apellido.';
   for (const w of words) {
-    if (!PERSON_WORD_RE.test(w)) return 'Solo letras y espacios, sin números ni símbolos.';
+    if (!PERSON_WORD_RE.test(w)) return 'Solo letras, sin números ni símbolos.';
     if (w.length < 2) return 'Cada palabra debe tener al menos 2 letras.';
   }
   return null;
@@ -70,7 +70,8 @@ export default function ClientForm() {
 
   const displayBranch = state.branch ?? (configBranches.length === 1 ? configBranches[0] : null);
 
-  const [name,          setName]          = useState(state.clientName);
+  const [firstName,     setFirstName]     = useState(state.clientFirstName);
+  const [lastName,      setLastName]      = useState(state.clientLastName);
   const [phone,         setPhone]         = useState(state.clientPhone);
   const [email,         setEmail]         = useState('');
   const [errors,        setErrors]        = useState({});
@@ -78,8 +79,10 @@ export default function ClientForm() {
 
   function validate() {
     const errs = {};
-    const nameErr = personNameErr(name);
-    if (nameErr) errs.name = nameErr;
+    const fnErr = namePartErr('nombre', firstName);
+    if (fnErr) errs.firstName = fnErr;
+    const lnErr = namePartErr('apellido', lastName);
+    if (lnErr) errs.lastName = lnErr;
     const digits = phone.replace(/\D/g, '');
     if (!digits || digits.length < 7 || digits.length > 15) {
       errs.phone = 'Teléfono inválido. Ingresa entre 7 y 15 dígitos.';
@@ -95,7 +98,7 @@ export default function ClientForm() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    dispatch({ type: 'SET_CLIENT', payload: { name: name.trim(), phone: phone.trim(), email: email.trim() || '' } });
+    dispatch({ type: 'SET_CLIENT', payload: { firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim(), email: email.trim() || '' } });
 
     const branchId = state.branch?.id ?? (configBranches.length === 1 ? configBranches[0].id : null);
 
@@ -107,22 +110,24 @@ export default function ClientForm() {
             serviceId:    a.service.id,
             specialistId: a.specialist.id,
           })),
-          date:        state.date,
-          time:        state.time,
-          clientName:  name.trim(),
-          clientPhone: phone.trim(),
-          clientEmail: email.trim() || undefined,
+          date:             state.date,
+          time:             state.time,
+          clientFirstName:  firstName.trim(),
+          clientLastName:   lastName.trim(),
+          clientPhone:      phone.trim(),
+          clientEmail:      email.trim() || undefined,
           branchId,
         });
       } else {
         result = await createMutation.mutateAsync({
-          serviceIds:   selectedServices.map(s => s.id),
-          specialistId: state.specialist.id,
-          date:         state.date,
-          time:         state.time,
-          clientName:   name.trim(),
-          clientPhone:  phone.trim(),
-          clientEmail:  email.trim() || undefined,
+          serviceIds:       selectedServices.map(s => s.id),
+          specialistId:     state.specialist.id,
+          date:             state.date,
+          time:             state.time,
+          clientFirstName:  firstName.trim(),
+          clientLastName:   lastName.trim(),
+          clientPhone:      phone.trim(),
+          clientEmail:      email.trim() || undefined,
           branchId,
         });
       }
@@ -316,17 +321,30 @@ export default function ClientForm() {
 
       {/* ── Client form ──────────────────────────────────────────────────── */}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <Input
-          label="Nombre completo"
-          placeholder="Ej. Juan García López"
-          value={name}
-          onChange={e => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: null })); }}
-          onBlur={e => { const err = personNameErr(e.target.value); if (err) setErrors(p => ({ ...p, name: err })); }}
-          error={errors.name}
-          required
-          autoComplete="name"
-          maxLength={100}
-        />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <Input
+            label="Nombre(s)"
+            placeholder="Ej. Juan"
+            value={firstName}
+            onChange={e => { setFirstName(e.target.value); if (errors.firstName) setErrors(p => ({ ...p, firstName: null })); }}
+            onBlur={e => { const err = namePartErr('nombre', e.target.value); if (err) setErrors(p => ({ ...p, firstName: err })); }}
+            error={errors.firstName}
+            required
+            autoComplete="given-name"
+            maxLength={50}
+          />
+          <Input
+            label="Apellido(s)"
+            placeholder="Ej. García López"
+            value={lastName}
+            onChange={e => { setLastName(e.target.value); if (errors.lastName) setErrors(p => ({ ...p, lastName: null })); }}
+            onBlur={e => { const err = namePartErr('apellido', e.target.value); if (err) setErrors(p => ({ ...p, lastName: err })); }}
+            error={errors.lastName}
+            required
+            autoComplete="family-name"
+            maxLength={50}
+          />
+        </div>
         <PhoneInput
           label="Teléfono"
           placeholder="55 1234 5678"
