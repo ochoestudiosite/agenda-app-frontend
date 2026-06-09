@@ -414,36 +414,34 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         {/* Cancel OTP verification */}
         {mode === 'cancel-otp' && (
           <div className="px-6 pb-6">
-            <div className="p-5 bg-card border border-edge rounded-2xl animate-fade-in">
-              <OTPPanel
-                key={manageOtpKey}
-                phone={manageOtpPhone}
-                loading={manageOtpLoading || cancelMutation.isPending}
-                error={manageOtpError}
-                resendCooldown={manageResendCooldown}
-                onVerify={handleCancelOtpVerify}
-                onResend={handleResendManageOtp}
-                onBack={() => { setMode('cancel-confirm'); setManageOtpError(null); }}
-              />
-            </div>
+            <OTPPanel
+              key={manageOtpKey}
+              phone={manageOtpPhone}
+              loading={manageOtpLoading || cancelMutation.isPending}
+              error={manageOtpError}
+              resendCooldown={manageResendCooldown}
+              onVerify={handleCancelOtpVerify}
+              onResend={handleResendManageOtp}
+              onBack={() => { setMode('cancel-confirm'); setManageOtpError(null); }}
+              backLabel="Volver"
+            />
           </div>
         )}
       </div>
 
       {/* ── Reschedule OTP verification overlay ─────────────────────────────── */}
       {mode === 'reschedule-otp' && (
-        <div className="card p-6 animate-fade-in">
-          <OTPPanel
-            key={manageOtpKey}
-            phone={manageOtpPhone}
-            loading={manageOtpLoading || rescheduleMutation.isPending}
-            error={manageOtpError}
-            resendCooldown={manageResendCooldown}
-            onVerify={handleRescheduleOtpVerify}
-            onResend={handleResendManageOtp}
-            onBack={() => { setMode('reschedule'); setManageOtpError(null); }}
-          />
-        </div>
+        <OTPPanel
+          key={manageOtpKey}
+          phone={manageOtpPhone}
+          loading={manageOtpLoading || rescheduleMutation.isPending}
+          error={manageOtpError}
+          resendCooldown={manageResendCooldown}
+          onVerify={handleRescheduleOtpVerify}
+          onResend={handleResendManageOtp}
+          onBack={() => { setMode('reschedule'); setManageOtpError(null); }}
+          backLabel="Volver a elegir horario"
+        />
       )}
 
       {/* ── Reschedule panel ──────────────────────────────────────────────────── */}

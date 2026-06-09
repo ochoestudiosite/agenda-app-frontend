@@ -240,7 +240,7 @@ export default function ClientForm() {
         </h2>
         <p className="text-ink-3 text-sm mt-1">
           {otpPhase
-            ? `Código enviado al ****${phone.replace(/\D/g, '').slice(-4)}`
+            ? 'Verifica tu identidad para completar la reservación'
             : 'Revisa los detalles y completa tus datos'}
         </p>
       </div>

@@ -6,8 +6,9 @@ function maskPhone(phone) {
   return `****${digits.slice(-4)}`;
 }
 
-export default function OTPPanel({ phone, loading, error, resendCooldown, onVerify, onResend, onBack }) {
-  const [digits, setDigits] = useState(['', '', '', '', '', '']);
+export default function OTPPanel({ phone, loading, error, resendCooldown, onVerify, onResend, onBack, backLabel = 'Editar mis datos' }) {
+  const [digits, setDigits]     = useState(['', '', '', '', '', '']);
+  const [isShaking, setShaking] = useState(false);
   const inputRefs       = useRef([]);
   const verifyCalledRef = useRef(false);
   const onVerifyRef     = useRef(onVerify);
@@ -21,6 +22,13 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       onVerifyRef.current(digits.join(''));
     }
   }, [digits, loading]);
+
+  useEffect(() => {
+    if (!error) return;
+    setShaking(true);
+    const t = setTimeout(() => setShaking(false), 420);
+    return () => clearTimeout(t);
+  }, [error]);
 
   function handleChange(i, val) {
     verifyCalledRef.current = false;
@@ -46,7 +54,7 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     if (!pasted) return;
-    const next   = Array.from({ length: 6 }, (_, i) => pasted[i] || '');
+    const next = Array.from({ length: 6 }, (_, i) => pasted[i] || '');
     setDigits(next);
     inputRefs.current[Math.min(pasted.length, 5)]?.focus();
   }
@@ -54,18 +62,49 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
   const filled = digits.filter(Boolean).length;
 
   return (
-    <div className="space-y-7">
+    <div className="card p-6 sm:p-7 animate-fade-in">
+      <style>{`
+        @keyframes otp-shake {
+          0%, 100% { transform: translateX(0); }
+          15% { transform: translateX(-8px); }
+          30% { transform: translateX(8px); }
+          45% { transform: translateX(-5px); }
+          60% { transform: translateX(5px); }
+          75% { transform: translateX(-2px); }
+        }
+        .otp-shake { animation: otp-shake 0.42s ease-out; }
+      `}</style>
+
+      {/* Header */}
+      <div className="flex flex-col items-center text-center gap-2.5 mb-6">
+        <div className="w-12 h-12 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+          <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-[15px] font-semibold text-ink leading-tight">Ingresa el código</p>
+          {phone && (
+            <p className="text-[13px] text-ink-3 mt-0.5 leading-tight">
+              Enviado a <span className="font-mono font-medium text-ink tracking-wider">{maskPhone(phone)}</span>
+            </p>
+          )}
+        </div>
+      </div>
 
       {/* Progress bar */}
-      <div className="h-0.5 rounded-full bg-edge overflow-hidden">
+      <div className="h-0.5 rounded-full bg-edge overflow-hidden mb-6">
         <div
-          className="h-full bg-gold rounded-full transition-all duration-300 ease-out"
+          className="h-full bg-gold rounded-full transition-all duration-500 ease-out"
           style={{ width: `${(filled / 6) * 100}%` }}
         />
       </div>
 
       {/* Digit inputs — two groups of 3 */}
-      <div className="flex items-center justify-center gap-2" onPaste={handlePaste}>
+      <div
+        className={`flex items-center justify-center gap-2 sm:gap-2.5 ${isShaking ? 'otp-shake' : ''}`}
+        onPaste={handlePaste}
+      >
         {[0, 1, 2].map(i => (
           <input
             key={i}
@@ -83,7 +122,10 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
           />
         ))}
 
-        <span className="text-edge-strong/60 text-xl font-extralight px-1 select-none" aria-hidden="true">·</span>
+        <span className="flex flex-col items-center gap-1.5 px-0.5 shrink-0" aria-hidden="true">
+          <span className="w-1 h-1 rounded-full bg-ink-3/30 block" />
+          <span className="w-1 h-1 rounded-full bg-ink-3/30 block" />
+        </span>
 
         {[3, 4, 5].map(i => (
           <input
@@ -104,17 +146,17 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       </div>
 
       {/* Feedback row — error OR loading */}
-      <div className="min-h-[22px] flex items-center justify-center">
+      <div className="min-h-[24px] flex items-center justify-center mt-5">
         {error ? (
-          <p className="text-center text-sm text-red-500 flex items-center gap-1.5" role="alert">
-            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <p className="text-center text-[13px] text-red-500 flex items-center gap-1.5" role="alert">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
             {error}
           </p>
         ) : loading ? (
-          <p className="text-center text-sm text-ink-3 flex items-center gap-2">
-            <svg className="animate-spin h-4 w-4 text-gold shrink-0" fill="none" viewBox="0 0 24 24">
+          <p className="text-center text-[13px] text-ink-3 flex items-center gap-2">
+            <svg className="animate-spin h-3.5 w-3.5 text-gold shrink-0" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
@@ -124,35 +166,40 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       </div>
 
       {/* Actions */}
-      <div className="space-y-1 text-center">
+      <div className="mt-6 pt-5 border-t border-edge space-y-1">
         <button
           type="button"
           disabled={resendCooldown > 0 || loading}
           onClick={onResend}
-          className="w-full py-2 text-sm text-ink-3 hover:text-gold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl text-[13px] font-medium transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-raised/70"
         >
-          {resendCooldown > 0
-            ? (
-              <span className="inline-flex items-center gap-2">
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Reenviar en {resendCooldown}s
-              </span>
-            )
-            : '¿No llegó el código? Reenviar'}
+          {resendCooldown > 0 ? (
+            <>
+              <svg className="w-3.5 h-3.5 text-ink-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-ink-3">Reenviar en <span className="tabular-nums">{resendCooldown}s</span></span>
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5 text-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className="text-gold">¿No llegó? Reenviar código</span>
+            </>
+          )}
         </button>
 
         <button
           type="button"
           onClick={onBack}
           disabled={loading}
-          className="w-full py-2 text-sm text-ink-3 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+          className="w-full py-2.5 flex items-center justify-center gap-1.5 rounded-xl text-[13px] text-ink-3 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 hover:bg-raised/70"
         >
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Editar mis datos
+          {backLabel}
         </button>
       </div>
     </div>
@@ -161,14 +208,14 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
 
 function digitClass(value, error, loading) {
   return [
-    'w-11 h-[3.25rem] text-center text-[1.35rem] font-bold rounded-xl',
-    'bg-card border-2 transition-all duration-150',
-    'focus:outline-none focus:ring-2',
-    'disabled:opacity-40 disabled:cursor-not-allowed',
+    'w-[46px] h-[56px] sm:w-[52px] sm:h-[60px] text-center text-[22px] font-bold rounded-2xl',
+    'border-2 transition-all duration-150 caret-gold',
+    'focus:outline-none disabled:cursor-not-allowed',
+    loading ? 'opacity-50' : '',
     error
-      ? 'border-red-400 text-red-500 focus:ring-red-300/25 focus:border-red-400'
+      ? 'bg-red-500/6 border-red-400/70 text-red-500 focus:border-red-400/70'
       : value
-        ? 'border-gold text-gold focus:ring-gold/25 focus:border-gold'
-        : 'border-edge text-ink hover:border-edge-strong focus:ring-gold/20 focus:border-gold',
-  ].join(' ');
+        ? 'bg-gold/10 border-gold text-gold'
+        : 'bg-raised border-edge text-ink hover:border-edge-strong focus:border-gold focus:ring-[3px] focus:ring-gold/12',
+  ].filter(Boolean).join(' ');
 }
