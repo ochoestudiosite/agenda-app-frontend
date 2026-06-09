@@ -81,7 +81,7 @@ export default function ClientForm() {
   // ── OTP sub-flow ──────────────────────────────────────────────────────────
   const [otpPhase,       setOtpPhase]       = useState(false);
   const [pendingId,      setPendingId]      = useState(null);
-  const [otpPhone,       setOtpPhone]       = useState(null); // phone that received the last OTP
+  const [otpClientKey,   setOtpClientKey]   = useState(null); // client data snapshot when the last OTP was sent
   const [submitting,     setSubmitting]     = useState(false);
   const [otpError,       setOtpError]       = useState(null);
   const [otpKey,         setOtpKey]         = useState(0);   // bump to re-mount OTPPanel
@@ -108,6 +108,13 @@ export default function ClientForm() {
       errs.email = 'Ingresa un correo electrónico válido.';
     }
     return errs;
+  }
+
+  // Snapshot of the client fields that end up in pending_bookings.booking_data.
+  // Used to detect edits made after an OTP was sent (back -> change name/email -> resubmit),
+  // which would otherwise create the appointment with stale data.
+  function clientKey() {
+    return JSON.stringify([firstName.trim(), lastName.trim(), phone.trim(), email.trim()]);
   }
 
   // Builds the full booking payload for both single and group modes.
@@ -152,9 +159,11 @@ export default function ClientForm() {
 
     // ── OTP path ─────────────────────────────────────────────────────────────
     if (config?.phone_verification_required) {
-      // If the user went back to edit data but kept the same phone, the previous
-      // OTP is still valid (15-min TTL). Reuse it to avoid burning rate-limit quota.
-      if (pendingId && phone.trim() === otpPhone) {
+      // If the user went back to edit data and resubmitted without changing
+      // anything, the previous OTP is still valid (15-min TTL). Reuse it to
+      // avoid burning rate-limit quota. Any change to name/phone/email means
+      // the stored booking_data is stale, so a fresh pending row is required.
+      if (pendingId && clientKey() === otpClientKey) {
         setOtpPhase(true);
         return;
       }
@@ -163,7 +172,7 @@ export default function ClientForm() {
       try {
         const { pendingId: id } = await api.requestOTP(buildBookingPayload());
         setPendingId(id);
-        setOtpPhone(phone.trim());
+        setOtpClientKey(clientKey());
         setOtpPhase(true);
         setResendCooldown(60);
       } catch (err) {
@@ -217,7 +226,7 @@ export default function ClientForm() {
     try {
       const { pendingId: id } = await api.requestOTP(buildBookingPayload());
       setPendingId(id);
-      setOtpPhone(phone.trim());
+      setOtpClientKey(clientKey());
       setOtpKey(k => k + 1);
       setResendCooldown(60);
     } catch (err) {
