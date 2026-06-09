@@ -62,7 +62,7 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
   const filled = digits.filter(Boolean).length;
 
   return (
-    <div className="card p-6 sm:p-7 animate-fade-in">
+    <div className="card p-5 sm:p-6 animate-fade-in">
       <style>{`
         @keyframes otp-shake {
           0%, 100% { transform: translateX(0); }
@@ -76,13 +76,13 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       `}</style>
 
       {/* Header */}
-      <div className="flex flex-col items-center text-center gap-2.5 mb-6">
-        <div className="w-12 h-12 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center">
-          <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
+          <svg className="w-4.5 h-4.5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
           </svg>
         </div>
-        <div>
+        <div className="text-left">
           <p className="text-[15px] font-semibold text-ink leading-tight">Ingresa el código</p>
           {phone && (
             <p className="text-[13px] text-ink-3 mt-0.5 leading-tight">
@@ -93,7 +93,7 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       </div>
 
       {/* Progress bar */}
-      <div className="h-0.5 rounded-full bg-edge overflow-hidden mb-6">
+      <div className="h-0.5 rounded-full bg-edge overflow-hidden mb-5">
         <div
           className="h-full bg-gold rounded-full transition-all duration-500 ease-out"
           style={{ width: `${(filled / 6) * 100}%` }}
@@ -146,7 +146,7 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       </div>
 
       {/* Feedback row — error OR loading */}
-      <div className="min-h-[24px] flex items-center justify-center mt-5">
+      <div className="min-h-[20px] flex items-center justify-center mt-4">
         {error ? (
           <p className="text-center text-[13px] text-red-500 flex items-center gap-1.5" role="alert">
             <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -166,12 +166,12 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       </div>
 
       {/* Actions */}
-      <div className="mt-6 pt-5 border-t border-edge space-y-1">
+      <div className="mt-5 pt-4 border-t border-edge space-y-0.5">
         <button
           type="button"
           disabled={resendCooldown > 0 || loading}
           onClick={onResend}
-          className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl text-[13px] font-medium transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-raised/70"
+          className="w-full py-2 flex items-center justify-center gap-2 rounded-xl text-[13px] font-medium transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-raised/70"
         >
           {resendCooldown > 0 ? (
             <>
@@ -194,7 +194,7 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
           type="button"
           onClick={onBack}
           disabled={loading}
-          className="w-full py-2.5 flex items-center justify-center gap-1.5 rounded-xl text-[13px] text-ink-3 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 hover:bg-raised/70"
+          className="w-full py-2 flex items-center justify-center gap-1.5 rounded-xl text-[13px] text-ink-3 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 hover:bg-raised/70"
         >
           <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />

@@ -411,23 +411,22 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           </div>
         )}
 
-        {/* Cancel OTP verification */}
-        {mode === 'cancel-otp' && (
-          <div className="px-6 pb-6">
-            <OTPPanel
-              key={manageOtpKey}
-              phone={manageOtpPhone}
-              loading={manageOtpLoading || cancelMutation.isPending}
-              error={manageOtpError}
-              resendCooldown={manageResendCooldown}
-              onVerify={handleCancelOtpVerify}
-              onResend={handleResendManageOtp}
-              onBack={() => { setMode('cancel-confirm'); setManageOtpError(null); }}
-              backLabel="Volver"
-            />
-          </div>
-        )}
       </div>
+
+      {/* ── Cancel OTP verification ──────────────────────────────────────────── */}
+      {mode === 'cancel-otp' && (
+        <OTPPanel
+          key={manageOtpKey}
+          phone={manageOtpPhone}
+          loading={manageOtpLoading || cancelMutation.isPending}
+          error={manageOtpError}
+          resendCooldown={manageResendCooldown}
+          onVerify={handleCancelOtpVerify}
+          onResend={handleResendManageOtp}
+          onBack={() => { setMode('cancel-confirm'); setManageOtpError(null); }}
+          backLabel="Volver"
+        />
+      )}
 
       {/* ── Reschedule OTP verification overlay ─────────────────────────────── */}
       {mode === 'reschedule-otp' && (
