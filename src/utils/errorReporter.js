@@ -80,7 +80,7 @@ function showReloadBanner() {
   bar.innerHTML = `
     <span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16.023 9.348h4.992V4.356M2.985 19.644v-4.992h4.992m-4.026 0a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg><strong>Nueva versión disponible.</strong> Recarga para continuar.</span>
     <button onclick="window.location.reload()" style="
-      background:#00B87A;color:#0D1117;border:none;border-radius:9999px;
+      background:rgb(var(--gold));color:rgb(var(--on-gold));border:none;border-radius:9999px;
       padding:7px 18px;font-size:12px;font-weight:700;cursor:pointer;
       font-family:inherit;white-space:nowrap;
     ">Recargar</button>

@@ -176,7 +176,7 @@ export default function Home() {
         </div>
         <button
           onClick={() => window.location.reload()}
-          style={{ padding: '10px 24px', borderRadius: 10, background: '#00B87A', color: '#fff', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          style={{ padding: '10px 24px', borderRadius: 10, background: 'rgb(var(--gold))', color: 'rgb(var(--on-gold))', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
         >
           Reintentar
         </button>
