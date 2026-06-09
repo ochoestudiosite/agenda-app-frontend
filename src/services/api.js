@@ -87,7 +87,7 @@ export const api = {
   createGroupAppointment: (body) => request('POST', '/appointments/group', body),
   getGroupAppointment: (code) => request('GET', `/appointments/group/${code}`),
   rescheduleGroupAppointment: (code, body) => request('PUT', `/appointments/group/${code}`, body),
-  cancelGroupAppointment: (code) => request('DELETE', `/appointments/group/${code}`),
+  cancelGroupAppointment:     (code, body) => request('DELETE', `/appointments/group/${code}`, body),
   getAvailability: (date, specialistId, branchId, serviceId, excludeCode, serviceIds) => {
     const p = new URLSearchParams({ date });
     if (specialistId) p.set('specialistId', specialistId);
@@ -98,8 +98,11 @@ export const api = {
     return request('GET', `/availability?${p}`);
   },
   getBlockedDates: (month, specialistId) => request('GET', `/availability/blocked-dates?month=${month}${specialistId ? `&specialistId=${specialistId}` : ''}`),
-  createAppointment: (body) => request('POST', '/appointments', body),
-  getAppointment: (code) => request('GET', `/appointments/${code}`),
+  requestOTP:          (body) => request('POST', '/appointments/request-otp', body),
+  confirmOTP:          (body) => request('POST', '/appointments/confirm-otp', body),
+  requestManageOTP:    (body) => request('POST', '/appointments/request-manage-otp', body),
+  createAppointment:   (body) => request('POST', '/appointments', body),
+  getAppointment:      (code) => request('GET', `/appointments/${code}`),
   rescheduleAppointment: (code, body) => request('PUT', `/appointments/${code}`, body),
-  cancelAppointment: (code) => request('DELETE', `/appointments/${code}`),
+  cancelAppointment:   (code, body) => request('DELETE', `/appointments/${code}`, body),
 };

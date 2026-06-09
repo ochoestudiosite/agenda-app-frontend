@@ -34,7 +34,8 @@ export function useCreateAppointment() {
 export function useRescheduleAppointment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ code, date, time, branchId, specialistId }) => api.rescheduleAppointment(code, { date, time, branchId, specialistId }),
+    mutationFn: ({ code, date, time, branchId, specialistId, ...ownership }) =>
+      api.rescheduleAppointment(code, { date, time, branchId, specialistId, ...ownership }),
     onSuccess: (data) => {
       queryClient.setQueryData(['appointment', data.code], data);
       queryClient.invalidateQueries({ queryKey: ['availability'] });
@@ -45,7 +46,8 @@ export function useRescheduleAppointment() {
 export function useRescheduleGroupAppointment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ code, date, time }) => api.rescheduleGroupAppointment(code, { date, time }),
+    mutationFn: ({ code, date, time, ...ownership }) =>
+      api.rescheduleGroupAppointment(code, { date, time, ...ownership }),
     onSuccess: (data) => {
       queryClient.setQueryData(['groupAppointment', data.groupCode], data);
     },
@@ -55,8 +57,9 @@ export function useRescheduleGroupAppointment() {
 export function useCancelAppointment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (code) => api.cancelAppointment(code),
-    onSuccess: (_data, code) => {
+    mutationFn: ({ code, ...ownership }) =>
+      api.cancelAppointment(code, Object.keys(ownership).length ? ownership : undefined),
+    onSuccess: (_data, { code }) => {
       queryClient.invalidateQueries({ queryKey: ['appointment', code] });
       queryClient.invalidateQueries({ queryKey: ['availability'] });
     },
@@ -66,7 +69,8 @@ export function useCancelAppointment() {
 export function useCancelGroupAppointment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (code) => api.cancelGroupAppointment(code),
+    mutationFn: ({ code, ...ownership }) =>
+      api.cancelGroupAppointment(code, Object.keys(ownership).length ? ownership : undefined),
     onSuccess: (data) => {
       queryClient.setQueryData(['groupAppointment', data.groupCode], data);
     },

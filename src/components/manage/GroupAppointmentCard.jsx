@@ -8,6 +8,8 @@ import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../
 import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
+import OTPPanel from '../booking/OTPPanel';
+import { api } from '../../services/api';
 
 function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
@@ -63,18 +65,110 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const { data: specialistsData } = useSpecialists();
   const allSpecialists = specialistsData?.specialists ?? [];
 
-  const [mode, setMode]    = useState('view'); // 'view' | 'cancel-confirm' | 'reschedule'
+  const [mode, setMode]    = useState('view');
   const cancelMutation     = useCancelGroupAppointment();
+  const rescheduleMutation = useRescheduleGroupAppointment();
 
-  async function handleCancel() {
+  // Manage OTP state (cancel / reschedule ownership)
+  const [manageOtpPendingId,   setManageOtpPendingId]   = useState(null);
+  const [manageOtpPhone,       setManageOtpPhone]       = useState(null);
+  const [manageOtpKey,         setManageOtpKey]         = useState(0);
+  const [manageOtpError,       setManageOtpError]       = useState(null);
+  const [manageOtpLoading,     setManageOtpLoading]     = useState(false);
+  const [manageResendCooldown, setManageResendCooldown] = useState(0);
+  const manageResendInFlightRef = useRef(false);
+  const pendingRescheduleRef    = useRef(null); // { date, time } stored while waiting for OTP
+
+  useEffect(() => {
+    if (manageResendCooldown <= 0) return;
+    const t = setInterval(() => setManageResendCooldown(c => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [manageResendCooldown]);
+
+  async function _requestManageOtp(action) {
+    setManageOtpLoading(true);
+    setManageOtpError(null);
     try {
-      const updated = await cancelMutation.mutateAsync(group.groupCode);
+      const { pendingId, maskedPhone } = await api.requestManageOTP({ code: group.groupCode });
+      setManageOtpPendingId(pendingId);
+      setManageOtpPhone(maskedPhone);
+      setManageOtpKey(k => k + 1);
+      setManageResendCooldown(60);
+      setMode(action === 'cancel' ? 'cancel-otp' : 'reschedule-otp');
+    } catch (err) {
+      toast(err.message || 'Error al enviar el código.', 'error');
+    } finally {
+      setManageOtpLoading(false);
+    }
+  }
+
+  async function handleResendManageOtp() {
+    if (manageResendCooldown > 0 || manageOtpLoading || manageResendInFlightRef.current) return;
+    manageResendInFlightRef.current = true;
+    setManageOtpLoading(true);
+    try {
+      const { pendingId, maskedPhone } = await api.requestManageOTP({ code: group.groupCode });
+      setManageOtpPendingId(pendingId);
+      setManageOtpPhone(maskedPhone);
+      setManageOtpKey(k => k + 1);
+      setManageResendCooldown(60);
+      setManageOtpError(null);
+    } catch (err) {
+      setManageOtpError(err.message || 'Error al reenviar.');
+      setManageResendCooldown(15);
+    } finally {
+      manageResendInFlightRef.current = false;
+      setManageOtpLoading(false);
+    }
+  }
+
+  async function handleCancelOtpVerify(otpCode) {
+    setManageOtpLoading(true);
+    setManageOtpError(null);
+    try {
+      const updated = await cancelMutation.mutateAsync({ code: group.groupCode, pendingId: manageOtpPendingId, otpCode });
       setMode('view');
       onUpdated?.(updated);
       toast('Visita cancelada.', 'info');
     } catch (err) {
-      toast(err.message || 'Error al cancelar.', 'error');
+      setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
+      setManageOtpKey(k => k + 1);
+    } finally {
+      setManageOtpLoading(false);
     }
+  }
+
+  async function handleGroupReschedule(date, time) {
+    pendingRescheduleRef.current = { date, time };
+    await _requestManageOtp('reschedule');
+  }
+
+  async function handleRescheduleOtpVerify(otpCode) {
+    if (!pendingRescheduleRef.current) return;
+    setManageOtpLoading(true);
+    setManageOtpError(null);
+    try {
+      const { date, time } = pendingRescheduleRef.current;
+      const updated = await rescheduleMutation.mutateAsync({
+        code: group.groupCode,
+        date,
+        time,
+        pendingId: manageOtpPendingId,
+        otpCode,
+      });
+      setMode('view');
+      onUpdated?.(updated);
+      toast('Visita reagendada correctamente.', 'success');
+    } catch (err) {
+      setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
+      setManageOtpKey(k => k + 1);
+    } finally {
+      setManageOtpLoading(false);
+    }
+  }
+
+  async function handleCancel() {
+    await _requestManageOtp('cancel');
   }
 
   return (
@@ -266,7 +360,11 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
               <p className="text-[14px] font-semibold text-ink mb-0.5">¿Cancelar esta visita?</p>
               <p className="text-xs text-ink-3 mb-4">Se cancelarán todos los servicios del grupo. Esta acción no se puede deshacer.</p>
               <div className="flex gap-2.5">
-                <Button variant="danger" loading={cancelMutation.isPending} onClick={handleCancel}>
+                <Button
+                  variant="danger"
+                  loading={manageOtpLoading}
+                  onClick={handleCancel}
+                >
                   Sí, cancelar
                 </Button>
                 <Button variant="ghost" onClick={() => setMode('view')}>Volver</Button>
@@ -274,7 +372,41 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
             </div>
           </div>
         )}
+
+        {/* Cancel OTP verification */}
+        {mode === 'cancel-otp' && (
+          <div className="px-6 pt-4 pb-6">
+            <div className="p-5 bg-card border border-edge rounded-2xl animate-fade-in">
+              <OTPPanel
+                key={manageOtpKey}
+                phone={manageOtpPhone}
+                loading={manageOtpLoading || cancelMutation.isPending}
+                error={manageOtpError}
+                resendCooldown={manageResendCooldown}
+                onVerify={handleCancelOtpVerify}
+                onResend={handleResendManageOtp}
+                onBack={() => { setMode('cancel-confirm'); setManageOtpError(null); }}
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Reschedule OTP verification overlay */}
+      {mode === 'reschedule-otp' && (
+        <div className="card p-6 animate-fade-in">
+          <OTPPanel
+            key={manageOtpKey}
+            phone={manageOtpPhone}
+            loading={manageOtpLoading || rescheduleMutation.isPending}
+            error={manageOtpError}
+            resendCooldown={manageResendCooldown}
+            onVerify={handleRescheduleOtpVerify}
+            onResend={handleResendManageOtp}
+            onBack={() => { setMode('reschedule'); setManageOtpError(null); }}
+          />
+        </div>
+      )}
 
       {/* Reschedule panel */}
       {mode === 'reschedule' && (
@@ -282,12 +414,9 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           group={group}
           config={config}
           timeFmt={timeFmt}
+          isLoading={manageOtpLoading}
           onCancel={() => setMode('view')}
-          onSuccess={updated => {
-            setMode('view');
-            onUpdated?.(updated);
-            toast('Visita reagendada correctamente.', 'success');
-          }}
+          onConfirm={handleGroupReschedule}
         />
       )}
     </div>
@@ -323,8 +452,7 @@ function findNextAvailableDate({ bizHours = [], blockedDates = [], leadMins = 0,
   return null;
 }
 
-function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
-  const toast        = useToast();
+function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCancel, onConfirm }) {
   const maxAdvance   = config?.max_advance_days ?? 30;
   const hoursByBranch = config?.hours ?? {};
 
@@ -369,8 +497,6 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bizHoursRaw.length, blockedDates.length]);
 
-  const rescheduleMutation = useRescheduleGroupAppointment();
-
   const today   = new Date(); today.setHours(0,0,0,0);
   const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
   const todayStr = toDateStr(today);
@@ -412,18 +538,9 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
   const { data: specialistsData } = useSpecialists();
   const allSpecialists = specialistsData?.specialists ?? [];
 
-  async function handleConfirm() {
+  function handleConfirm() {
     if (!newDate || !newTime) return;
-    try {
-      const updated = await rescheduleMutation.mutateAsync({
-        code: group.groupCode,
-        date: toDateStr(newDate),
-        time: newTime,
-      });
-      onSuccess(updated);
-    } catch (err) {
-      toast(err.message || 'Error al reagendar.', 'error');
-    }
+    onConfirm(toDateStr(newDate), newTime);
   }
 
   return (
@@ -648,7 +765,7 @@ function GroupReschedulePanel({ group, config, timeFmt, onCancel, onSuccess }) {
       {/* Confirm — mismo lugar que /agendar */}
       {newDate && newTime && (
         <div className="mt-4">
-          <Button onClick={handleConfirm} loading={rescheduleMutation.isPending} className="w-full sm:w-auto">
+          <Button onClick={handleConfirm} loading={isLoading} className="w-full sm:w-auto">
             Confirmar nuevo horario
           </Button>
         </div>

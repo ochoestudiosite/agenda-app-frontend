@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
@@ -12,6 +12,7 @@ import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { BackButton } from './SpecialistSelector';
 import BookingUnavailable from './BookingUnavailable';
+import OTPPanel from './OTPPanel';
 
 const PERSON_WORD_RE = /^[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+$/;
 
@@ -77,6 +78,21 @@ export default function ClientForm() {
   const [errors,        setErrors]        = useState({});
   const [quotaExceeded, setQuotaExceeded] = useState(false);
 
+  // ── OTP sub-flow ──────────────────────────────────────────────────────────
+  const [otpPhase,       setOtpPhase]       = useState(false);
+  const [pendingId,      setPendingId]      = useState(null);
+  const [submitting,     setSubmitting]     = useState(false);
+  const [otpError,       setOtpError]       = useState(null);
+  const [otpKey,         setOtpKey]         = useState(0);   // bump to re-mount OTPPanel
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const resendInFlightRef = useRef(false); // prevents double-submit on rapid taps
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [resendCooldown]);
+
   function validate() {
     const errs = {};
     const fnErr = namePartErr('nombre', firstName);
@@ -93,6 +109,39 @@ export default function ClientForm() {
     return errs;
   }
 
+  // Builds the full booking payload for both single and group modes.
+  function buildBookingPayload() {
+    const branchId = state.branch?.id ?? (configBranches.length === 1 ? configBranches[0].id : null);
+    const base = {
+      date:            state.date,
+      time:            state.time,
+      clientFirstName: firstName.trim(),
+      clientLastName:  lastName.trim(),
+      clientPhone:     phone.trim(),
+      clientEmail:     email.trim() || undefined,
+      branchId,
+    };
+    if (groupMode) {
+      return { ...base, assignments: serviceAssignments.map(a => ({ serviceId: a.service.id, specialistId: a.specialist.id })) };
+    }
+    return { ...base, serviceIds: selectedServices.map(s => s.id), specialistId: state.specialist.id };
+  }
+
+  function handleAppointmentError(err) {
+    if (err.status === 409) {
+      toast('El horario ya no está disponible. Por favor elige otro.', 'error');
+      dispatch({ type: 'GO_BACK' });
+    } else if (err.code === 'BOOKING_QUOTA_EXCEEDED' || err.status === 503) {
+      qc.invalidateQueries({ queryKey: ['config'] });
+      setQuotaExceeded(true);
+    } else if (err.status === 400) {
+      toast(err.message || 'Selecciona otro horario e intenta de nuevo.', 'error');
+      dispatch({ type: 'GO_BACK' });
+    } else {
+      toast(err.message || 'Error al crear la cita.', 'error');
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     const errs = validate();
@@ -100,51 +149,73 @@ export default function ClientForm() {
     setErrors({});
     dispatch({ type: 'SET_CLIENT', payload: { firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim(), email: email.trim() || '' } });
 
-    const branchId = state.branch?.id ?? (configBranches.length === 1 ? configBranches[0].id : null);
-
-    try {
-      let result;
-      if (groupMode) {
-        result = await createGroupMutation.mutateAsync({
-          assignments: serviceAssignments.map(a => ({
-            serviceId:    a.service.id,
-            specialistId: a.specialist.id,
-          })),
-          date:             state.date,
-          time:             state.time,
-          clientFirstName:  firstName.trim(),
-          clientLastName:   lastName.trim(),
-          clientPhone:      phone.trim(),
-          clientEmail:      email.trim() || undefined,
-          branchId,
-        });
-      } else {
-        result = await createMutation.mutateAsync({
-          serviceIds:       selectedServices.map(s => s.id),
-          specialistId:     state.specialist.id,
-          date:             state.date,
-          time:             state.time,
-          clientFirstName:  firstName.trim(),
-          clientLastName:   lastName.trim(),
-          clientPhone:      phone.trim(),
-          clientEmail:      email.trim() || undefined,
-          branchId,
-        });
+    // ── OTP path ─────────────────────────────────────────────────────────────
+    if (config?.phone_verification_required) {
+      setSubmitting(true);
+      try {
+        const { pendingId: id } = await api.requestOTP(buildBookingPayload());
+        setPendingId(id);
+        setOtpPhase(true);
+        setResendCooldown(60);
+      } catch (err) {
+        toast(err.message || 'Error al enviar el código. Intenta de nuevo.', 'error');
+      } finally {
+        setSubmitting(false);
       }
+      return;
+    }
+
+    // ── Direct create path (OTP not required) ────────────────────────────────
+    try {
+      const result = groupMode
+        ? await createGroupMutation.mutateAsync(buildBookingPayload())
+        : await createMutation.mutateAsync(buildBookingPayload());
       dispatch({ type: 'SET_CONFIRMATION', payload: result });
     } catch (err) {
+      handleAppointmentError(err);
+    }
+  }
+
+  async function handleVerifyOTP(code) {
+    setSubmitting(true);
+    setOtpError(null);
+    try {
+      const result = await api.confirmOTP({ pendingId, clientPhone: phone.trim(), otpCode: code });
+      dispatch({ type: 'SET_CONFIRMATION', payload: result });
+      // No setSubmitting(false) — component unmounts on success
+    } catch (err) {
       if (err.status === 409) {
+        // Slot was taken while awaiting OTP — pending booking deleted server-side.
+        // Send user back to date picker to choose another slot.
         toast('El horario ya no está disponible. Por favor elige otro.', 'error');
         dispatch({ type: 'GO_BACK' });
       } else if (err.code === 'BOOKING_QUOTA_EXCEEDED' || err.status === 503) {
         qc.invalidateQueries({ queryKey: ['config'] });
         setQuotaExceeded(true);
-      } else if (err.status === 400) {
-        toast(err.message || 'Selecciona otro horario e intenta de nuevo.', 'error');
-        dispatch({ type: 'GO_BACK' });
       } else {
-        toast(err.message || 'Error al crear la cita.', 'error');
+        setOtpError(err.message || 'Código incorrecto o expirado. Intenta de nuevo.');
+        setOtpKey(k => k + 1); // re-mount OTPPanel to clear digits
+        setSubmitting(false);
       }
+    }
+  }
+
+  async function handleResendOTP() {
+    if (resendCooldown > 0 || submitting || resendInFlightRef.current) return;
+    resendInFlightRef.current = true;
+    setSubmitting(true);
+    setOtpError(null);
+    try {
+      const { pendingId: id } = await api.requestOTP(buildBookingPayload());
+      setPendingId(id);
+      setOtpKey(k => k + 1);
+      setResendCooldown(60);
+    } catch (err) {
+      setOtpError(err.message || 'Error al reenviar el código.');
+      setResendCooldown(15); // brief cooldown on error to avoid accidental spam
+    } finally {
+      resendInFlightRef.current = false;
+      setSubmitting(false);
     }
   }
 
@@ -152,10 +223,14 @@ export default function ClientForm() {
 
   return (
     <div className="animate-fade-up max-w-lg mx-auto">
-      <BackButton onClick={() => dispatch({ type: 'GO_BACK' })} />
+      <BackButton onClick={otpPhase ? () => setOtpPhase(false) : () => dispatch({ type: 'GO_BACK' })} />
       <div className="mb-7">
-        <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">Confirma tu cita</h2>
-        <p className="text-ink-3 text-sm mt-1">Revisa los detalles y completa tus datos</p>
+        <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">
+          {otpPhase ? 'Verifica tu número' : 'Confirma tu cita'}
+        </h2>
+        <p className="text-ink-3 text-sm mt-1">
+          {otpPhase ? 'Ingresa el código que enviamos a tu celular' : 'Revisa los detalles y completa tus datos'}
+        </p>
       </div>
 
       {/* ── Booking summary card ──────────────────────────────────────────── */}
@@ -319,57 +394,70 @@ export default function ClientForm() {
         </div>
       </div>
 
-      {/* ── Client form ──────────────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Input
-            label="Nombre(s)"
-            placeholder="Ej. Juan"
-            value={firstName}
-            onChange={e => { setFirstName(e.target.value); if (errors.firstName) setErrors(p => ({ ...p, firstName: null })); }}
-            onBlur={e => { const err = namePartErr('nombre', e.target.value); if (err) setErrors(p => ({ ...p, firstName: err })); }}
-            error={errors.firstName}
+      {/* ── Client form / OTP panel ──────────────────────────────────────── */}
+      {otpPhase ? (
+        <OTPPanel
+          key={otpKey}
+          phone={phone}
+          loading={submitting}
+          error={otpError}
+          resendCooldown={resendCooldown}
+          onVerify={handleVerifyOTP}
+          onResend={handleResendOTP}
+          onBack={() => setOtpPhase(false)}
+        />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Input
+              label="Nombre(s)"
+              placeholder="Ej. Juan"
+              value={firstName}
+              onChange={e => { setFirstName(e.target.value); if (errors.firstName) setErrors(p => ({ ...p, firstName: null })); }}
+              onBlur={e => { const err = namePartErr('nombre', e.target.value); if (err) setErrors(p => ({ ...p, firstName: err })); }}
+              error={errors.firstName}
+              required
+              autoComplete="given-name"
+              maxLength={50}
+            />
+            <Input
+              label="Apellido(s)"
+              placeholder="Ej. García López"
+              value={lastName}
+              onChange={e => { setLastName(e.target.value); if (errors.lastName) setErrors(p => ({ ...p, lastName: null })); }}
+              onBlur={e => { const err = namePartErr('apellido', e.target.value); if (err) setErrors(p => ({ ...p, lastName: err })); }}
+              error={errors.lastName}
+              required
+              autoComplete="family-name"
+              maxLength={50}
+            />
+          </div>
+          <PhoneInput
+            label="Teléfono"
+            placeholder="55 1234 5678"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            error={errors.phone}
             required
-            autoComplete="given-name"
-            maxLength={50}
+            autoComplete="tel"
+            helper="10 dígitos (asegúrate de incluir la lada)"
           />
           <Input
-            label="Apellido(s)"
-            placeholder="Ej. García López"
-            value={lastName}
-            onChange={e => { setLastName(e.target.value); if (errors.lastName) setErrors(p => ({ ...p, lastName: null })); }}
-            onBlur={e => { const err = namePartErr('apellido', e.target.value); if (err) setErrors(p => ({ ...p, lastName: err })); }}
-            error={errors.lastName}
-            required
-            autoComplete="family-name"
-            maxLength={50}
+            label="Correo electrónico"
+            placeholder="tu@correo.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            error={errors.email}
+            autoComplete="email"
+            type="email"
+            maxLength={120}
+            helper="Opcional · Recibirás confirmación y recordatorios"
           />
-        </div>
-        <PhoneInput
-          label="Teléfono"
-          placeholder="55 1234 5678"
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          error={errors.phone}
-          required
-          autoComplete="tel"
-          helper="10 dígitos (asegúrate de incluir la lada)"
-        />
-        <Input
-          label="Correo electrónico"
-          placeholder="tu@correo.com"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          error={errors.email}
-          autoComplete="email"
-          type="email"
-          maxLength={120}
-          helper="Opcional · Recibirás confirmación y recordatorios"
-        />
-        <Button type="submit" size="lg" className="w-full mt-2" loading={isPending}>
-          Confirmar reservación
-        </Button>
-      </form>
+          <Button type="submit" size="lg" className="w-full mt-2" loading={isPending || submitting}>
+            Confirmar reservación
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

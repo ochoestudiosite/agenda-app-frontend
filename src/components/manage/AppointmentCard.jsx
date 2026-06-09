@@ -10,6 +10,8 @@ import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 import SummaryStrip from '../ui/SummaryStrip';
+import OTPPanel from '../booking/OTPPanel';
+import { api } from '../../services/api';
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -59,6 +61,21 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
 
+  // Manage OTP state (cancel / reschedule ownership)
+  const [manageOtpPendingId,   setManageOtpPendingId]   = useState(null);
+  const [manageOtpPhone,       setManageOtpPhone]       = useState(null);
+  const [manageOtpKey,         setManageOtpKey]         = useState(0);
+  const [manageOtpError,       setManageOtpError]       = useState(null);
+  const [manageOtpLoading,     setManageOtpLoading]     = useState(false);
+  const [manageResendCooldown, setManageResendCooldown] = useState(0);
+  const manageResendInFlightRef = useRef(false);
+
+  useEffect(() => {
+    if (manageResendCooldown <= 0) return;
+    const t = setInterval(() => setManageResendCooldown(c => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [manageResendCooldown]);
+
   const effectiveSpecialistId = reSpecialist?.id || appointment.specialistId;
   const effectiveBranchId     = reBranch?.id     || appointment.branchId;
   const dateStr               = newDate ? toDateStr(newDate) : null;
@@ -104,8 +121,62 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     setMode('reschedule');
   }
 
-  async function handleReschedule() {
-    if (!newDate || !newTime) return;
+  async function _requestManageOtp(action) {
+    setManageOtpLoading(true);
+    setManageOtpError(null);
+    try {
+      const { pendingId, maskedPhone } = await api.requestManageOTP({ code: appointment.code });
+      setManageOtpPendingId(pendingId);
+      setManageOtpPhone(maskedPhone);
+      setManageOtpKey(k => k + 1);
+      setManageResendCooldown(60);
+      setMode(action === 'cancel' ? 'cancel-otp' : 'reschedule-otp');
+    } catch (err) {
+      toast(err.message || 'Error al enviar el código.', 'error');
+    } finally {
+      setManageOtpLoading(false);
+    }
+  }
+
+  async function handleResendManageOtp() {
+    if (manageResendCooldown > 0 || manageOtpLoading || manageResendInFlightRef.current) return;
+    manageResendInFlightRef.current = true;
+    setManageOtpLoading(true);
+    try {
+      const { pendingId, maskedPhone } = await api.requestManageOTP({ code: appointment.code });
+      setManageOtpPendingId(pendingId);
+      setManageOtpPhone(maskedPhone);
+      setManageOtpKey(k => k + 1);
+      setManageResendCooldown(60);
+      setManageOtpError(null);
+    } catch (err) {
+      setManageOtpError(err.message || 'Error al reenviar.');
+      setManageResendCooldown(15);
+    } finally {
+      manageResendInFlightRef.current = false;
+      setManageOtpLoading(false);
+    }
+  }
+
+  async function handleCancelOtpVerify(otpCode) {
+    setManageOtpLoading(true);
+    setManageOtpError(null);
+    try {
+      await cancelMutation.mutateAsync({ code: appointment.code, pendingId: manageOtpPendingId, otpCode });
+      toast('Cita cancelada.', 'info');
+      onUpdated?.({ ...appointment, status: 'cancelled' });
+      setMode('view');
+    } catch (err) {
+      setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
+      setManageOtpKey(k => k + 1);
+    } finally {
+      setManageOtpLoading(false);
+    }
+  }
+
+  async function handleRescheduleOtpVerify(otpCode) {
+    setManageOtpLoading(true);
+    setManageOtpError(null);
     try {
       const updated = await rescheduleMutation.mutateAsync({
         code:         appointment.code,
@@ -113,24 +184,27 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         time:         newTime,
         branchId:     reBranch?.id     ?? undefined,
         specialistId: reSpecialist?.id ?? undefined,
+        pendingId:    manageOtpPendingId,
+        otpCode,
       });
       toast('Cita reagendada correctamente.', 'success');
       setMode('view');
-      onUpdated(updated);
+      onUpdated?.(updated);
     } catch (err) {
-      toast(err.message || 'Error al reagendar.', 'error');
+      setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
+      setManageOtpKey(k => k + 1);
+    } finally {
+      setManageOtpLoading(false);
     }
   }
 
+  async function handleReschedule() {
+    if (!newDate || !newTime) return;
+    await _requestManageOtp('reschedule');
+  }
+
   async function handleCancel() {
-    try {
-      await cancelMutation.mutateAsync(appointment.code);
-      toast('Cita cancelada.', 'info');
-      onUpdated({ ...appointment, status: 'cancelled' });
-      setMode('view');
-    } catch (err) {
-      toast(err.message || 'Error al cancelar.', 'error');
-    }
+    await _requestManageOtp('cancel');
   }
 
   return (
@@ -324,7 +398,11 @@ export default function AppointmentCard({ appointment, onUpdated }) {
               <p className="text-[14px] font-semibold text-ink mb-0.5">¿Cancelar esta cita?</p>
               <p className="text-xs text-ink-3 mb-4">Esta acción no se puede deshacer.</p>
               <div className="flex gap-2.5">
-                <Button variant="danger" loading={cancelMutation.isPending} onClick={handleCancel}>
+                <Button
+                  variant="danger"
+                  loading={manageOtpLoading}
+                  onClick={handleCancel}
+                >
                   Sí, cancelar
                 </Button>
                 <Button variant="ghost" onClick={() => setMode('view')}>Volver</Button>
@@ -332,7 +410,41 @@ export default function AppointmentCard({ appointment, onUpdated }) {
             </div>
           </div>
         )}
+
+        {/* Cancel OTP verification */}
+        {mode === 'cancel-otp' && (
+          <div className="px-6 pb-6">
+            <div className="p-5 bg-card border border-edge rounded-2xl animate-fade-in">
+              <OTPPanel
+                key={manageOtpKey}
+                phone={manageOtpPhone}
+                loading={manageOtpLoading || cancelMutation.isPending}
+                error={manageOtpError}
+                resendCooldown={manageResendCooldown}
+                onVerify={handleCancelOtpVerify}
+                onResend={handleResendManageOtp}
+                onBack={() => { setMode('cancel-confirm'); setManageOtpError(null); }}
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── Reschedule OTP verification overlay ─────────────────────────────── */}
+      {mode === 'reschedule-otp' && (
+        <div className="card p-6 animate-fade-in">
+          <OTPPanel
+            key={manageOtpKey}
+            phone={manageOtpPhone}
+            loading={manageOtpLoading || rescheduleMutation.isPending}
+            error={manageOtpError}
+            resendCooldown={manageResendCooldown}
+            onVerify={handleRescheduleOtpVerify}
+            onResend={handleResendManageOtp}
+            onBack={() => { setMode('reschedule'); setManageOtpError(null); }}
+          />
+        </div>
+      )}
 
       {/* ── Reschedule panel ──────────────────────────────────────────────────── */}
       {mode === 'reschedule' && (
@@ -358,7 +470,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           cutoffMins={cutoffMins}
           onConfirm={handleReschedule}
           onCancel={() => setMode('view')}
-          isLoading={rescheduleMutation.isPending}
+          isLoading={manageOtpLoading}
         />
       )}
     </div>
