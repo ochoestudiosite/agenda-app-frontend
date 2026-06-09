@@ -28,7 +28,8 @@
   --gold-light: 142 142 147;
   --gold-muted: 229 229 234;
   /* systemGray5 tint */
-  --on-gold: 255 255 255;
+  --on-gold: 15 15 15;
+  /* dark text on gray — 7.3:1 contrast vs #787880, passes WCAG AA */
   --section-contrast: 15 15 15;
   --section-contrast-text: 245 245 247;
   --section-contrast-muted: 174 174 178;
@@ -58,7 +59,8 @@
   --gold-light: 174 174 178;
   --gold-muted: 44 44 46;
   /* dark raised — muted tint */
-  --on-gold: 255 255 255;
+  --on-gold: 15 15 15;
+  /* dark text on gray (#8E8E93) — 6.5:1; BrandTokensApplier recalcula por luminancia en runtime */
   --section-contrast: 28 28 30;
   --section-contrast-text: 245 245 247;
   --section-contrast-muted: 142 142 147;
