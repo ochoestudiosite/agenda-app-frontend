@@ -23,12 +23,11 @@
   /* secondaryLabel           #636366 */
   --ink-3: 174 174 178;
   /* tertiaryLabel            #AEAEB2 */
-  --gold: 0 184 122;
-  /* brand teal #00B87A */
-  --gold-light: 0 210 142;
-  /* teal light variant */
-  --gold-muted: 212 245 233;
-  /* teal tint #D4F5E9   */
+  --gold: 120 120 128;
+  /* systemGray — neutral fallback when no brand is configured */
+  --gold-light: 142 142 147;
+  --gold-muted: 229 229 234;
+  /* systemGray5 tint */
   --on-gold: 255 255 255;
   --section-contrast: 15 15 15;
   --section-contrast-text: 245 245 247;
@@ -54,14 +53,12 @@
   --ink-3: 142 142 147;
   /* systemGray dark (≥3.5:1 on #1C1C1E) — replaces #636366 which gave
      only 2.5:1 contrast against card surfaces, failing WCAG level AA     */
-  --gold: 0 184 122;
-  /* brand teal — works on dark bg     */
-  --gold-light: 0 210 142;
-  /* teal light                         */
-  --gold-muted: 10 60 40;
-  /* deep teal bg                       */
+  --gold: 142 142 147;
+  /* systemGray2 — neutral fallback when no brand is configured */
+  --gold-light: 174 174 178;
+  --gold-muted: 44 44 46;
+  /* dark raised — muted tint */
   --on-gold: 255 255 255;
-  /* texto blanco sobre color de marca  */
   --section-contrast: 28 28 30;
   --section-contrast-text: 245 245 247;
   --section-contrast-muted: 142 142 147;
