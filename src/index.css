@@ -39,15 +39,15 @@
   /* Apple Human Interface Guidelines — Dark mode (OLED-optimised) */
   --surface: 0 0 0;
   /* pure black OLED          #000000  */
-  --card: 28 28 30;
-  /* secondarySystemBg dark   #1C1C1E  */
-  --raised: 54 54 56;
-  /* tertiarySystemBg dark+   #363638  — brighter than stock #2C2C2E so the
-     skeleton shimmer (raised→edge gradient) is visible in dark mode         */
-  --edge: 72 72 74;
-  /* separator dark+          #48484A  */
-  --edge-strong: 99 99 102;
-  /* systemGray dark          #636366  */
+  --card: 44 44 46;
+  /* tertiarySystemBg dark    #2C2C2E  — clearly visible on pure black;
+     secondarySystemBg (#1C1C1E) is too close to pure black for card UIs  */
+  --raised: 64 64 66;
+  /* elevated surface dark    #404042  — skeleton shimmer visible           */
+  --edge: 84 84 86;
+  /* separator dark+          #545456  — readable borders on dark card bg   */
+  --edge-strong: 112 112 114;
+  /* systemGray dark+         #707072  */
   --ink: 255 255 255;
   --ink-2: 174 174 178;
   /* systemGray2 dark         #AEAEB2  */
@@ -134,7 +134,8 @@
   }
 
   .dark .card {
-    box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.09);
   }
 
   /* Elevated card — modals / floating panels */
@@ -245,6 +246,12 @@
 
   .btn-premium:hover::after {
     @apply opacity-100;
+  }
+
+  /* Dark mode: hover:shadow-card uses black shadows — invisible on dark bg.
+     Replace with a visible gold ring + depth shadow. */
+  .dark .hover\:shadow-card:hover {
+    box-shadow: 0 0 0 2px rgb(var(--gold) / 0.35), 0 6px 24px rgba(0, 0, 0, 0.55) !important;
   }
 }
 

@@ -67,7 +67,7 @@ export default function ServiceSelector() {
       {/* Running total + continue — sticky to bottom of scroll container */}
       {selected.length > 0 && (
         <div className="sticky bottom-0 -mx-1 px-1 pt-3 pb-1 animate-fade-up">
-          <div className="bg-card border border-edge rounded-2xl shadow-card p-4 space-y-3">
+          <div className="bg-card border border-edge dark:border-white/[0.08] rounded-2xl shadow-card dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-gold bg-gold/10 px-2.5 py-0.5 rounded-full">
@@ -104,8 +104,8 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
                   ${isSelected
                     ? 'border-gold bg-gold/5 shadow-card'
                     : isDisabled
-                      ? 'border-edge bg-card opacity-40 cursor-not-allowed'
-                      : 'border-edge bg-card hover:border-gold/40 hover:shadow-card active:scale-[0.99]'
+                      ? 'border-edge dark:border-white/[0.05] bg-card opacity-40 cursor-not-allowed'
+                      : 'border-edge dark:border-white/[0.08] bg-card hover:border-gold/50 dark:hover:border-gold/70 hover:shadow-card active:scale-[0.99]'
                   }`}
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
@@ -114,7 +114,7 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
                        border-2 transition-all duration-240
                        ${isSelected
                          ? 'border-gold/60 bg-gold/10'
-                         : 'border-edge bg-raised group-hover:border-gold/40 group-hover:bg-gold/5'}`}>
+                         : 'border-gold/20 bg-gold/8 group-hover:border-gold/55 group-hover:bg-gold/15'}`}>
         <span className="font-display text-sm font-bold text-gold leading-none">{service.duration}</span>
         <span className="text-[0.5625rem] text-ink-3 font-medium mt-0.5">min</span>
         {hasImage && (

@@ -74,7 +74,7 @@ export default function SummaryStrip({ items, ariaLabel = 'Resumen de selección
 
   return (
     <div className="mb-8 animate-fade-in" role="status" aria-label={ariaLabel}>
-      <div className="bg-card border border-edge/60 rounded-2xl shadow-xs overflow-hidden">
+      <div className="bg-card border border-edge/60 dark:border-white/[0.08] rounded-2xl shadow-xs dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)] overflow-hidden">
         <div className="flex items-stretch overflow-x-auto scrollbar-hide">
           {items.map((item, i) => (
             <Fragment key={item.id}>
