@@ -81,6 +81,7 @@ export default function ClientForm() {
   // ── OTP sub-flow ──────────────────────────────────────────────────────────
   const [otpPhase,       setOtpPhase]       = useState(false);
   const [pendingId,      setPendingId]      = useState(null);
+  const [otpPhone,       setOtpPhone]       = useState(null); // phone that received the last OTP
   const [submitting,     setSubmitting]     = useState(false);
   const [otpError,       setOtpError]       = useState(null);
   const [otpKey,         setOtpKey]         = useState(0);   // bump to re-mount OTPPanel
@@ -151,10 +152,18 @@ export default function ClientForm() {
 
     // ── OTP path ─────────────────────────────────────────────────────────────
     if (config?.phone_verification_required) {
+      // If the user went back to edit data but kept the same phone, the previous
+      // OTP is still valid (15-min TTL). Reuse it to avoid burning rate-limit quota.
+      if (pendingId && phone.trim() === otpPhone) {
+        setOtpPhase(true);
+        return;
+      }
+
       setSubmitting(true);
       try {
         const { pendingId: id } = await api.requestOTP(buildBookingPayload());
         setPendingId(id);
+        setOtpPhone(phone.trim());
         setOtpPhase(true);
         setResendCooldown(60);
       } catch (err) {
@@ -208,6 +217,7 @@ export default function ClientForm() {
     try {
       const { pendingId: id } = await api.requestOTP(buildBookingPayload());
       setPendingId(id);
+      setOtpPhone(phone.trim());
       setOtpKey(k => k + 1);
       setResendCooldown(60);
     } catch (err) {
