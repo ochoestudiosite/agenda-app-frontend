@@ -226,10 +226,12 @@ export default function ClientForm() {
       <BackButton onClick={otpPhase ? () => setOtpPhase(false) : () => dispatch({ type: 'GO_BACK' })} />
       <div className="mb-7">
         <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">
-          {otpPhase ? 'Verifica tu número' : 'Confirma tu cita'}
+          Confirma tu cita
         </h2>
         <p className="text-ink-3 text-sm mt-1">
-          {otpPhase ? 'Ingresa el código que enviamos a tu celular' : 'Revisa los detalles y completa tus datos'}
+          {otpPhase
+            ? `Código enviado al ****${phone.replace(/\D/g, '').slice(-4)}`
+            : 'Revisa los detalles y completa tus datos'}
         </p>
       </div>
 

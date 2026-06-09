@@ -10,27 +10,20 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const inputRefs       = useRef([]);
   const verifyCalledRef = useRef(false);
-  // Keep a ref to onVerify so the auto-submit effect never has a stale closure
-  // and never needs onVerify in its dependency array (avoids an effect re-run on
-  // every parent render).
-  const onVerifyRef = useRef(onVerify);
+  const onVerifyRef     = useRef(onVerify);
   useLayoutEffect(() => { onVerifyRef.current = onVerify; });
 
-  // Auto-focus first input on mount.
-  useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
+  useEffect(() => { inputRefs.current[0]?.focus(); }, []);
 
-  // Auto-submit when all 6 digits are filled.
   useEffect(() => {
     if (digits.every(d => d !== '') && !loading && !verifyCalledRef.current) {
       verifyCalledRef.current = true;
       onVerifyRef.current(digits.join(''));
     }
-  }, [digits, loading]); // intentionally omits onVerify — always current via ref
+  }, [digits, loading]);
 
   function handleChange(i, val) {
-    verifyCalledRef.current = false; // allow re-auto-submit if the user corrects a digit
+    verifyCalledRef.current = false;
     const digit = val.replace(/\D/g, '').slice(-1);
     const next  = [...digits];
     next[i]     = digit;
@@ -51,29 +44,29 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
 
   function handlePaste(e) {
     e.preventDefault();
-    const pasted   = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     if (!pasted) return;
-    const next     = Array.from({ length: 6 }, (_, i) => pasted[i] || '');
+    const next   = Array.from({ length: 6 }, (_, i) => pasted[i] || '');
     setDigits(next);
-    const focusIdx = Math.min(pasted.length, 5);
-    inputRefs.current[focusIdx]?.focus();
+    inputRefs.current[Math.min(pasted.length, 5)]?.focus();
   }
 
-  return (
-    <div className="space-y-6">
+  const filled = digits.filter(Boolean).length;
 
-      {/* Header */}
-      <div>
-        <h3 className="font-display text-xl font-semibold text-ink">Verifica tu número</h3>
-        <p className="text-ink-3 text-sm mt-1 leading-relaxed">
-          Ingresa el código de 6 dígitos que enviamos por SMS al
-          {' '}<span className="font-semibold text-ink tabular-nums">{maskPhone(phone)}</span>
-        </p>
+  return (
+    <div className="space-y-7">
+
+      {/* Progress bar */}
+      <div className="h-0.5 rounded-full bg-edge overflow-hidden">
+        <div
+          className="h-full bg-gold rounded-full transition-all duration-300 ease-out"
+          style={{ width: `${(filled / 6) * 100}%` }}
+        />
       </div>
 
-      {/* Digit inputs */}
-      <div className="flex gap-2.5 justify-center" onPaste={handlePaste}>
-        {digits.map((d, i) => (
+      {/* Digit inputs — two groups of 3 */}
+      <div className="flex items-center justify-center gap-2" onPaste={handlePaste}>
+        {[0, 1, 2].map(i => (
           <input
             key={i}
             ref={el => { inputRefs.current[i] = el; }}
@@ -81,71 +74,101 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
             inputMode="numeric"
             pattern="\d"
             maxLength={2}
-            value={d}
+            value={digits[i]}
             disabled={loading}
             onChange={e => handleChange(i, e.target.value)}
             onKeyDown={e => handleKeyDown(i, e)}
             aria-label={`Dígito ${i + 1} de 6`}
-            className={[
-              'w-11 h-14 text-center text-[1.4rem] font-bold rounded-xl',
-              'bg-card border-2 transition-all duration-150',
-              'focus:outline-none focus:ring-2',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              error
-                ? 'border-red-400 text-red-500 focus:ring-red-400/20 focus:border-red-400'
-                : d
-                  ? 'border-gold text-gold focus:ring-gold/30 focus:border-gold'
-                  : 'border-edge text-ink hover:border-edge-strong focus:ring-gold/30 focus:border-gold',
-            ].join(' ')}
+            className={digitClass(digits[i], error, loading)}
+          />
+        ))}
+
+        <span className="text-edge-strong/60 text-xl font-extralight px-1 select-none" aria-hidden="true">·</span>
+
+        {[3, 4, 5].map(i => (
+          <input
+            key={i}
+            ref={el => { inputRefs.current[i] = el; }}
+            type="tel"
+            inputMode="numeric"
+            pattern="\d"
+            maxLength={2}
+            value={digits[i]}
+            disabled={loading}
+            onChange={e => handleChange(i, e.target.value)}
+            onKeyDown={e => handleKeyDown(i, e)}
+            aria-label={`Dígito ${i + 1} de 6`}
+            className={digitClass(digits[i], error, loading)}
           />
         ))}
       </div>
 
-      {/* Error */}
-      {error && (
-        <p className="text-center text-sm text-red-500 flex items-center justify-center gap-1.5" role="alert">
-          <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          {error}
-        </p>
-      )}
+      {/* Feedback row — error OR loading */}
+      <div className="min-h-[22px] flex items-center justify-center">
+        {error ? (
+          <p className="text-center text-sm text-red-500 flex items-center gap-1.5" role="alert">
+            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </p>
+        ) : loading ? (
+          <p className="text-center text-sm text-ink-3 flex items-center gap-2">
+            <svg className="animate-spin h-4 w-4 text-gold shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Verificando…
+          </p>
+        ) : null}
+      </div>
 
-      {/* Verifying spinner */}
-      {loading && !error && (
-        <p className="text-center text-sm text-ink-3 flex items-center justify-center gap-2">
-          <svg className="animate-spin h-4 w-4 text-gold shrink-0" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" />
-            <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          Verificando…
-        </p>
-      )}
-
-      {/* Resend + Back */}
-      <div className="space-y-2.5 pt-1 text-center">
+      {/* Actions */}
+      <div className="space-y-1 text-center">
         <button
           type="button"
           disabled={resendCooldown > 0 || loading}
           onClick={onResend}
-          className="text-sm text-ink-3 hover:text-gold disabled:opacity-50 disabled:cursor-not-allowed transition-colors py-1 w-full"
+          className="w-full py-2 text-sm text-ink-3 hover:text-gold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {resendCooldown > 0
-            ? `¿No recibiste el código? Reenviar en ${resendCooldown}s`
-            : '¿No recibiste el código? Reenviar'}
+            ? (
+              <span className="inline-flex items-center gap-2">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Reenviar en {resendCooldown}s
+              </span>
+            )
+            : '¿No llegó el código? Reenviar'}
         </button>
+
         <button
           type="button"
           onClick={onBack}
           disabled={loading}
-          className="text-sm text-ink-3 hover:text-ink disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5 py-1 w-full"
+          className="w-full py-2 text-sm text-ink-3 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
         >
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Cambiar mis datos
+          Editar mis datos
         </button>
       </div>
     </div>
   );
+}
+
+function digitClass(value, error, loading) {
+  return [
+    'w-11 h-[3.25rem] text-center text-[1.35rem] font-bold rounded-xl',
+    'bg-card border-2 transition-all duration-150',
+    'focus:outline-none focus:ring-2',
+    'disabled:opacity-40 disabled:cursor-not-allowed',
+    error
+      ? 'border-red-400 text-red-500 focus:ring-red-300/25 focus:border-red-400'
+      : value
+        ? 'border-gold text-gold focus:ring-gold/25 focus:border-gold'
+        : 'border-edge text-ink hover:border-edge-strong focus:ring-gold/20 focus:border-gold',
+  ].join(' ');
 }
