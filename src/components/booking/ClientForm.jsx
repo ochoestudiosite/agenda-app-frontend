@@ -34,15 +34,16 @@ function namePartErr(label, v) {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-// PhoneInput caps the national number at 10 digits, so the valid range
-// excludes the country-code digits from the total.
+// PhoneInput caps the national number at 10 digits. The minimum is 9 (not 7)
+// so the total digit count (country code + number) always reaches the 10
+// digits the booking API requires (POST /api/appointments matches /^\+?\d{10,15}$/).
 function phoneErr(v) {
   const phone = (v || '').trim();
   const country = COUNTRIES.find(c => phone.startsWith(c.code));
   const codeDigits = country ? country.code.replace(/\D/g, '').length : 0;
   const nationalDigits = phone.replace(/\D/g, '').length - codeDigits;
-  if (nationalDigits < 7 || nationalDigits > 10) {
-    return 'Teléfono inválido. Ingresa entre 7 y 10 dígitos.';
+  if (nationalDigits < 9 || nationalDigits > 10) {
+    return 'Teléfono inválido. Ingresa los 9 o 10 dígitos de tu número.';
   }
   return null;
 }
