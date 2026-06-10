@@ -353,27 +353,25 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           </div>
         )}
 
-        {/* Cancel confirm */}
-        {mode === 'cancel-confirm' && (
-          <div className="px-6 pt-4 pb-6">
-            <div className="p-4 bg-red-500/6 border border-red-500/20 rounded-2xl animate-fade-in">
-              <p className="text-[14px] font-semibold text-ink mb-0.5">¿Cancelar esta visita?</p>
-              <p className="text-xs text-ink-3 mb-4">Se cancelarán todos los servicios del grupo. Esta acción no se puede deshacer.</p>
-              <div className="flex gap-2.5">
-                <Button
-                  variant="danger"
-                  loading={manageOtpLoading}
-                  onClick={handleCancel}
-                >
-                  Sí, cancelar
-                </Button>
-                <Button variant="ghost" onClick={() => setMode('view')}>Volver</Button>
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
+
+      {/* Cancel confirm */}
+      {mode === 'cancel-confirm' && (
+        <div className="card p-5 sm:p-6 animate-fade-in">
+          <p className="text-[14px] font-semibold text-ink mb-0.5">¿Cancelar esta visita?</p>
+          <p className="text-xs text-ink-3 mb-4">Se cancelarán todos los servicios del grupo. Esta acción no se puede deshacer.</p>
+          <div className="flex gap-2.5">
+            <Button
+              variant="danger"
+              loading={manageOtpLoading}
+              onClick={handleCancel}
+            >
+              Sí, cancelar
+            </Button>
+            <Button variant="ghost" onClick={() => setMode('view')}>Volver</Button>
+          </div>
+        </div>
+      )}
 
       {/* Cancel OTP verification */}
       {mode === 'cancel-otp' && (
