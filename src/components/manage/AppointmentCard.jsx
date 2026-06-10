@@ -638,7 +638,7 @@ function ReschedulePanel({
   const daysClosed = bizHoursRaw.filter(h => !h.is_open).map(h => h.day_of_week);
 
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
-  const { data: blockedData } = useBlockedDates(monthStr, effectiveSpecialistId);
+  const { data: blockedData } = useBlockedDates(monthStr, effectiveSpecialistId, effectiveBranchId);
   const blockedDates = blockedData?.blockedDates ?? [];
 
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);

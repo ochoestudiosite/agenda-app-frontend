@@ -22,10 +22,10 @@ export function useGroupAvailability(date, assignments, branchId) {
   });
 }
 
-export function useBlockedDates(month, specialistId) {
+export function useBlockedDates(month, specialistId, branchId, specialistIds) {
   return useQuery({
-    queryKey: ['blockedDates', month, specialistId],
-    queryFn: () => api.getBlockedDates(month, specialistId),
+    queryKey: ['blockedDates', month, specialistId, branchId, specialistIds],
+    queryFn: () => api.getBlockedDates(month, specialistId, branchId, specialistIds),
     enabled: !!month,
     staleTime: 300_000, // 5 min — blocked dates don't change often
   });

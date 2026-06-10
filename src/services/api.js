@@ -97,7 +97,13 @@ export const api = {
     if (excludeCode)  p.set('excludeCode', excludeCode);
     return request('GET', `/availability?${p}`);
   },
-  getBlockedDates: (month, specialistId) => request('GET', `/availability/blocked-dates?month=${month}${specialistId ? `&specialistId=${specialistId}` : ''}`),
+  getBlockedDates: (month, specialistId, branchId, specialistIds) => {
+    const p = new URLSearchParams({ month });
+    if (specialistIds)      p.set('specialistIds', specialistIds);
+    else if (specialistId)  p.set('specialistId', specialistId);
+    if (branchId) p.set('branchId', String(branchId));
+    return request('GET', `/availability/blocked-dates?${p}`);
+  },
   requestOTP:          (body) => request('POST', '/appointments/request-otp', body),
   confirmOTP:          (body) => request('POST', '/appointments/confirm-otp', body),
   requestManageOTP:    (body) => request('POST', '/appointments/request-manage-otp', body),

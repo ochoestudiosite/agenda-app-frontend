@@ -475,8 +475,10 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
   const availableSlots = availData?.availableSlots ?? [];
   const totalDuration  = availData?.totalDuration  ?? group.totalDuration;
 
+  const groupSpecialistIds = [...new Set(assignments.map(a => a.specialistId).filter(Boolean))].join(',');
+
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
-  const { data: blockedData } = useBlockedDates(monthStr, assignments[0]?.specialistId ?? null);
+  const { data: blockedData } = useBlockedDates(monthStr, null, branchId, groupSpecialistIds);
   const blockedDates = blockedData?.blockedDates ?? [];
 
   // Auto-selección del próximo día disponible

@@ -104,8 +104,12 @@ export default function DateTimePicker() {
   const { data: availData,      isFetching,       isError: availError }      = useAvailability(dateStr, singleSpecialistId, branchId, null, null, serviceIdsParam);
   const { data: groupAvailData, isFetching: gFetching, isError: groupAvailError } = useGroupAvailability(groupMode ? dateStr : null, groupAssignments, branchId);
 
+  const groupSpecialistIds = groupMode
+    ? [...new Set(state.serviceAssignments.map(a => a.specialist.id))].join(',')
+    : null;
+
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
-  const { data: blockedData } = useBlockedDates(monthStr, state.specialist?.id);
+  const { data: blockedData } = useBlockedDates(monthStr, groupMode ? null : state.specialist?.id, branchId, groupSpecialistIds);
   const blockedDates = blockedData?.blockedDates || [];
 
   const activeData       = groupMode ? groupAvailData : availData;
