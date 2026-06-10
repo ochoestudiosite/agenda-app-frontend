@@ -471,7 +471,12 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
 
   const dateStr = newDate ? toDateStr(newDate) : null;
 
-  const { data: availData, isFetching } = useGroupAvailability(dateStr, assignments, branchId);
+  // Exclude the group's own appointments from busy intervals — otherwise its
+  // current slot (and any time overlapping it) would show as unavailable
+  // when the reschedule date matches the current appointment date.
+  const excludeCodes = (group.appointments ?? []).map(a => a.code).filter(Boolean);
+
+  const { data: availData, isFetching } = useGroupAvailability(dateStr, assignments, branchId, excludeCodes);
   const availableSlots = availData?.availableSlots ?? [];
   const totalDuration  = availData?.totalDuration  ?? group.totalDuration;
 
