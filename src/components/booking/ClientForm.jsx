@@ -7,7 +7,7 @@ import { useConfig } from '../../hooks/useConfig';
 import { formatDate, formatTime, formatServicePrice, formatCombinedPrice, toTitleCase } from '../../utils/formatters';
 import { api } from '../../services/api';
 import Input from '../ui/Input';
-import PhoneInput from '../ui/PhoneInput';
+import PhoneInput, { COUNTRIES } from '../ui/PhoneInput';
 import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { BackButton } from './SpecialistSelector';
@@ -29,6 +29,27 @@ function namePartErr(label, v) {
     if (!PERSON_WORD_RE.test(w)) return 'Solo letras, sin números ni símbolos.';
     if (w.length < 2) return 'Cada palabra debe tener al menos 2 letras.';
   }
+  return null;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+// PhoneInput caps the national number at 10 digits, so the valid range
+// excludes the country-code digits from the total.
+function phoneErr(v) {
+  const phone = (v || '').trim();
+  const country = COUNTRIES.find(c => phone.startsWith(c.code));
+  const codeDigits = country ? country.code.replace(/\D/g, '').length : 0;
+  const nationalDigits = phone.replace(/\D/g, '').length - codeDigits;
+  if (nationalDigits < 7 || nationalDigits > 10) {
+    return 'Teléfono inválido. Ingresa entre 7 y 10 dígitos.';
+  }
+  return null;
+}
+
+function emailErr(v) {
+  const s = (v || '').trim();
+  if (s && !EMAIL_RE.test(s)) return 'Ingresa un correo electrónico válido.';
   return null;
 }
 
@@ -100,13 +121,10 @@ export default function ClientForm() {
     if (fnErr) errs.firstName = fnErr;
     const lnErr = namePartErr('apellido', lastName);
     if (lnErr) errs.lastName = lnErr;
-    const digits = phone.replace(/\D/g, '');
-    if (!digits || digits.length < 7 || digits.length > 15) {
-      errs.phone = 'Teléfono inválido. Ingresa entre 7 y 15 dígitos.';
-    }
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
-      errs.email = 'Ingresa un correo electrónico válido.';
-    }
+    const phErr = phoneErr(phone);
+    if (phErr) errs.phone = phErr;
+    const emErr = emailErr(email);
+    if (emErr) errs.email = emErr;
     return errs;
   }
 
@@ -457,7 +475,8 @@ export default function ClientForm() {
             label="Teléfono"
             placeholder="55 1234 5678"
             value={phone}
-            onChange={e => setPhone(e.target.value)}
+            onChange={e => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: null })); }}
+            onBlur={e => { const err = phoneErr(e.target.value); if (err) setErrors(p => ({ ...p, phone: err })); }}
             error={errors.phone}
             required
             autoComplete="tel"
@@ -467,7 +486,8 @@ export default function ClientForm() {
             label="Correo electrónico"
             placeholder="tu@correo.com"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={e => { setEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: null })); }}
+            onBlur={e => { const err = emailErr(e.target.value); if (err) setErrors(p => ({ ...p, email: err })); }}
             error={errors.email}
             autoComplete="email"
             type="email"

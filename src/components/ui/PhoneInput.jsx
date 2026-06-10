@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const COUNTRIES = [
+export const COUNTRIES = [
   { code: '+52', name: 'México' },
   { code: '+1',  name: 'USA/Canadá' },
   { code: '+57', name: 'Colombia' },
