@@ -1,6 +1,6 @@
 import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
-import { formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
+import { formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, promoEndsLabel, toTitleCase } from '../../utils/formatters';
 import { BackButton } from './SpecialistSelector';
 
 export default function ServiceSelector() {
@@ -144,11 +144,18 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
             {toTitleCase(service.name)}
           </p>
           {service.promo && (
-            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold uppercase tracking-wide bg-gold text-on-gold">
-              {service.promo.discountType === 'percent'
-                ? `−${Number(service.promo.discountValue)}%`
-                : 'Promo'}
-            </span>
+            <>
+              <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold uppercase tracking-wide bg-gold text-on-gold">
+                {service.promo.discountType === 'percent'
+                  ? `−${Number(service.promo.discountValue)}%`
+                  : 'Promo'}
+              </span>
+              {promoEndsLabel(service.promo.endsAt) && (
+                <span className="shrink-0 text-[0.625rem] font-semibold text-gold/80">
+                  {promoEndsLabel(service.promo.endsAt)}
+                </span>
+              )}
+            </>
           )}
         </div>
         {service.description && (

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import { Sparkles, ArrowUpRight, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatServicePrice } from '../../utils/formatters';
+import { formatServicePrice, promoEndsLabel } from '../../utils/formatters';
 
 const VISIBLE_DESKTOP = 6;
 
@@ -186,6 +186,13 @@ function ServiceCard({ service, i, buttonText }) {
                   {service.promo.discountType === 'percent'
                     ? `−${Number(service.promo.discountValue)}% Promo`
                     : 'Promo'}
+                </span>
+              )}
+              {service.promo && promoEndsLabel(service.promo.endsAt) && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide
+                                 bg-card/85 backdrop-blur-md border border-edge/50 text-ink
+                                 shadow-[0_4px_16px_rgba(0,0,0,0.18)]">
+                  {promoEndsLabel(service.promo.endsAt)}
                 </span>
               )}
             </div>

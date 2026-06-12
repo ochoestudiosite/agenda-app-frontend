@@ -51,6 +51,14 @@ export function promoSavings(services) {
   return services.reduce((sum, s) => sum + (s.promo?.discountAmount || 0), 0);
 }
 
+// Etiqueta corta de vigencia de una promo: "hasta el 19 jun" (null sin fecha de fin).
+export function promoEndsLabel(endsAt) {
+  if (!endsAt) return null;
+  const d = new Date(endsAt);
+  if (isNaN(d)) return null;
+  return `hasta el ${d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}`;
+}
+
 // Combined price display for a list of selected services.
 // Handles all 4 priceTypes and multi-service combos correctly.
 // Usa el precio promocional cuando el servicio tiene promo vigente.
