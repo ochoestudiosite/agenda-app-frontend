@@ -94,7 +94,7 @@ describe('PhoneInput — handleNumberChange digit rules', () => {
     const calls = onChange.mock.calls.map(c => c[0].target.value)
     const lastDigitsOnly = calls[calls.length - 1].replace(/^\+\d+/, '') // strip code
     expect(lastDigitsOnly).toMatch(/^\d+$/)
-    expect(lastDigitsOnly).not.toMatch(/[a-zA-Z\s\-]/)
+    expect(lastDigitsOnly).not.toMatch(/[a-zA-Z\s-]/)
   })
 
   it('input is truncated to 10 digits maximum', async () => {

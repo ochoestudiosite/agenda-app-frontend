@@ -35,4 +35,13 @@ export default [
       'no-debugger': 'warn',
     },
   },
+  {
+    // Archivos de test: corren en node + vitest. Habilita globals de node
+    // (global, require) y relaja react-hooks/globals (patrón Spy de tests).
+    files: ['**/*.test.{js,jsx}', '**/__tests__/**/*.{js,jsx}'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: {
+      'react-hooks/globals': 'off',
+    },
+  },
 ]

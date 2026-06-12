@@ -75,7 +75,7 @@ export default function Home() {
         // que Framer Motion (once:true) las marque como vistas y no las
         // anime cuando el usuario llegue a ellas de forma orgánica.
         if (el) el.scrollIntoView({ behavior: 'instant' });
-      } catch (_) {}
+      } catch { /* scroll best-effort — ignorar si el nodo no existe */ }
     }, 150);
     return () => clearTimeout(timer);
   }, [isLoading]);
