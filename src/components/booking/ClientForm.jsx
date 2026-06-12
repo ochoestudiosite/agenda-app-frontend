@@ -109,6 +109,7 @@ export default function ClientForm() {
   const [otpKey,         setOtpKey]         = useState(0);   // bump to re-mount OTPPanel
   const [resendCooldown, setResendCooldown] = useState(0);
   const resendInFlightRef = useRef(false); // prevents double-submit on rapid taps
+  const submitInFlightRef = useRef(false); // prevents double-submit on the confirm action
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -173,43 +174,54 @@ export default function ClientForm() {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
+    // Re-entry guard: a rapid double-tap fires two submit events before the
+    // button's `loading` state (one render behind) disables it. Without this,
+    // the second request hits the backend slot re-check, gets a 409, and
+    // bounces the user from the success screen back to step 4 via GO_BACK —
+    // even though the first request already created the appointment.
+    if (submitInFlightRef.current) return;
+    submitInFlightRef.current = true;
     setErrors({});
     dispatch({ type: 'SET_CLIENT', payload: { firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim(), email: email.trim() || '' } });
 
-    // ── OTP path ─────────────────────────────────────────────────────────────
-    if (config?.phone_verification_required) {
-      // If the user went back to edit data and resubmitted without changing
-      // anything, the previous OTP is still valid (15-min TTL). Reuse it to
-      // avoid burning rate-limit quota. Any change to name/phone/email means
-      // the stored booking_data is stale, so a fresh pending row is required.
-      if (pendingId && clientKey() === otpClientKey) {
-        setOtpPhase(true);
+    try {
+      // ── OTP path ─────────────────────────────────────────────────────────────
+      if (config?.phone_verification_required) {
+        // If the user went back to edit data and resubmitted without changing
+        // anything, the previous OTP is still valid (15-min TTL). Reuse it to
+        // avoid burning rate-limit quota. Any change to name/phone/email means
+        // the stored booking_data is stale, so a fresh pending row is required.
+        if (pendingId && clientKey() === otpClientKey) {
+          setOtpPhase(true);
+          return;
+        }
+
+        setSubmitting(true);
+        try {
+          const { pendingId: id } = await api.requestOTP(buildBookingPayload());
+          setPendingId(id);
+          setOtpClientKey(clientKey());
+          setOtpPhase(true);
+          setResendCooldown(60);
+        } catch (err) {
+          toast(err.message || 'Error al enviar el código. Intenta de nuevo.', 'error');
+        } finally {
+          setSubmitting(false);
+        }
         return;
       }
 
-      setSubmitting(true);
+      // ── Direct create path (OTP not required) ────────────────────────────────
       try {
-        const { pendingId: id } = await api.requestOTP(buildBookingPayload());
-        setPendingId(id);
-        setOtpClientKey(clientKey());
-        setOtpPhase(true);
-        setResendCooldown(60);
+        const result = groupMode
+          ? await createGroupMutation.mutateAsync(buildBookingPayload())
+          : await createMutation.mutateAsync(buildBookingPayload());
+        dispatch({ type: 'SET_CONFIRMATION', payload: result });
       } catch (err) {
-        toast(err.message || 'Error al enviar el código. Intenta de nuevo.', 'error');
-      } finally {
-        setSubmitting(false);
+        handleAppointmentError(err);
       }
-      return;
-    }
-
-    // ── Direct create path (OTP not required) ────────────────────────────────
-    try {
-      const result = groupMode
-        ? await createGroupMutation.mutateAsync(buildBookingPayload())
-        : await createMutation.mutateAsync(buildBookingPayload());
-      dispatch({ type: 'SET_CONFIRMATION', payload: result });
-    } catch (err) {
-      handleAppointmentError(err);
+    } finally {
+      submitInFlightRef.current = false;
     }
   }
 
