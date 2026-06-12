@@ -1,6 +1,6 @@
 import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
-import { formatServicePrice, formatCombinedPrice, toTitleCase } from '../../utils/formatters';
+import { formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
 import { BackButton } from './SpecialistSelector';
 
 export default function ServiceSelector() {
@@ -75,9 +75,16 @@ export default function ServiceSelector() {
                 </span>
                 <span className="text-xs text-ink-3 tabular-nums">{totalDuration} min</span>
               </div>
-              <span className="font-semibold text-ink tabular-nums">
-                {formatCombinedPrice(selected)}
-              </span>
+              <div className="text-right">
+                <span className="font-semibold text-ink tabular-nums">
+                  {formatCombinedPrice(selected)}
+                </span>
+                {promoSavings(selected) > 0 && (
+                  <p className="text-[11px] font-semibold text-gold tabular-nums">
+                    Ahorras {formatPrice(promoSavings(selected))}
+                  </p>
+                )}
+              </div>
             </div>
             <button
               onClick={() => dispatch({ type: 'CONFIRM_SERVICES' })}
@@ -131,10 +138,19 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className={`font-semibold text-[0.9375rem] transition-colors duration-160 truncate
-                       ${isSelected ? 'text-gold' : 'text-ink group-hover:text-gold'}`}>
-          {toTitleCase(service.name)}
-        </p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className={`font-semibold text-[0.9375rem] transition-colors duration-160 truncate
+                         ${isSelected ? 'text-gold' : 'text-ink group-hover:text-gold'}`}>
+            {toTitleCase(service.name)}
+          </p>
+          {service.promo && (
+            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold uppercase tracking-wide bg-gold text-on-gold">
+              {service.promo.discountType === 'percent'
+                ? `−${Number(service.promo.discountValue)}%`
+                : 'Promo'}
+            </span>
+          )}
+        </div>
         {service.description && (
           <p className="text-xs text-ink-3 mt-0.5 leading-snug line-clamp-2">{service.description}</p>
         )}
@@ -147,7 +163,16 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
 
       {/* Price + checkbox */}
       <div className="shrink-0 flex items-center gap-3">
-        <span className="font-semibold text-[0.9375rem] text-gold tabular-nums">{formatServicePrice(service)}</span>
+        {service.promo ? (
+          <div className="flex flex-col items-end leading-tight">
+            <span className="text-xs text-ink-3 line-through tabular-nums">{formatServicePrice(service)}</span>
+            <span className="font-semibold text-[0.9375rem] text-gold tabular-nums">
+              {formatServicePrice({ ...service, price: service.promo.finalPrice })}
+            </span>
+          </div>
+        ) : (
+          <span className="font-semibold text-[0.9375rem] text-gold tabular-nums">{formatServicePrice(service)}</span>
+        )}
         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-160 shrink-0
                          ${isSelected ? 'border-gold bg-gold' : 'border-ink-3/50 group-hover:border-gold'}`}>
           {isSelected && (

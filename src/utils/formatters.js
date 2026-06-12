@@ -39,14 +39,27 @@ export function formatServicePrice(service) {
   }
 }
 
+// Precio efectivo de un servicio: el promocional cuando hay promo vigente
+// (calculada server-side y adjunta por GET /services), el de lista si no.
+export function effectiveServicePrice(service) {
+  return service?.promo?.finalPrice ?? service?.price ?? 0;
+}
+
+// Ahorro total por promociones en una selección de servicios.
+export function promoSavings(services) {
+  if (!services?.length) return 0;
+  return services.reduce((sum, s) => sum + (s.promo?.discountAmount || 0), 0);
+}
+
 // Combined price display for a list of selected services.
 // Handles all 4 priceTypes and multi-service combos correctly.
+// Usa el precio promocional cuando el servicio tiene promo vigente.
 export function formatCombinedPrice(services) {
   if (!services || services.length === 0) return '';
   const hasAsk          = services.some(s => s.priceType === 'ask');
   const hasRange        = services.some(s => s.priceType === 'range');
   const hasStartingFrom = services.some(s => s.priceType === 'starting_from');
-  const knownMin        = services.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : (s.price || 0)), 0);
+  const knownMin        = services.reduce((sum, s) => sum + (s.priceType === 'ask' ? 0 : effectiveServicePrice(s)), 0);
   if (hasAsk) {
     return knownMin > 0 ? `${formatPrice(knownMin)}+` : 'Precio a consultar';
   }

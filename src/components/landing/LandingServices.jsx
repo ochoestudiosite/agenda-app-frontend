@@ -159,14 +159,35 @@ function ServiceCard({ service, i, buttonText }) {
           {/* Gradiente oscuro — cubre el 55% inferior para legibilidad */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 via-[42%] to-transparent" />
 
-          {/* Price badge */}
+          {/* Price badge — con promo: precio tachado + promocional + chip de descuento */}
           {showPrice && (
-            <div className="absolute top-4 right-4 inline-flex items-center px-3 py-1.5 rounded-full
-                            bg-card/85 backdrop-blur-md border border-edge/50
-                            shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-              <span className="text-[13px] font-bold text-ink tabular-nums">
-                {formatServicePrice(service)}
-              </span>
+            <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                              bg-card/85 backdrop-blur-md border border-edge/50
+                              shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
+                {service.promo ? (
+                  <>
+                    <span className="text-[11px] text-ink-3 line-through tabular-nums">
+                      {formatServicePrice(service)}
+                    </span>
+                    <span className="text-[13px] font-bold text-ink tabular-nums">
+                      {formatServicePrice({ ...service, price: service.promo.finalPrice })}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[13px] font-bold text-ink tabular-nums">
+                    {formatServicePrice(service)}
+                  </span>
+                )}
+              </div>
+              {service.promo && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide
+                                 bg-gold text-on-gold shadow-[0_4px_16px_rgba(0,0,0,0.25)]">
+                  {service.promo.discountType === 'percent'
+                    ? `−${Number(service.promo.discountValue)}% Promo`
+                    : 'Promo'}
+                </span>
+              )}
             </div>
           )}
 

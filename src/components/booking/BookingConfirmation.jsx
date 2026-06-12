@@ -191,15 +191,30 @@ export default function BookingConfirmation() {
             {/* Total (group) */}
             <div className="px-6 py-3.5 flex items-center justify-between bg-raised/30">
               <span className="text-[13px] font-semibold text-ink">Total</span>
-              <span className="text-[18px] font-bold text-gold tabular-nums">
+              <div className="text-right">
                 {(() => {
                   const allAsk = appts.every(a => a.priceType === 'ask');
                   const hasVariable = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
-                  if (allAsk) return 'A consultar';
-                  if (hasVariable) return `${formatPrice(totalPrice)}+`;
-                  return formatPrice(totalPrice);
+                  const savings = confirmation?.totalDiscount
+                    ?? appts.reduce((s, a) => s + (a.discountAmount || 0), 0);
+                  const totalFmt = allAsk ? 'A consultar' : hasVariable ? `${formatPrice(totalPrice)}+` : formatPrice(totalPrice);
+                  return (
+                    <>
+                      {!allAsk && savings > 0 && (
+                        <span className="block text-xs text-ink-3 line-through tabular-nums">
+                          {formatPrice(totalPrice + savings)}
+                        </span>
+                      )}
+                      <span className="text-[18px] font-bold text-gold tabular-nums">{totalFmt}</span>
+                      {!allAsk && savings > 0 && (
+                        <p className="text-[11px] font-semibold text-gold tabular-nums">
+                          Ahorraste {formatPrice(savings)} 🎉
+                        </p>
+                      )}
+                    </>
+                  );
                 })()}
-              </span>
+              </div>
             </div>
           </>
         ) : (
@@ -291,9 +306,21 @@ export default function BookingConfirmation() {
             {/* ── SINGLE: total ───────────────────────────────────────────── */}
             <div className="px-6 py-3.5 flex items-center justify-between bg-raised/30">
               <span className="text-[13px] font-semibold text-ink">Total</span>
-              <span className="text-[18px] font-bold text-gold tabular-nums">
-                {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
-              </span>
+              <div className="text-right">
+                {confirmation?.discountAmount > 0 && confirmation?.originalPrice != null && (
+                  <span className="block text-xs text-ink-3 line-through tabular-nums">
+                    {formatPrice(confirmation.originalPrice)}
+                  </span>
+                )}
+                <span className="text-[18px] font-bold text-gold tabular-nums">
+                  {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
+                </span>
+                {confirmation?.discountAmount > 0 && (
+                  <p className="text-[11px] font-semibold text-gold tabular-nums">
+                    Ahorraste {formatPrice(confirmation.discountAmount)} 🎉
+                  </p>
+                )}
+              </div>
             </div>
           </>
         )}
