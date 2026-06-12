@@ -110,6 +110,29 @@ function reducer(state, action) {
     case 'SET_CLIENT':
       return { ...state, clientFirstName: action.payload.firstName, clientLastName: action.payload.lastName, clientPhone: action.payload.phone, clientEmail: action.payload.email ?? '' };
 
+    // Re-mapea los servicios/especialistas seleccionados a los objetos frescos del
+    // catálogo (por ID), para que precio/duración/nombre no queden obsoletos tras
+    // restaurar de sessionStorage o si cambian mientras el cliente reserva.
+    // No cambia IDs ni el conteo (isGroupMode intacto). Solo actualiza si algo cambió.
+    case 'RECONCILE_CATALOG': {
+      const freshSvcs = action.payload?.services;
+      if (!freshSvcs?.length) return state;
+      const svcById = new Map(freshSvcs.map(s => [s.id, s]));
+      const spById  = new Map((action.payload.specialists ?? []).map(s => [s.id, s]));
+      let changed = false;
+      const remapSvc = s => { const f = s && svcById.get(s.id); if (f && f !== s) { changed = true; return f; } return s; };
+      const remapSp  = s => { const f = s && spById.get(s.id);  if (f && f !== s) { changed = true; return f; } return s; };
+      const services     = state.services.map(remapSvc);
+      const specialist   = remapSp(state.specialist);
+      const serviceAssignments = state.serviceAssignments.map(a => {
+        const service = remapSvc(a.service);
+        const specialist = remapSp(a.specialist);
+        return (service !== a.service || specialist !== a.specialist) ? { service, specialist } : a;
+      });
+      if (!changed) return state;
+      return { ...state, services, specialist, serviceAssignments };
+    }
+
     case 'SET_CONFIRMATION': {
       // Guard: group mode requires all assignments + date/time
       if (isGroupMode(state)) {

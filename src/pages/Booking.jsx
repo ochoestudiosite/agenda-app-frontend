@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { BookingProvider, useBooking } from '../context/BookingContext';
 import { useConfig } from '../hooks/useConfig';
+import { useServices } from '../hooks/useServices';
 import StepIndicator from '../components/booking/StepIndicator';
 import BranchSelector from '../components/booking/BranchSelector';
 import ServiceSelector from '../components/booking/ServiceSelector';
@@ -30,7 +31,17 @@ export default function Booking() {
 function BookingFlow() {
   const { state, dispatch } = useBooking();
   const { data: config, isLoading: configLoading } = useConfig();
+  const { data: catalog } = useServices();
   const qc = useQueryClient();
+
+  // Mantiene servicios/especialistas seleccionados sincronizados con el catálogo
+  // fresco (precio/duración/nombre), tras restaurar sesión o si cambian server-side.
+  // react-query dedupe: no agrega red (ServiceSelector usa la misma query).
+  useEffect(() => {
+    if (catalog?.services?.length) {
+      dispatch({ type: 'RECONCILE_CATALOG', payload: catalog });
+    }
+  }, [catalog, dispatch]);
 
   const branches     = config?.branches ?? [];
   const multiBranch  = branches.length > 1;
