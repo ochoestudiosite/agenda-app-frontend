@@ -10,7 +10,7 @@ import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 import SummaryStrip from '../ui/SummaryStrip';
-import { StruckPrice, SavingsNote } from '../ui/PromoPrice';
+import { PromoBadge, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import OTPPanel from '../booking/OTPPanel';
 import { api } from '../../services/api';
 
@@ -269,14 +269,26 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-ink leading-snug truncate">
-                      {toTitleCase(svc.serviceName)}
-                    </p>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+                        {toTitleCase(svc.serviceName)}
+                      </p>
+                      {svc.discountAmount > 0 && <PromoBadge />}
+                    </div>
                     <p className="text-xs text-ink-3 mt-0.5">{svc.serviceDuration} min</p>
                   </div>
-                  <p className="text-[14px] font-bold text-gold tabular-nums shrink-0 mt-0.5">
-                    {displayPrice(svc.priceType, svc.servicePrice)}
-                  </p>
+                  {svc.discountAmount > 0 && svc.originalPrice != null ? (
+                    <StruckPrice
+                      original={displayPrice(svc.priceType, svc.originalPrice)}
+                      final={displayPrice(svc.priceType, svc.servicePrice)}
+                      size="md"
+                      className="mt-0.5"
+                    />
+                  ) : (
+                    <p className="text-[14px] font-bold text-gold tabular-nums shrink-0 mt-0.5">
+                      {displayPrice(svc.priceType, svc.servicePrice)}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -289,9 +301,12 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                 }
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-semibold text-ink leading-snug truncate">
-                  {toTitleCase(appointment.serviceName)}
-                </p>
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                    {toTitleCase(appointment.serviceName)}
+                  </p>
+                  {appointment.discountAmount > 0 && <PromoBadge />}
+                </div>
                 <p className="text-xs text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
               </div>
               {appointment.discountAmount > 0 && appointment.originalPrice != null ? (

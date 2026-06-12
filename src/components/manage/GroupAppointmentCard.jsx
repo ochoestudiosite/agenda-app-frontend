@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
-import { StruckPrice, SavingsNote } from '../ui/PromoPrice';
+import { PromoBadge, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
@@ -240,9 +240,12 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                     }
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-ink leading-snug">
-                      {toTitleCase(appt.serviceName)}
-                    </p>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="text-[13px] font-semibold text-ink leading-snug">
+                        {toTitleCase(appt.serviceName)}
+                      </p>
+                      {appt.discountAmount > 0 && <PromoBadge />}
+                    </div>
                     {/* Specialist mini-avatar + info */}
                     <div className="flex items-center gap-1.5 mt-1">
                       <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">

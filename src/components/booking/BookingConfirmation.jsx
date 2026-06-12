@@ -5,7 +5,7 @@ import { useConfig } from '../../hooks/useConfig';
 import { useServices } from '../../hooks/useServices';
 import { useSpecialists } from '../../hooks/useSpecialists';
 import { formatDate, formatTime, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
-import { StruckPrice } from '../ui/PromoPrice';
+import { PromoBadge, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import Button from '../ui/Button';
 
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -152,9 +152,12 @@ export default function BookingConfirmation() {
                         }
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold text-ink leading-snug">
-                          {toTitleCase(appt.serviceName)}
-                        </p>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="text-[13px] font-semibold text-ink leading-snug">
+                            {toTitleCase(appt.serviceName)}
+                          </p>
+                          {appt.discountAmount > 0 && <PromoBadge />}
+                        </div>
                         {/* Specialist mini-avatar + info */}
                         <div className="flex items-center gap-1.5 mt-1">
                           <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
@@ -215,22 +218,17 @@ export default function BookingConfirmation() {
                   const hasVariable = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
                   const savings = confirmation?.totalDiscount
                     ?? appts.reduce((s, a) => s + (a.discountAmount || 0), 0);
+                  const promoNames = [...new Set(appts.map(a => a.promotionName).filter(Boolean))].join(' + ');
                   const totalFmt = allAsk ? 'A consultar' : hasVariable ? `${formatPrice(totalPrice)}+` : formatPrice(totalPrice);
-                  return (
-                    <>
-                      {!allAsk && savings > 0 && (
-                        <span className="block text-xs text-ink-3 line-through tabular-nums">
-                          {formatPrice(totalPrice + savings)}
-                        </span>
-                      )}
-                      <span className="text-[18px] font-bold text-gold tabular-nums">{totalFmt}</span>
-                      {!allAsk && savings > 0 && (
-                        <p className="text-[11px] font-semibold text-gold tabular-nums">
-                          Ahorraste {formatPrice(savings)} 🎉
-                        </p>
-                      )}
-                    </>
-                  );
+                  if (!allAsk && savings > 0) {
+                    return (
+                      <>
+                        <StruckPrice original={formatPrice(totalPrice + savings)} final={totalFmt} size="xl" />
+                        <SavingsNote amount={savings} promoName={promoNames} verb="Ahorraste" className="mt-0.5" />
+                      </>
+                    );
+                  }
+                  return <span className="text-[18px] font-bold text-gold tabular-nums">{totalFmt}</span>;
                 })()}
               </div>
             </div>
@@ -253,14 +251,26 @@ export default function BookingConfirmation() {
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-ink leading-snug truncate">
-                          {toTitleCase(svc.serviceName)}
-                        </p>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+                            {toTitleCase(svc.serviceName)}
+                          </p>
+                          {svc.discountAmount > 0 && <PromoBadge />}
+                        </div>
                         <p className="text-xs text-ink-3 mt-0.5">{svc.serviceDuration} min</p>
                       </div>
-                      <p className="text-[14px] font-bold text-gold tabular-nums shrink-0 mt-0.5">
-                        {displayPrice(svc.priceType, svc.servicePrice)}
-                      </p>
+                      {svc.discountAmount > 0 && svc.originalPrice != null ? (
+                        <StruckPrice
+                          original={displayPrice(svc.priceType, svc.originalPrice)}
+                          final={displayPrice(svc.priceType, svc.servicePrice)}
+                          size="md"
+                          className="mt-0.5"
+                        />
+                      ) : (
+                        <p className="text-[14px] font-bold text-gold tabular-nums shrink-0 mt-0.5">
+                          {displayPrice(svc.priceType, svc.servicePrice)}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -273,16 +283,27 @@ export default function BookingConfirmation() {
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-semibold text-ink leading-snug truncate">
-                      {toTitleCase(confirmation?.serviceName)}
-                    </p>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                        {toTitleCase(confirmation?.serviceName)}
+                      </p>
+                      {confirmation?.discountAmount > 0 && <PromoBadge />}
+                    </div>
                     {confirmation?.serviceDuration && (
                       <p className="text-xs text-ink-3 mt-0.5">{confirmation.serviceDuration} min</p>
                     )}
                   </div>
-                  <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
-                    {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
-                  </p>
+                  {confirmation?.discountAmount > 0 && confirmation?.originalPrice != null ? (
+                    <StruckPrice
+                      original={displayPrice(confirmation.priceType, confirmation.originalPrice)}
+                      final={displayPrice(confirmation.priceType, confirmation.servicePrice)}
+                      size="lg"
+                    />
+                  ) : (
+                    <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
+                      {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -325,18 +346,24 @@ export default function BookingConfirmation() {
             <div className="px-6 py-3.5 flex items-center justify-between bg-raised/30">
               <span className="text-[13px] font-semibold text-ink">Total</span>
               <div className="text-right">
-                {confirmation?.discountAmount > 0 && confirmation?.originalPrice != null && (
-                  <span className="block text-xs text-ink-3 line-through tabular-nums">
-                    {formatPrice(confirmation.originalPrice)}
+                {confirmation?.discountAmount > 0 && confirmation?.originalPrice != null ? (
+                  <>
+                    <StruckPrice
+                      original={displayPrice(confirmation.priceType, confirmation.originalPrice)}
+                      final={displayPrice(confirmation.priceType, confirmation.servicePrice)}
+                      size="xl"
+                    />
+                    <SavingsNote
+                      amount={confirmation.discountAmount}
+                      promoName={confirmation.promotionName}
+                      verb="Ahorraste"
+                      className="mt-0.5"
+                    />
+                  </>
+                ) : (
+                  <span className="text-[18px] font-bold text-gold tabular-nums">
+                    {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
                   </span>
-                )}
-                <span className="text-[18px] font-bold text-gold tabular-nums">
-                  {displayPrice(confirmation?.priceType, confirmation?.servicePrice)}
-                </span>
-                {confirmation?.discountAmount > 0 && (
-                  <p className="text-[11px] font-semibold text-gold tabular-nums">
-                    Ahorraste {formatPrice(confirmation.discountAmount)} 🎉
-                  </p>
                 )}
               </div>
             </div>
