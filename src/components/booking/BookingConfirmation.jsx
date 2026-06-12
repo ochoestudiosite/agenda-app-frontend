@@ -5,6 +5,7 @@ import { useConfig } from '../../hooks/useConfig';
 import { useServices } from '../../hooks/useServices';
 import { useSpecialists } from '../../hooks/useSpecialists';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
+import { StruckPrice } from '../ui/PromoPrice';
 import Button from '../ui/Button';
 
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -161,9 +162,17 @@ export default function BookingConfirmation() {
                           </p>
                         </div>
                       </div>
-                      <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
-                        {displayPrice(appt.priceType, appt.servicePrice)}
-                      </p>
+                      {appt.discountAmount > 0 && appt.originalPrice != null ? (
+                        <StruckPrice
+                          original={displayPrice(appt.priceType, appt.originalPrice)}
+                          final={displayPrice(appt.priceType, appt.servicePrice)}
+                          size="sm"
+                        />
+                      ) : (
+                        <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
+                          {displayPrice(appt.priceType, appt.servicePrice)}
+                        </p>
+                      )}
                     </div>
                   );
                 })}

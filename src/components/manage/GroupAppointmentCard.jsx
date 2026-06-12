@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
+import { StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
@@ -261,9 +262,17 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                       <span className="badge badge-cancelled text-[10px] mt-1.5 inline-block">Cancelada</span>
                     )}
                   </div>
-                  <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
-                    {displayPrice(appt.priceType, appt.servicePrice)}
-                  </p>
+                  {appt.discountAmount > 0 && appt.originalPrice != null ? (
+                    <StruckPrice
+                      original={displayPrice(appt.priceType, appt.originalPrice)}
+                      final={displayPrice(appt.priceType, appt.servicePrice)}
+                      size="sm"
+                    />
+                  ) : (
+                    <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">
+                      {displayPrice(appt.priceType, appt.servicePrice)}
+                    </p>
+                  )}
                 </div>
               );
             })}
@@ -288,19 +297,27 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           </div>
         )}
 
-        {/* Total */}
+        {/* Total — con promo: lista tachada + total promocional + ahorro */}
         <div className="px-6 py-3.5 border-b border-edge flex items-center justify-between bg-raised/30">
           <span className="text-[13px] font-semibold text-ink">Total</span>
-          <span className="text-[18px] font-bold text-gold tabular-nums">
-            {(() => {
-              const appts = group.appointments ?? [];
-              const allAsk = appts.every(a => a.priceType === 'ask');
-              const hasVariable = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
-              if (allAsk) return 'A consultar';
-              if (hasVariable) return `${formatPrice(group.totalPrice)}+`;
-              return formatPrice(group.totalPrice);
-            })()}
-          </span>
+          {(() => {
+            const appts = group.appointments ?? [];
+            const allAsk = appts.every(a => a.priceType === 'ask');
+            const hasVariable = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
+            const suffix = hasVariable && !allAsk ? '+' : '';
+            const totalFmt = allAsk ? 'A consultar' : `${formatPrice(group.totalPrice)}${suffix}`;
+            const savings = Number(group.totalDiscount) > 0 ? Number(group.totalDiscount) : 0;
+            if (!allAsk && savings > 0 && group.originalTotal != null) {
+              const promoNames = [...new Set(appts.map(a => a.promotionName).filter(Boolean))].join(' + ');
+              return (
+                <div className="text-right">
+                  <StruckPrice original={`${formatPrice(group.originalTotal)}${suffix}`} final={totalFmt} size="xl" />
+                  <SavingsNote amount={savings} promoName={promoNames} verb="Ahorraste" className="mt-0.5" />
+                </div>
+              );
+            }
+            return <span className="text-[18px] font-bold text-gold tabular-nums">{totalFmt}</span>;
+          })()}
         </div>
 
         {/* Reagendada banner */}
@@ -750,16 +767,23 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
           </div>
           <div className="pt-2.5 border-t border-edge flex justify-between text-xs">
             <span className="text-ink-3">Total</span>
-            <span className="font-semibold text-ink tabular-nums">
-              {totalDuration} min · {(() => {
-                const appts = group.appointments ?? [];
-                const allAsk = appts.every(a => a.priceType === 'ask');
-                const hasVar = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
-                if (allAsk) return 'A consultar';
-                if (hasVar) return `${formatPrice(group.totalPrice)}+`;
-                return formatPrice(group.totalPrice);
-              })()}
-            </span>
+            <div className="text-right">
+              <span className="font-semibold text-ink tabular-nums">
+                {totalDuration} min · {(() => {
+                  const appts = group.appointments ?? [];
+                  const allAsk = appts.every(a => a.priceType === 'ask');
+                  const hasVar = appts.some(a => a.priceType === 'ask' || a.priceType === 'range' || a.priceType === 'starting_from');
+                  if (allAsk) return 'A consultar';
+                  if (hasVar) return `${formatPrice(group.totalPrice)}+`;
+                  return formatPrice(group.totalPrice);
+                })()}
+              </span>
+              {Number(group.totalDiscount) > 0 && (
+                <p className="text-[10px] font-semibold text-gold tabular-nums">
+                  Incluye ahorro de {formatPrice(group.totalDiscount)} por promoción
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

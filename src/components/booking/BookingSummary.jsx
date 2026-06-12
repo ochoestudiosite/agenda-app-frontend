@@ -1,6 +1,6 @@
 import { useBooking, isGroupMode } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
-import { toTitleCase, formatTime, formatCombinedPrice } from '../../utils/formatters';
+import { toTitleCase, formatTime, formatCombinedPrice, formatPrice, promoSavings } from '../../utils/formatters';
 import SummaryStrip from '../ui/SummaryStrip';
 
 function shortDate(dateStr) {
@@ -35,6 +35,7 @@ export default function BookingSummary() {
   const selectedServices = state.services ?? [];
   if (selectedServices.length > 0) {
     const totalDuration = selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const savings = promoSavings(selectedServices);
     const first = toTitleCase(selectedServices[0].name);
     items.push({
       id:       'service',
@@ -43,7 +44,7 @@ export default function BookingSummary() {
       label:    selectedServices.length === 1
         ? first
         : `${first} +${selectedServices.length - 1} más`,
-      sub:      `${totalDuration} min · ${formatCombinedPrice(selectedServices)}`,
+      sub:      `${totalDuration} min · ${formatCombinedPrice(selectedServices)}${savings > 0 ? ` · Ahorras ${formatPrice(savings)}` : ''}`,
     });
   }
 

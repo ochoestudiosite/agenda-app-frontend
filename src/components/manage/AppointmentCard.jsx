@@ -10,6 +10,7 @@ import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 import SummaryStrip from '../ui/SummaryStrip';
+import { StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import OTPPanel from '../booking/OTPPanel';
 import { api } from '../../services/api';
 
@@ -293,9 +294,17 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                 </p>
                 <p className="text-xs text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
               </div>
-              <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
-                {displayPrice(appointment.priceType, appointment.servicePrice)}
-              </p>
+              {appointment.discountAmount > 0 && appointment.originalPrice != null ? (
+                <StruckPrice
+                  original={displayPrice(appointment.priceType, appointment.originalPrice)}
+                  final={displayPrice(appointment.priceType, appointment.servicePrice)}
+                  size="lg"
+                />
+              ) : (
+                <p className="text-[17px] font-bold text-gold tabular-nums shrink-0">
+                  {displayPrice(appointment.priceType, appointment.servicePrice)}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -334,12 +343,23 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           </div>
         )}
 
-        {/* Total */}
+        {/* Total — con promo: lista tachada + total promocional + ahorro */}
         <div className="px-6 py-3.5 border-b border-edge flex items-center justify-between bg-raised/30">
           <span className="text-[13px] font-semibold text-ink">Total</span>
-          <span className="text-[18px] font-bold text-gold tabular-nums">
-            {displayPrice(appointment.priceType, appointment.servicePrice)}
-          </span>
+          {appointment.discountAmount > 0 && appointment.originalPrice != null ? (
+            <div className="text-right">
+              <StruckPrice
+                original={displayPrice(appointment.priceType, appointment.originalPrice)}
+                final={displayPrice(appointment.priceType, appointment.servicePrice)}
+                size="xl"
+              />
+              <SavingsNote amount={appointment.discountAmount} promoName={appointment.promotionName} verb="Ahorraste" className="mt-0.5" />
+            </div>
+          ) : (
+            <span className="text-[18px] font-bold text-gold tabular-nums">
+              {displayPrice(appointment.priceType, appointment.servicePrice)}
+            </span>
+          )}
         </div>
 
         {/* Reagendada banner */}

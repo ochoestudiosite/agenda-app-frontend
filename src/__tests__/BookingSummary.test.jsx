@@ -53,6 +53,8 @@ vi.mock('../utils/formatters', () => ({
   toTitleCase:           (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '',
   formatTime:            (t, _fmt) => t || '',
   formatCombinedPrice:   (_services) => '$100',
+  formatPrice:           (p) => `$${Number(p ?? 0).toFixed(0)}`,
+  promoSavings:          (services) => (services ?? []).reduce((s, x) => s + (x.promo?.discountAmount || 0), 0),
 }))
 
 // SummaryStrip stub: renders each item's data as accessible text so tests can

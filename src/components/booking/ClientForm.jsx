@@ -4,11 +4,12 @@ import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useCreateAppointment } from '../../hooks/useAppointment';
 import { useConfig } from '../../hooks/useConfig';
-import { formatDate, formatTime, formatServicePrice, formatCombinedPrice, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatServicePrice, formatCombinedPrice, promoSavings, toTitleCase } from '../../utils/formatters';
 import { api } from '../../services/api';
 import Input from '../ui/Input';
 import PhoneInput, { COUNTRIES } from '../ui/PhoneInput';
 import Button from '../ui/Button';
+import { PromoBadge, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import { useToast } from '../ui/Toast';
 import { BackButton } from './SpecialistSelector';
 import BookingUnavailable from './BookingUnavailable';
@@ -87,9 +88,19 @@ export default function ClientForm() {
   const totalDuration = groupMode
     ? groupServices.reduce((sum, s) => sum + (s.duration || 0), 0)
     : selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
-  const combinedPriceStr = groupMode
-    ? formatCombinedPrice(groupServices)
-    : formatCombinedPrice(selectedServices);
+  const activeServices   = groupMode ? groupServices : selectedServices;
+  const combinedPriceStr = formatCombinedPrice(activeServices);
+  // Desglose de promoción: total de lista (sin promos), ahorro y nombres únicos.
+  const totalSavings        = promoSavings(activeServices);
+  const originalCombinedStr = totalSavings > 0
+    ? formatCombinedPrice(activeServices.map(s => ({ ...s, promo: null })))
+    : null;
+  const promoNames = [...new Set(activeServices.filter(s => s.promo).map(s => s.promo.name))].join(' + ');
+
+  // Precio de una línea de servicio: tachado + promocional cuando aplica.
+  const servicePriceTag = (svc, size = 'md') => svc?.promo
+    ? <StruckPrice original={formatServicePrice(svc)} final={formatServicePrice({ ...svc, price: svc.promo.finalPrice })} size={size} className="mt-0.5" />
+    : <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0 mt-0.5">{formatServicePrice(svc)}</p>;
 
   const displayBranch = state.branch ?? (configBranches.length === 1 ? configBranches[0] : null);
 
@@ -329,9 +340,12 @@ export default function ClientForm() {
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-ink leading-tight">
-                        {toTitleCase(a.service.name)}
-                      </p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-[14px] font-semibold text-ink leading-tight">
+                          {toTitleCase(a.service.name)}
+                        </p>
+                        {a.service.promo && <PromoBadge discountType={a.service.promo.discountType} discountValue={a.service.promo.discountValue} />}
+                      </div>
                       {/* Specialist mini-avatar + info */}
                       <div className="flex items-center gap-1.5 mt-1">
                         <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
@@ -349,9 +363,7 @@ export default function ClientForm() {
                         </p>
                       </div>
                     </div>
-                    <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0 mt-0.5">
-                      {formatServicePrice(a.service)}
-                    </p>
+                    {servicePriceTag(a.service)}
                   </div>
                 );
               })}
@@ -384,10 +396,16 @@ export default function ClientForm() {
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-ink leading-snug truncate">{toTitleCase(svc.name)}</p>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="text-[13px] font-semibold text-ink leading-snug truncate">{toTitleCase(svc.name)}</p>
+                          {svc.promo && <PromoBadge discountType={svc.promo.discountType} discountValue={svc.promo.discountValue} />}
+                        </div>
                         <p className="text-xs text-ink-3 mt-0.5">{svc.duration} min</p>
                       </div>
-                      <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">{formatServicePrice(svc)}</p>
+                      {svc.promo
+                        ? <StruckPrice original={formatServicePrice(svc)} final={formatServicePrice({ ...svc, price: svc.promo.finalPrice })} size="sm" />
+                        : <p className="text-[13px] font-semibold text-gold tabular-nums shrink-0">{formatServicePrice(svc)}</p>
+                      }
                     </div>
                   ))}
                 </div>
@@ -401,10 +419,16 @@ export default function ClientForm() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-0.5">Servicio</p>
-                    <p className="text-[14px] font-semibold text-ink leading-snug">{toTitleCase(selectedServices[0]?.name)}</p>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="text-[14px] font-semibold text-ink leading-snug">{toTitleCase(selectedServices[0]?.name)}</p>
+                      {selectedServices[0]?.promo && <PromoBadge discountType={selectedServices[0].promo.discountType} discountValue={selectedServices[0].promo.discountValue} />}
+                    </div>
                     <p className="text-xs text-ink-3 mt-0.5">{selectedServices[0]?.duration} min</p>
                   </div>
-                  <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0">{combinedPriceStr}</p>
+                  {selectedServices[0]?.promo
+                    ? <StruckPrice original={formatServicePrice(selectedServices[0])} final={combinedPriceStr} size="md" />
+                    : <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0">{combinedPriceStr}</p>
+                  }
                 </div>
               )}
               <div className="flex items-center gap-3">
@@ -437,12 +461,19 @@ export default function ClientForm() {
           )}
         </div>
 
-        {/* Total row */}
+        {/* Total row — con promo: lista tachada + total promocional + ahorro */}
         <div className="px-5 py-3.5 border-t border-edge flex items-center justify-between bg-raised/30">
           <span className="text-[13px] font-semibold text-ink">Total</span>
-          <span className="text-[18px] font-bold text-gold tabular-nums">
-            {combinedPriceStr}
-          </span>
+          {totalSavings > 0 ? (
+            <div className="text-right">
+              <StruckPrice original={originalCombinedStr} final={combinedPriceStr} size="xl" />
+              <SavingsNote amount={totalSavings} promoName={promoNames} className="mt-0.5" />
+            </div>
+          ) : (
+            <span className="text-[18px] font-bold text-gold tabular-nums">
+              {combinedPriceStr}
+            </span>
+          )}
         </div>
       </div>
 
