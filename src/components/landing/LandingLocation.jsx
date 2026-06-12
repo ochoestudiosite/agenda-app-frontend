@@ -86,6 +86,16 @@ function resolveLocations(config, locationConfig) {
   return [];
 }
 
+// Solo permite URLs absolutas http(s) para el enlace de "cómo llegar", que es
+// configurable por el admin en landing_config. Bloquea URIs javascript:/data:/
+// vbscript: que React renderiza tal cual dentro de href → XSS almacenado en la
+// página pública del tenant. El mapa auto-generado (Google Maps) ya es https fijo.
+function safeHttpUrl(url) {
+  if (typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : '';
+}
+
 function getBranchHours(config, branchId) {
   const raw = config.hours || {};
   if (branchId != null && raw[String(branchId)]) return raw[String(branchId)];
@@ -179,7 +189,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
 
   // Auto-generate a Google Maps search URL when the branch has an address but no
   // explicit directions_url (e.g. auto-populated from catalogue without Landing Editor config).
-  const effectiveDirectionsUrl = loc.directions_url
+  const effectiveDirectionsUrl = safeHttpUrl(loc.directions_url)
     || (loc.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.address)}` : '');
 
   return (
