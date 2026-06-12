@@ -88,14 +88,39 @@ export default function ClientForm() {
   const totalDuration = groupMode
     ? groupServices.reduce((sum, s) => sum + (s.duration || 0), 0)
     : selectedServices.reduce((sum, s) => sum + (s.duration || 0), 0);
-  const activeServices   = groupMode ? groupServices : selectedServices;
-  const combinedPriceStr = formatCombinedPrice(activeServices);
+  const activeServices = groupMode ? groupServices : selectedServices;
+
+  // Pricing definitivo del servidor (llega con request-otp, ya con el teléfono
+  // del cliente — cubre per_client_limit y promos agotadas). Mientras no exista,
+  // se muestra el precio promocional del catálogo (mejor información conocida).
+  const [serverPricing, setServerPricing] = useState(null);
+  const displayServices = serverPricing?.items?.length === activeServices.length
+    ? activeServices.map((s, i) => {
+        const item = serverPricing.items[i];
+        if (!(item?.discountAmount > 0)) return { ...s, promo: null };
+        return {
+          ...s,
+          promo: {
+            ...(s.promo ?? {}),
+            name:           item.promoName || s.promo?.name || 'Promoción',
+            finalPrice:     item.finalPrice,
+            discountAmount: item.discountAmount,
+          },
+        };
+      })
+    : activeServices;
+
+  // La promo que el cliente vio en el catálogo ya no aplica (total o parcialmente)
+  const expectedSavings = promoSavings(activeServices);
+  const promoDropped    = serverPricing != null && serverPricing.totalDiscount < expectedSavings;
+
+  const combinedPriceStr = formatCombinedPrice(displayServices);
   // Desglose de promoción: total de lista (sin promos), ahorro y nombres únicos.
-  const totalSavings        = promoSavings(activeServices);
+  const totalSavings        = promoSavings(displayServices);
   const originalCombinedStr = totalSavings > 0
-    ? formatCombinedPrice(activeServices.map(s => ({ ...s, promo: null })))
+    ? formatCombinedPrice(displayServices.map(s => ({ ...s, promo: null })))
     : null;
-  const promoNames = [...new Set(activeServices.filter(s => s.promo).map(s => s.promo.name))].join(' + ');
+  const promoNames = [...new Set(displayServices.filter(s => s.promo).map(s => s.promo.name))].join(' + ');
 
   // Precio de una línea de servicio: tachado + promocional cuando aplica.
   const servicePriceTag = (svc, size = 'md') => svc?.promo
@@ -209,8 +234,9 @@ export default function ClientForm() {
 
         setSubmitting(true);
         try {
-          const { pendingId: id } = await api.requestOTP(buildBookingPayload());
+          const { pendingId: id, pricing } = await api.requestOTP(buildBookingPayload());
           setPendingId(id);
+          setServerPricing(pricing ?? null);
           setOtpClientKey(clientKey());
           setOtpPhase(true);
           setResendCooldown(60);
@@ -266,8 +292,9 @@ export default function ClientForm() {
     setSubmitting(true);
     setOtpError(null);
     try {
-      const { pendingId: id } = await api.requestOTP(buildBookingPayload());
+      const { pendingId: id, pricing } = await api.requestOTP(buildBookingPayload());
       setPendingId(id);
+      setServerPricing(pricing ?? null);
       setOtpClientKey(clientKey());
       setOtpKey(k => k + 1);
       setResendCooldown(60);
@@ -330,6 +357,7 @@ export default function ClientForm() {
               {serviceAssignments.map((a, i) => {
                 const offsetMins = serviceAssignments.slice(0, i).reduce((s, prev) => s + (prev.service.duration || 0), 0);
                 const startSlot  = minsToSlot(slotToMins(state.time) + offsetMins);
+                const dSvc       = displayServices[i] ?? a.service;
                 return (
                   <div key={i} className="flex items-start gap-3">
                     {/* Service avatar */}
@@ -344,7 +372,7 @@ export default function ClientForm() {
                         <p className="text-[14px] font-semibold text-ink leading-tight">
                           {toTitleCase(a.service.name)}
                         </p>
-                        {a.service.promo && <PromoBadge discountType={a.service.promo.discountType} discountValue={a.service.promo.discountValue} />}
+                        {dSvc.promo && <PromoBadge discountType={dSvc.promo.discountType} discountValue={dSvc.promo.discountValue} />}
                       </div>
                       {/* Specialist mini-avatar + info */}
                       <div className="flex items-center gap-1.5 mt-1">
@@ -363,7 +391,7 @@ export default function ClientForm() {
                         </p>
                       </div>
                     </div>
-                    {servicePriceTag(a.service)}
+                    {servicePriceTag(dSvc)}
                   </div>
                 );
               })}
@@ -387,7 +415,7 @@ export default function ClientForm() {
               {selectedServices.length > 1 ? (
                 <div className="space-y-3">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Servicios</p>
-                  {selectedServices.map((svc, i) => (
+                  {displayServices.map((svc, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
                         {svc.imageUrl
@@ -412,21 +440,21 @@ export default function ClientForm() {
               ) : (
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
-                    {selectedServices[0]?.imageUrl
-                      ? <img src={selectedServices[0].imageUrl} alt={selectedServices[0].name} className="w-full h-full object-cover" />
-                      : <span className="text-[11px] font-bold text-gold">{initials(selectedServices[0]?.name)}</span>
+                    {displayServices[0]?.imageUrl
+                      ? <img src={displayServices[0].imageUrl} alt={displayServices[0].name} className="w-full h-full object-cover" />
+                      : <span className="text-[11px] font-bold text-gold">{initials(displayServices[0]?.name)}</span>
                     }
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-0.5">Servicio</p>
                     <div className="flex items-center gap-2 min-w-0">
-                      <p className="text-[14px] font-semibold text-ink leading-snug">{toTitleCase(selectedServices[0]?.name)}</p>
-                      {selectedServices[0]?.promo && <PromoBadge discountType={selectedServices[0].promo.discountType} discountValue={selectedServices[0].promo.discountValue} />}
+                      <p className="text-[14px] font-semibold text-ink leading-snug">{toTitleCase(displayServices[0]?.name)}</p>
+                      {displayServices[0]?.promo && <PromoBadge discountType={displayServices[0].promo.discountType} discountValue={displayServices[0].promo.discountValue} />}
                     </div>
-                    <p className="text-xs text-ink-3 mt-0.5">{selectedServices[0]?.duration} min</p>
+                    <p className="text-xs text-ink-3 mt-0.5">{displayServices[0]?.duration} min</p>
                   </div>
-                  {selectedServices[0]?.promo
-                    ? <StruckPrice original={formatServicePrice(selectedServices[0])} final={combinedPriceStr} size="md" />
+                  {displayServices[0]?.promo
+                    ? <StruckPrice original={formatServicePrice(displayServices[0])} final={combinedPriceStr} size="md" />
                     : <p className="text-[14px] font-semibold text-gold tabular-nums shrink-0">{combinedPriceStr}</p>
                   }
                 </div>
@@ -477,6 +505,21 @@ export default function ClientForm() {
         </div>
       </div>
 
+      {/* ── Aviso: la promo del catálogo ya no aplica para este cliente ──── */}
+      {promoDropped && (
+        <div className="mb-5 flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/8 border border-amber-500/25 animate-fade-up">
+          <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+            <span className="font-semibold">La promoción ya no está disponible para este número.</span>{' '}
+            {serverPricing?.totalDiscount > 0
+              ? 'El descuento se ajustó y el total de arriba ya lo refleja.'
+              : 'Es posible que ya la hayas usado o que haya alcanzado su límite. El total de arriba muestra el precio regular.'}
+          </p>
+        </div>
+      )}
+
       {/* ── Client form / OTP panel ──────────────────────────────────────── */}
       {otpPhase ? (
         <OTPPanel
@@ -519,7 +562,7 @@ export default function ClientForm() {
             label="Teléfono"
             placeholder="55 1234 5678"
             value={phone}
-            onChange={e => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: null })); }}
+            onChange={e => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: null })); if (serverPricing) setServerPricing(null); }}
             onBlur={e => { const err = phoneErr(e.target.value); if (err) setErrors(p => ({ ...p, phone: err })); }}
             error={errors.phone}
             required

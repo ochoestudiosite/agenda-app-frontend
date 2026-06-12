@@ -4,7 +4,7 @@ import { useBooking } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
 import { useServices } from '../../hooks/useServices';
 import { useSpecialists } from '../../hooks/useSpecialists';
-import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
 import { StruckPrice } from '../ui/PromoPrice';
 import Button from '../ui/Button';
 
@@ -50,6 +50,15 @@ export default function BookingConfirmation() {
   const apptDate  = confirmation?.date ? new Date(confirmation.date + 'T12:00:00') : null;
   const monthAbbr = apptDate ? MONTH_SHORT[apptDate.getMonth()] : '';
   const dayNum    = confirmation?.date?.split('-')[2] ?? '';
+
+  // El catálogo mostraba promo pero la reserva se creó con menos descuento
+  // (límite de usos por cliente alcanzado, cupo agotado o vigencia terminada).
+  // Se avisa con claridad — el precio registrado es el que muestra esta tarjeta.
+  const expectedSavings = promoSavings(state.services ?? []);
+  const actualSavings   = isGroup
+    ? (confirmation?.totalDiscount ?? appts.reduce((s, a) => s + (a.discountAmount || 0), 0))
+    : (confirmation?.discountAmount || 0);
+  const promoDropped = expectedSavings > 0 && actualSavings < expectedSavings;
 
   return (
     <div className="animate-fade-up max-w-md mx-auto px-1">
@@ -334,6 +343,21 @@ export default function BookingConfirmation() {
           </>
         )}
       </div>
+
+      {/* Aviso: la promoción del catálogo no aplicó (o aplicó parcialmente) */}
+      {promoDropped && (
+        <div className="mb-4 flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/8 border border-amber-500/25">
+          <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+            <span className="font-semibold">Sobre la promoción:</span>{' '}
+            {actualSavings > 0
+              ? 'el descuento aplicado fue menor al mostrado en el catálogo (la promoción alcanzó su límite). El total de arriba es el precio final de tu reserva.'
+              : 'no se aplicó porque ya la habías usado o alcanzó su límite de usos. El total de arriba es el precio final de tu reserva.'}
+          </p>
+        </div>
+      )}
 
       {/* Tip */}
       <p className="text-center text-[11.5px] text-ink-3 mb-5 leading-relaxed">
