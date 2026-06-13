@@ -4,7 +4,7 @@ import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useCreateAppointment } from '../../hooks/useAppointment';
 import { useConfig } from '../../hooks/useConfig';
-import { formatDate, formatTime, formatServicePrice, formatCombinedPrice, promoSavings, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
 import { api } from '../../services/api';
 import Input from '../ui/Input';
 import PhoneInput, { COUNTRIES } from '../ui/PhoneInput';
@@ -136,6 +136,14 @@ export default function ClientForm() {
   const [errors,        setErrors]        = useState({});
   const [quotaExceeded, setQuotaExceeded] = useState(false);
 
+  // ── Código promocional (Fase 2) ────────────────────────────────────────────
+  const promoEnabled = config?.promotions_enabled === true;
+  const [promoOpen,     setPromoOpen]     = useState(false);
+  const [promoInput,    setPromoInput]    = useState('');
+  const [appliedCode,   setAppliedCode]   = useState(null);  // código validado que viaja en la reserva
+  const [promoStatus,   setPromoStatus]   = useState(null);  // { ok, message }
+  const [promoChecking, setPromoChecking] = useState(false);
+
   // ── OTP sub-flow ──────────────────────────────────────────────────────────
   const [otpPhase,       setOtpPhase]       = useState(false);
   const [pendingId,      setPendingId]      = useState(null);
@@ -184,11 +192,58 @@ export default function ClientForm() {
       clientPhone:     phone.trim(),
       clientEmail:     email.trim() || undefined,
       branchId,
+      ...(appliedCode ? { promoCode: appliedCode } : {}),
     };
     if (groupMode) {
       return { ...base, assignments: serviceAssignments.map(a => ({ serviceId: a.service.id, specialistId: a.specialist.id })) };
     }
     return { ...base, serviceIds: selectedServices.map(s => s.id), specialistId: state.specialist.id };
+  }
+
+  // Valida el código contra el backend con el contexto del slot (fecha/hora) —
+  // el descuento real se revalida server-side al crear la cita. El preview de
+  // precios usa el mismo mecanismo que serverPricing (items[] alineado con
+  // activeServices, mismo orden de slugs).
+  async function handleApplyPromo() {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setPromoChecking(true);
+    setPromoStatus(null);
+    try {
+      const slugs = activeServices.map(s => s.id);
+      // Pasar el teléfono (ya ingresado) hace el preview preciso: evalúa
+      // "solo clientes nuevos" y el límite por cliente sobre su propio número.
+      const cleanPhone = phone.trim();
+      const res = await api.validatePromo({
+        code, serviceIds: slugs, date: state.date, time: state.time,
+        ...(phoneErr(cleanPhone) ? {} : { clientPhone: cleanPhone }),
+      });
+      if (!res.valid) {
+        setAppliedCode(null);
+        setServerPricing(null);
+        setPromoStatus({ ok: false, message: res.message || 'Código no válido o expirado.' });
+      } else {
+        setAppliedCode(code);
+        setServerPricing(res.pricing ?? null);
+        setPromoStatus({
+          ok: true,
+          message: res.codeApplied === false
+            ? (res.message || 'Ya tienes aplicado un descuento igual o mayor.')
+            : `Código aplicado${res.pricing?.totalDiscount > 0 ? ` · ahorras ${formatPrice(res.pricing.totalDiscount)}` : ''}.`,
+        });
+      }
+    } catch (err) {
+      setPromoStatus({ ok: false, message: err.message || 'No se pudo validar el código. Intenta de nuevo.' });
+    } finally {
+      setPromoChecking(false);
+    }
+  }
+
+  function clearPromo() {
+    setAppliedCode(null);
+    setPromoInput('');
+    setPromoStatus(null);
+    setServerPricing(null);
   }
 
   function handleAppointmentError(err) {
@@ -581,6 +636,61 @@ export default function ClientForm() {
             maxLength={120}
             helper="Opcional · Recibirás confirmación y recordatorios"
           />
+          {/* ── Código promocional (colapsable) ──────────────────────────── */}
+          {promoEnabled && (
+            <div className="pt-1">
+              {!promoOpen && !appliedCode ? (
+                <button
+                  type="button"
+                  onClick={() => setPromoOpen(true)}
+                  className="text-[13px] font-medium text-gold hover:text-gold/80 transition-colors inline-flex items-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M3 3h7.5a2 2 0 011.414.586l7.5 7.5a2 2 0 010 2.828l-5.086 5.086a2 2 0 01-2.828 0l-7.5-7.5A2 2 0 013 10.5V3z" />
+                  </svg>
+                  ¿Tienes un código promocional?
+                </button>
+              ) : appliedCode ? (
+                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl bg-gold/8 border border-gold/25">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg className="w-4 h-4 text-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-bold text-ink tabular-nums tracking-wider truncate">{appliedCode}</p>
+                      {promoStatus?.message && <p className="text-[11px] text-ink-3 truncate">{promoStatus.message}</p>}
+                    </div>
+                  </div>
+                  <button type="button" onClick={clearPromo} className="text-[12px] font-semibold text-ink-3 hover:text-ink transition-colors shrink-0">
+                    Quitar
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="block text-[12px] font-medium text-ink-2">Código promocional</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoInput}
+                      onChange={e => { setPromoInput(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')); if (promoStatus) setPromoStatus(null); }}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApplyPromo(); } }}
+                      maxLength={24}
+                      placeholder="Ej. VERANO20"
+                      autoComplete="off" spellCheck={false}
+                      className="flex-1 h-11 px-3.5 rounded-2xl border border-edge bg-raised/40 text-[14px] font-semibold tracking-wider uppercase text-ink placeholder:text-ink-3 placeholder:font-normal placeholder:normal-case focus:outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/15 transition-all"
+                    />
+                    <Button type="button" variant="subtle" onClick={handleApplyPromo} loading={promoChecking} disabled={!promoInput.trim()} className="shrink-0">
+                      Aplicar
+                    </Button>
+                  </div>
+                  {promoStatus && !promoStatus.ok && (
+                    <p className="text-[12px] text-amber-600 dark:text-amber-400">{promoStatus.message}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <Button type="submit" size="lg" className="w-full mt-2" loading={isPending || submitting}>
             Confirmar reservación
           </Button>
