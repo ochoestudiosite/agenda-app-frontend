@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
-import { PromoBadge, StruckPrice, SavingsNote } from '../ui/PromoPrice';
+import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
@@ -240,12 +240,9 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                     }
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <p className="text-[13px] font-semibold text-ink leading-snug">
-                        {toTitleCase(appt.serviceName)}
-                      </p>
-                      {appt.discountAmount > 0 && <PromoBadge />}
-                    </div>
+                    <p className="text-[13px] font-semibold text-ink leading-snug">
+                      {toTitleCase(appt.serviceName)}
+                    </p>
                     {/* Specialist mini-avatar + info */}
                     <div className="flex items-center gap-1.5 mt-1">
                       <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
@@ -261,6 +258,14 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                         {' · '}{appt.serviceDuration} min
                       </p>
                     </div>
+                    {appt.discountAmount > 0 && (
+                      <PromoTag
+                        className="mt-1.5"
+                        promotionName={appt.promotionName} promotionType={appt.promotionType}
+                        promotionValue={appt.promotionValue} promotionCode={appt.promotionCode}
+                        discountAmount={appt.discountAmount}
+                      />
+                    )}
                     {appt.status === 'cancelled' && (
                       <span className="badge badge-cancelled text-[10px] mt-1.5 inline-block">Cancelada</span>
                     )}

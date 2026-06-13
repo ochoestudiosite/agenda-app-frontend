@@ -5,7 +5,16 @@ import { useConfig } from '../../hooks/useConfig';
 import { useServices } from '../../hooks/useServices';
 import { useSpecialists } from '../../hooks/useSpecialists';
 import { formatDate, formatTime, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
-import { PromoBadge, StruckPrice, SavingsNote } from '../ui/PromoPrice';
+import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
+
+// Snapshot de la cita → props del pill de promoción
+const promoTagProps = o => ({
+  promotionName:  o.promotionName,
+  promotionType:  o.promotionType,
+  promotionValue: o.promotionValue,
+  promotionCode:  o.promotionCode,
+  discountAmount: o.discountAmount,
+});
 import Button from '../ui/Button';
 
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -152,12 +161,9 @@ export default function BookingConfirmation() {
                         }
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <p className="text-[13px] font-semibold text-ink leading-snug">
-                            {toTitleCase(appt.serviceName)}
-                          </p>
-                          {appt.discountAmount > 0 && <PromoBadge />}
-                        </div>
+                        <p className="text-[13px] font-semibold text-ink leading-snug">
+                          {toTitleCase(appt.serviceName)}
+                        </p>
                         {/* Specialist mini-avatar + info */}
                         <div className="flex items-center gap-1.5 mt-1">
                           <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
@@ -173,6 +179,7 @@ export default function BookingConfirmation() {
                             {' · '}{appt.serviceDuration} min
                           </p>
                         </div>
+                        {appt.discountAmount > 0 && <PromoTag className="mt-1.5" {...promoTagProps(appt)} />}
                       </div>
                       {appt.discountAmount > 0 && appt.originalPrice != null ? (
                         <StruckPrice
@@ -251,13 +258,13 @@ export default function BookingConfirmation() {
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <p className="text-[13px] font-semibold text-ink leading-snug truncate">
-                            {toTitleCase(svc.serviceName)}
-                          </p>
-                          {svc.discountAmount > 0 && <PromoBadge />}
+                        <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+                          {toTitleCase(svc.serviceName)}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-xs text-ink-3">{svc.serviceDuration} min</span>
+                          {svc.discountAmount > 0 && <PromoTag {...promoTagProps(svc)} />}
                         </div>
-                        <p className="text-xs text-ink-3 mt-0.5">{svc.serviceDuration} min</p>
                       </div>
                       {svc.discountAmount > 0 && svc.originalPrice != null ? (
                         <StruckPrice
@@ -283,15 +290,15 @@ export default function BookingConfirmation() {
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <p className="text-[15px] font-semibold text-ink leading-snug truncate">
-                        {toTitleCase(confirmation?.serviceName)}
-                      </p>
-                      {confirmation?.discountAmount > 0 && <PromoBadge />}
+                    <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                      {toTitleCase(confirmation?.serviceName)}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      {confirmation?.serviceDuration && (
+                        <span className="text-xs text-ink-3">{confirmation.serviceDuration} min</span>
+                      )}
+                      {confirmation?.discountAmount > 0 && <PromoTag {...promoTagProps(confirmation)} />}
                     </div>
-                    {confirmation?.serviceDuration && (
-                      <p className="text-xs text-ink-3 mt-0.5">{confirmation.serviceDuration} min</p>
-                    )}
                   </div>
                   {confirmation?.discountAmount > 0 && confirmation?.originalPrice != null ? (
                     <StruckPrice

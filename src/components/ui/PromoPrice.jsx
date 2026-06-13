@@ -5,12 +5,54 @@ import { formatPrice } from '../../utils/formatters';
 // (AppointmentCard, GroupAppointmentCard) para mostrar el descuento de forma
 // consistente: lista tachada + precio final + línea de ahorro con la promo.
 
-// Chip dorado de promoción: "−20%" para porcentaje, "PROMO" para monto fijo.
+// Concepto registrado en el módulo de Promociones: "−20%" (porcentaje) ·
+// "−$100" (monto fijo). Cae al monto descontado real para citas históricas
+// sin el snapshot de tipo/valor.
+export function promoConceptLabel({ promotionType, promotionValue, discountType, discountValue, discountAmount } = {}) {
+  const type = promotionType ?? discountType;
+  const val  = promotionValue ?? discountValue;
+  if (type === 'percent' && val != null) return `−${Number(val).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%`;
+  if (type === 'fixed_amount' && val != null) return `−${formatPrice(Number(val))}`;
+  if (Number(discountAmount) > 0) return `−${formatPrice(Number(discountAmount))}`;
+  return null;
+}
+
+// Chip dorado de promoción: "−20%" (porcentaje) o "−$100" (monto fijo).
 export function PromoBadge({ discountType, discountValue, className = '' }) {
-  const label = discountType === 'percent' ? `−${Number(discountValue)}%` : 'PROMO';
+  const label = promoConceptLabel({ discountType, discountValue }) || 'PROMO';
   return (
     <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold uppercase tracking-wide bg-gold text-on-gold shrink-0 ${className}`}>
       {label}
+    </span>
+  );
+}
+
+// Estrella ✦ del pill de promoción.
+function PromoStar({ className = 'w-2.5 h-2.5' }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z" />
+    </svg>
+  );
+}
+
+// Pill completo de promoción: nombre + concepto (−20% / −$100) + código.
+// Snapshot de la cita: promotionName, promotionType, promotionValue,
+// promotionCode, discountAmount.
+export function PromoTag({ promotionName, promotionType, promotionValue, promotionCode, discountAmount, className = '' }) {
+  const concept = promoConceptLabel({ promotionType, promotionValue, discountAmount });
+  if (!concept && !(Number(discountAmount) > 0)) return null;
+  const name  = promotionName || 'Promoción';
+  const title = [name, concept, promotionCode ? `código ${promotionCode}` : null].filter(Boolean).join(' · ');
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/12 text-gold border border-gold/25 text-[0.625rem] font-semibold shrink-0 max-w-full ${className}`}
+      title={title}
+    >
+      <PromoStar className="w-2.5 h-2.5 shrink-0" />
+      <span className="truncate max-w-[130px]">{name}</span>
+      {concept && <span className="tabular-nums font-bold shrink-0">· {concept}</span>}
+      {promotionCode && <span className="font-mono tracking-wide text-gold/85 bg-gold/10 rounded px-1 shrink-0">#{promotionCode}</span>}
     </span>
   );
 }

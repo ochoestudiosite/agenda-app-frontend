@@ -10,7 +10,7 @@ import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 import SummaryStrip from '../ui/SummaryStrip';
-import { PromoBadge, StruckPrice, SavingsNote } from '../ui/PromoPrice';
+import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import OTPPanel from '../booking/OTPPanel';
 import { api } from '../../services/api';
 
@@ -269,13 +269,19 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <p className="text-[13px] font-semibold text-ink leading-snug truncate">
-                        {toTitleCase(svc.serviceName)}
-                      </p>
-                      {svc.discountAmount > 0 && <PromoBadge />}
+                    <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+                      {toTitleCase(svc.serviceName)}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span className="text-xs text-ink-3">{svc.serviceDuration} min</span>
+                      {svc.discountAmount > 0 && (
+                        <PromoTag
+                          promotionName={svc.promotionName} promotionType={svc.promotionType}
+                          promotionValue={svc.promotionValue} promotionCode={svc.promotionCode}
+                          discountAmount={svc.discountAmount}
+                        />
+                      )}
                     </div>
-                    <p className="text-xs text-ink-3 mt-0.5">{svc.serviceDuration} min</p>
                   </div>
                   {svc.discountAmount > 0 && svc.originalPrice != null ? (
                     <StruckPrice
@@ -301,13 +307,19 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                 }
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <p className="text-[15px] font-semibold text-ink leading-snug truncate">
-                    {toTitleCase(appointment.serviceName)}
-                  </p>
-                  {appointment.discountAmount > 0 && <PromoBadge />}
+                <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                  {toTitleCase(appointment.serviceName)}
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  <span className="text-xs text-ink-3">{appointment.serviceDuration} min</span>
+                  {appointment.discountAmount > 0 && (
+                    <PromoTag
+                      promotionName={appointment.promotionName} promotionType={appointment.promotionType}
+                      promotionValue={appointment.promotionValue} promotionCode={appointment.promotionCode}
+                      discountAmount={appointment.discountAmount}
+                    />
+                  )}
                 </div>
-                <p className="text-xs text-ink-3 mt-0.5">{appointment.serviceDuration} min</p>
               </div>
               {appointment.discountAmount > 0 && appointment.originalPrice != null ? (
                 <StruckPrice
