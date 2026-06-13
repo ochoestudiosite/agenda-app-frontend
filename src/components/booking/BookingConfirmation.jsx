@@ -62,12 +62,15 @@ export default function BookingConfirmation() {
 
   // El catálogo mostraba promo pero la reserva se creó con menos descuento
   // (límite de usos por cliente alcanzado, cupo agotado o vigencia terminada).
-  // Se avisa con claridad — el precio registrado es el que muestra esta tarjeta.
+  // confirmation.promoDropped es la señal autoritativa del backend (cubre race
+  // conditions en max_redemptions y promos de código sin reflejo en catálogo).
+  // El fallback client-side cubre la divergencia visible sin necesidad de señal.
   const expectedSavings = promoSavings(state.services ?? []);
   const actualSavings   = isGroup
     ? (confirmation?.totalDiscount ?? appts.reduce((s, a) => s + (a.discountAmount || 0), 0))
     : (confirmation?.discountAmount || 0);
-  const promoDropped = expectedSavings > 0 && actualSavings < expectedSavings;
+  const promoDropped = confirmation?.promoDropped
+    || (expectedSavings > 0 && actualSavings < expectedSavings);
 
   return (
     <div className="animate-fade-up max-w-md mx-auto px-1">
