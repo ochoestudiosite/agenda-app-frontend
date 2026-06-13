@@ -617,7 +617,7 @@ export default function ClientForm() {
             label="Teléfono"
             placeholder="55 1234 5678"
             value={phone}
-            onChange={e => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: null })); if (serverPricing) setServerPricing(null); }}
+            onChange={e => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: null })); if (serverPricing) setServerPricing(null); if (appliedCode) { setAppliedCode(null); setPromoStatus(null); } }}
             onBlur={e => { const err = phoneErr(e.target.value); if (err) setErrors(p => ({ ...p, phone: err })); }}
             error={errors.phone}
             required
