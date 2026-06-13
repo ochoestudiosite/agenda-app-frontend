@@ -12,8 +12,9 @@ export function promoConceptLabel({ promotionType, promotionValue, discountType,
   const type = promotionType ?? discountType;
   const val  = promotionValue ?? discountValue;
   if (type === 'percent' && val != null) return `−${Number(val).toLocaleString('es-MX', { maximumFractionDigits: 2 })}%`;
-  if (type === 'fixed_amount' && val != null) return `−${formatPrice(Number(val))}`;
+  // Monto fijo: el descuento REAL (puede topar con el precio) antes que el valor registrado.
   if (Number(discountAmount) > 0) return `−${formatPrice(Number(discountAmount))}`;
+  if (type === 'fixed_amount' && val != null) return `−${formatPrice(Number(val))}`;
   return null;
 }
 
