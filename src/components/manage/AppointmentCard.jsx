@@ -189,6 +189,9 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         otpCode,
       });
       toast('Cita reagendada correctamente.', 'success');
+      if (updated?.promoRemovedOnReschedule) {
+        toast('La promoción aplicada ya no es válida para el nuevo horario y fue removida.', 'info');
+      }
       setMode('view');
       onUpdated?.(updated);
     } catch (err) {

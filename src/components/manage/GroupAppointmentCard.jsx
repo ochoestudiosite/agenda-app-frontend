@@ -160,6 +160,9 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
       setMode('view');
       onUpdated?.(updated);
       toast('Visita reagendada correctamente.', 'success');
+      if (updated?.promoRemovedOnReschedule) {
+        toast('La promoción aplicada ya no es válida para el nuevo horario y fue removida.', 'info');
+      }
     } catch (err) {
       setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
       setManageOtpKey(k => k + 1);
