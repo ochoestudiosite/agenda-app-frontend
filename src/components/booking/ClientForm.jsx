@@ -105,6 +105,8 @@ export default function ClientForm() {
             name:           item.promoName || s.promo?.name || 'Promoción',
             finalPrice:     item.finalPrice,
             discountAmount: item.discountAmount,
+            discountType:   item.promoType  || s.promo?.discountType  || null,
+            discountValue:  item.promoValue ?? s.promo?.discountValue ?? null,
           },
         };
       })
@@ -222,14 +224,18 @@ export default function ClientForm() {
         setAppliedCode(null);
         setServerPricing(null);
         setPromoStatus({ ok: false, message: res.message || 'Código no válido o expirado.' });
+      } else if (res.codeApplied === false) {
+        // Code is valid but a better catalog promo is already applied — don't mark
+        // as applied (the code didn't contribute to the discount).
+        setAppliedCode(null);
+        setServerPricing(res.pricing ?? null);
+        setPromoStatus({ ok: false, message: res.message || 'Ya tienes un descuento igual o mayor aplicado.' });
       } else {
         setAppliedCode(code);
         setServerPricing(res.pricing ?? null);
         setPromoStatus({
           ok: true,
-          message: res.codeApplied === false
-            ? (res.message || 'Ya tienes aplicado un descuento igual o mayor.')
-            : `Código aplicado${res.pricing?.totalDiscount > 0 ? ` · ahorras ${formatPrice(res.pricing.totalDiscount)}` : ''}.`,
+          message: `Código aplicado${res.pricing?.totalDiscount > 0 ? ` · ahorras ${formatPrice(res.pricing.totalDiscount)}` : ''}.`,
         });
       }
     } catch (err) {
