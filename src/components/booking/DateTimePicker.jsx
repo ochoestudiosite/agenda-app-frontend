@@ -81,6 +81,7 @@ export default function DateTimePicker() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
   const autoSelectedRef = useRef(false);
+  const skippedDatesRef = useRef(new Set());
 
   const timeFmt  = config?.time_format ?? '12h';
   const branchId = state.branch?.id;
@@ -121,6 +122,7 @@ export default function DateTimePicker() {
   const appointmentIntervals = (!groupMode && activeData?.appointmentIntervals) || [];
   const groupAvailableSlots  = (groupMode  && activeData?.availableSlots)       || null;
   const staffBlocked         = activeData?.staffBlocked;
+  const staffBlockedFlag     = !!staffBlocked?.blocked;
 
   const intervalMins       = liveConfig.interval   || config?.slot_interval_mins || 30;
   const leadMins           = liveConfig.leadMins   || config?.booking_lead_mins  || 60;
@@ -181,7 +183,7 @@ export default function DateTimePicker() {
   // Si el día actual ya no tiene slots posibles (tarde + leadMins), salta al
   // siguiente día hábil. Nunca sobreescribe una selección manual del usuario.
   useEffect(() => {
-    if (autoSelectedRef.current || selectedDate || bizHours.length === 0) return;
+    if (autoSelectedRef.current || selectedDate || bizHours.length === 0 || !blockedData) return;
     const next = findNextAvailableDate({
       bizHours,
       blockedDates,
@@ -194,7 +196,26 @@ export default function DateTimePicker() {
       setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bizHours.length, blockedDates.length, leadMins]);
+  }, [bizHours.length, blockedDates.length, leadMins, !!blockedData]);
+
+  // Auto-avance cuando el día seleccionado tiene staffBlocked (vacaciones, permisos, etc.)
+  // El cliente nunca debe ver el motivo interno — avanzamos silenciosamente al próximo día.
+  useEffect(() => {
+    if (!staffBlockedFlag || !selectedDate || activeFetching) return;
+    skippedDatesRef.current.add(toDateStr(selectedDate));
+    const next = findNextAvailableDate({
+      bizHours,
+      blockedDates: [...blockedDates, ...skippedDatesRef.current],
+      leadMins: 0,
+      maxAdvanceDays: maxAdvance,
+    });
+    if (next) {
+      setSelectedDate(next);
+      setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+      setSelectedTime(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staffBlockedFlag, activeFetching]);
 
   function handleSelectDate(date) {
     autoSelectedRef.current = true; // usuario seleccionó manualmente
@@ -317,7 +338,7 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && activeFetching && (
+          {selectedDate && (activeFetching || staffBlockedFlag) && !activeError && (
             <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
           )}
 
@@ -335,25 +356,7 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && !activeFetching && !activeError && staffBlocked && (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
-              <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-ink">Día no disponible</p>
-                <p className="text-xs text-ink-3 mt-1">
-                  {staffBlocked.reason || (groupMode
-                    ? 'Uno o más especialistas no están disponibles este día.'
-                    : 'El especialista no estará disponible este día.')}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {selectedDate && !activeFetching && !activeError && !staffBlocked && (
+          {selectedDate && !activeFetching && !staffBlockedFlag && !activeError && (
             <div className="space-y-4 flex-1">
               {isSelectedToday && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold/8 border border-gold/20">
