@@ -80,8 +80,11 @@ export default function DateTimePicker() {
   const [viewMonth,    setViewMonth]    = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
-  const autoSelectedRef = useRef(false);
-  const skippedDatesRef = useRef(new Set());
+  const [noMoreDates,  setNoMoreDates]  = useState(false); // true cuando el auto-avance agotó todas las opciones
+  const autoSelectedRef      = useRef(false);
+  const skippedDatesRef      = useRef(new Set());
+  const autoAdvanceCountRef  = useRef(0);
+  const MAX_AUTO_ADVANCES    = 7;
 
   const timeFmt  = config?.time_format ?? '12h';
   const branchId = state.branch?.id;
@@ -163,6 +166,12 @@ export default function DateTimePicker() {
     isSlotPast(s) || (!groupMode && isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust))
   );
 
+  // true cuando el día está resuelto (no cargando, no error, no bloqueado) pero sin slots
+  const exhaustedFlag    = !!(selectedDate && !activeFetching && !activeError && !staffBlockedFlag &&
+    (allSlots.length === 0 || allSlotsExhausted));
+  // true mientras config u horarios bloqueados aún no cargan (evita flash de "Selecciona una fecha")
+  const waitingForSetup  = !config || !blockedData;
+
   const firstDay    = (viewMonth.getDay() + 6) % 7; // 0=Lunes … 6=Domingo
   const daysInMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
   const cells = [];
@@ -217,8 +226,38 @@ export default function DateTimePicker() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffBlockedFlag, activeFetching]);
 
+  // Auto-avance cuando el día no tiene slots (agendados/pasados/sin horario).
+  // Limitado a MAX_AUTO_ADVANCES para no encadenar decenas de llamadas al API.
+  // noMoreDates=true cuando se agota el límite o findNextAvailableDate regresa null.
+  useEffect(() => {
+    if (!exhaustedFlag || !selectedDate) return;
+    if (autoAdvanceCountRef.current >= MAX_AUTO_ADVANCES) {
+      setNoMoreDates(true); // límite alcanzado — muestra "Sin disponibilidad"
+      return;
+    }
+    setNoMoreDates(false);
+    autoAdvanceCountRef.current++;
+    skippedDatesRef.current.add(toDateStr(selectedDate));
+    const next = findNextAvailableDate({
+      bizHours,
+      blockedDates: [...blockedDates, ...skippedDatesRef.current],
+      leadMins: 0,
+      maxAdvanceDays: maxAdvance,
+    });
+    if (next) {
+      setSelectedDate(next);
+      setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+      setSelectedTime(null);
+    } else {
+      setNoMoreDates(true); // sin fechas estructurales disponibles
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exhaustedFlag]);
+
   function handleSelectDate(date) {
-    autoSelectedRef.current = true; // usuario seleccionó manualmente
+    autoSelectedRef.current = true;
+    autoAdvanceCountRef.current = 0;
+    setNoMoreDates(false);
     setSelectedDate(date);
     setSelectedTime(null);
   }
@@ -327,7 +366,13 @@ export default function DateTimePicker() {
         {/* ── Time slots ───────────────────────────────────────────────────── */}
         <div className="card p-5 min-h-[280px] flex flex-col">
 
-          {!selectedDate && (
+          {/* Spinner de setup: config o blocked-dates aún cargando (evita flash antes del auto-select) */}
+          {!selectedDate && waitingForSetup && (
+            <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
+          )}
+
+          {/* Solo cuando el setup está completo y no hay fecha aún (el usuario canceló auto-select o no hay días) */}
+          {!selectedDate && !waitingForSetup && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                 <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -338,7 +383,8 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && (activeFetching || staffBlockedFlag) && !activeError && (
+          {/* Spinner mientras carga slots, auto-avanza por staffBlocked o agendado completo */}
+          {selectedDate && (activeFetching || staffBlockedFlag || (exhaustedFlag && !noMoreDates)) && !activeError && (
             <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
           )}
 
@@ -356,7 +402,8 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {selectedDate && !activeFetching && !staffBlockedFlag && !activeError && (
+          {/* Área de slots: carga completa, sin bloqueos activos, y sin auto-avance en curso */}
+          {selectedDate && !activeFetching && !staffBlockedFlag && (!exhaustedFlag || noMoreDates) && !activeError && (
             <div className="space-y-4 flex-1">
               {isSelectedToday && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold/8 border border-gold/20">
@@ -370,6 +417,7 @@ export default function DateTimePicker() {
               )}
 
               {allSlots.length === 0 || allSlotsExhausted ? (
+                // Solo llega aquí si autoAdvanceCountRef >= MAX_AUTO_ADVANCES (todos los días próximos agendados)
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                   <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                     <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -378,39 +426,8 @@ export default function DateTimePicker() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
-                    <p className="text-xs text-ink-3 mt-1">No hay horarios libres para este día.</p>
+                    <p className="text-xs text-ink-3 mt-1">No hay horarios disponibles en las próximas semanas. Intenta seleccionar otra fecha en el calendario.</p>
                   </div>
-                  {/* Botón para saltar al siguiente día disponible */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!selectedDate) return;
-                      const next = findNextAvailableDate({
-                        bizHours,
-                        blockedDates,
-                        leadMins,
-                        maxAdvanceDays: maxAdvance,
-                      });
-                      // Buscar el día SIGUIENTE al actual seleccionado
-                      const afterSelected = new Date(selectedDate);
-                      afterSelected.setDate(afterSelected.getDate() + 1);
-                      const nextAfter = findNextAvailableDate({
-                        bizHours,
-                        blockedDates: [...blockedDates, toDateStr(selectedDate)],
-                        leadMins: 0,
-                        maxAdvanceDays: maxAdvance,
-                      });
-                      if (nextAfter) {
-                        autoSelectedRef.current = true;
-                        setSelectedDate(nextAfter);
-                        setViewMonth(new Date(nextAfter.getFullYear(), nextAfter.getMonth(), 1));
-                        setSelectedTime(null);
-                      }
-                    }}
-                    className="text-[12px] font-semibold text-gold border border-gold/25 bg-gold/6 rounded-xl px-4 py-2 hover:bg-gold/12 transition-colors cursor-pointer"
-                  >
-                    Ver siguiente fecha disponible →
-                  </button>
                 </div>
               ) : (
                 Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
