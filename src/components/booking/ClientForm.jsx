@@ -9,7 +9,7 @@ import { api } from '../../services/api';
 import Input from '../ui/Input';
 import PhoneInput, { COUNTRIES } from '../ui/PhoneInput';
 import Button from '../ui/Button';
-import { PromoBadge, StruckPrice, SavingsNote } from '../ui/PromoPrice';
+import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import { useToast } from '../ui/Toast';
 import { BackButton } from './SpecialistSelector';
 import BookingUnavailable from './BookingUnavailable';
@@ -427,7 +427,7 @@ export default function ClientForm() {
                         <p className="text-[14px] font-semibold text-ink leading-tight">
                           {toTitleCase(a.service.name)}
                         </p>
-                        {dSvc.promo && <PromoBadge discountType={dSvc.promo.discountType} discountValue={dSvc.promo.discountValue} />}
+                        {dSvc.promo && <PromoTag promotionName={dSvc.promo.name} promotionType={dSvc.promo.discountType} promotionValue={dSvc.promo.discountValue} discountAmount={dSvc.promo.discountAmount} />}
                       </div>
                       {/* Specialist mini-avatar + info */}
                       <div className="flex items-center gap-1.5 mt-1">
@@ -481,7 +481,7 @@ export default function ClientForm() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
                           <p className="text-[13px] font-semibold text-ink leading-snug truncate">{toTitleCase(svc.name)}</p>
-                          {svc.promo && <PromoBadge discountType={svc.promo.discountType} discountValue={svc.promo.discountValue} />}
+                          {svc.promo && <PromoTag promotionName={svc.promo.name} promotionType={svc.promo.discountType} promotionValue={svc.promo.discountValue} discountAmount={svc.promo.discountAmount} />}
                         </div>
                         <p className="text-xs text-ink-3 mt-0.5">{svc.duration} min</p>
                       </div>
@@ -504,7 +504,7 @@ export default function ClientForm() {
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-0.5">Servicio</p>
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="text-[14px] font-semibold text-ink leading-snug">{toTitleCase(displayServices[0]?.name)}</p>
-                      {displayServices[0]?.promo && <PromoBadge discountType={displayServices[0].promo.discountType} discountValue={displayServices[0].promo.discountValue} />}
+                      {displayServices[0]?.promo && <PromoTag promotionName={displayServices[0].promo.name} promotionType={displayServices[0].promo.discountType} promotionValue={displayServices[0].promo.discountValue} discountAmount={displayServices[0].promo.discountAmount} />}
                     </div>
                     <p className="text-xs text-ink-3 mt-0.5">{displayServices[0]?.duration} min</p>
                   </div>
@@ -617,7 +617,7 @@ export default function ClientForm() {
             label="Teléfono"
             placeholder="55 1234 5678"
             value={phone}
-            onChange={e => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: null })); if (serverPricing) setServerPricing(null); if (appliedCode) { setAppliedCode(null); setPromoStatus(null); } }}
+            onChange={e => { setPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: null })); }}
             onBlur={e => { const err = phoneErr(e.target.value); if (err) setErrors(p => ({ ...p, phone: err })); }}
             error={errors.phone}
             required
