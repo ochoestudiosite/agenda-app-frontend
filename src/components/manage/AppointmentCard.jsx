@@ -939,7 +939,7 @@ function ReschedulePanel({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-ink">Día no disponible</p>
-                    <p className="text-xs text-ink-3 mt-1">{staffBlocked.reason || 'El especialista no estará disponible este día.'}</p>
+                    <p className="text-xs text-ink-3 mt-1">El especialista no estará disponible este día.</p>
                   </div>
                 </div>
               )}
