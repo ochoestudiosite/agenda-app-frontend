@@ -81,7 +81,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const effectiveBranchId     = reBranch?.id     || appointment.branchId;
   const dateStr               = newDate ? toDateStr(newDate) : null;
 
-  const { data: availData, isFetching } = useAvailability(
+  const { data: availData, isFetching, isError: availError } = useAvailability(
     mode === 'reschedule' && reschedStep === 'datetime' ? dateStr : null,
     effectiveSpecialistId,
     effectiveBranchId,
@@ -89,10 +89,11 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     mode === 'reschedule' ? appointment.code : null,
   );
   const appointmentIntervals = availData?.appointmentIntervals || [];
-  const bufferMins   = availData?.config?.bufferMins   || 0;
-  const leadMins     = availData?.config?.leadMins     || 0;
-  const closeTime    = availData?.config?.closeTime    || '19:00';
-  const staffBlocked = availData?.staffBlocked ?? null;
+  const bufferMins     = availData?.config?.bufferMins   || 0;
+  const leadMins       = availData?.config?.leadMins     || 0;
+  const closeTime      = availData?.config?.closeTime    || '19:00';
+  const staffBlocked   = availData?.staffBlocked   ?? null;
+  const businessClosed = availData?.businessClosed ?? null;
 
   const todayStr   = toDateStr(new Date());
   const isToday    = dateStr === todayStr;
@@ -506,11 +507,13 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           effectiveSpecialistId={effectiveSpecialistId}
           effectiveBranchId={effectiveBranchId}
           staffBlocked={staffBlocked}
+          businessClosed={businessClosed}
           viewMonth={viewMonth}   setViewMonth={setViewMonth}
           newDate={newDate}       setNewDate={d => { setNewDate(d); setNewTime(null); }}
           newTime={newTime}       setNewTime={setNewTime}
           appointmentIntervals={appointmentIntervals}
           bufferMins={bufferMins}  isFetching={isFetching}
+          isError={availError}
           isToday={isToday}
           cutoffMins={cutoffMins}
           onConfirm={handleReschedule}
@@ -655,15 +658,30 @@ function findNextAvailableDate({ bizHours = [], blockedDates = [], leadMins = 0,
   return null;
 }
 
+function slotToMinutes(slot) {
+  if (!slot) return 0;
+  const [h, m] = slot.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins) {
+  const start = slotToMinutes(slot);
+  const end   = start + duration;
+  if (end > closeTimeMins) return true;
+  return appointmentIntervals.some(({ startMin, endMin }) =>
+    start < endMin && end > startMin
+  );
+}
+
 function ReschedulePanel({
   appointment, config, branches, isMulti, serviceDbId,
   allSpecialists = [],
   reschedStep, setReschedStep,
   reBranch, setReBranch, reSpecialist, setReSpecialist,
   effectiveSpecialistId, effectiveBranchId,
-  staffBlocked, viewMonth, setViewMonth,
+  staffBlocked, businessClosed, viewMonth, setViewMonth,
   newDate, setNewDate, newTime, setNewTime,
-  appointmentIntervals, bufferMins = 0, isFetching,
+  appointmentIntervals, bufferMins = 0, isFetching, isError,
   isToday = false, cutoffMins = 0,
   onConfirm, onCancel, isLoading,
 }) {
@@ -691,14 +709,52 @@ function ReschedulePanel({
   const { data: blockedData } = useBlockedDates(monthStr, effectiveSpecialistId, effectiveBranchId);
   const blockedDates = blockedData?.blockedDates ?? [];
 
+  const staffBlockedFlag   = !!staffBlocked?.blocked;
+  const businessClosedFlag = !!businessClosed?.closed;
+  // Unifica ambas condiciones de "día estructuralmente no disponible" —
+  // ni vacaciones de especialista ni cierres del negocio llegan al cliente.
+  const anyDaySkipFlag     = staffBlockedFlag || businessClosedFlag;
+  // true mientras config u horarios bloqueados aún no cargan (evita flash de "Selecciona una fecha")
+  const waitingForSetup    = !config || !blockedData;
+
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
   const maxDate   = new Date(todayDate); maxDate.setDate(maxDate.getDate() + maxAdvance);
   const todayStr  = toDateStr(todayDate);
 
-  // Auto-selección: cuando llega el especialista/datos, salta al próximo día disponible
-  const autoSelectedRef = useRef(false);
+  const dayEntry  = newDate ? (bizHoursRaw.find(h => h.day_of_week === newDate.getDay()) ?? null) : null;
+  const openTime  = dayEntry?.open_time  ?? '9:00';
+  const closeTime = dayEntry?.close_time ?? '19:00';
+  const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
+  const grouped   = groupSlots(allSlots);
+
+  function isSlotPast(slot) {
+    return isToday && slotToMinutes(slot) <= cutoffMins;
+  }
+  const closeMinsForExhaust = slotToMinutes(closeTime);
+  const allSlotsExhausted   = allSlots.length > 0 && allSlots.every(s =>
+    isSlotPast(s) || isSlotBusy(s, appointment.serviceDuration, appointmentIntervals, closeMinsForExhaust)
+  );
+  // true cuando el día está resuelto (no cargando, no error, no bloqueado) pero sin slots
+  const exhaustedFlag = !!(newDate && !isFetching && !isError && !anyDaySkipFlag &&
+    (allSlots.length === 0 || allSlotsExhausted));
+
+  const autoSelectedRef     = useRef(false);
+  const skippedDatesRef     = useRef(new Set());
+  const autoAdvanceCountRef = useRef(0);
+  const MAX_AUTO_ADVANCES   = 7;
+  const [noMoreDates, setNoMoreDates] = useState(false);
+
+  // Cambio de especialista/sucursal: reinicia el auto-avance para el nuevo contexto
   useEffect(() => {
-    if (autoSelectedRef.current || newDate || reschedStep !== 'datetime' || !bizHoursRaw.length) return;
+    autoSelectedRef.current = false;
+    autoAdvanceCountRef.current = 0;
+    skippedDatesRef.current = new Set();
+    setNoMoreDates(false);
+  }, [effectiveSpecialistId, effectiveBranchId]);
+
+  // Auto-selección: cuando llega el especialista/datos, salta al próximo día disponible
+  useEffect(() => {
+    if (autoSelectedRef.current || newDate || reschedStep !== 'datetime' || !bizHoursRaw.length || !blockedData) return;
     const next = findNextAvailableDate({
       bizHours: bizHoursRaw,
       blockedDates,
@@ -711,7 +767,57 @@ function ReschedulePanel({
       setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reschedStep, blockedDates.length, bizHoursRaw.length]);
+  }, [reschedStep, blockedDates.length, bizHoursRaw.length, !!blockedData]);
+
+  // Auto-avance cuando staffBlocked o businessClosed — el cliente nunca ve el motivo interno.
+  useEffect(() => {
+    if (!anyDaySkipFlag || !newDate || isFetching) return;
+    skippedDatesRef.current.add(toDateStr(newDate));
+    const next = findNextAvailableDate({
+      bizHours: bizHoursRaw,
+      blockedDates: [...blockedDates, ...skippedDatesRef.current],
+      leadMins: 0,
+      maxAdvanceDays: maxAdvance,
+    });
+    if (next) {
+      setNewDate(next);
+      setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anyDaySkipFlag, isFetching]);
+
+  // Auto-avance cuando el día no tiene slots (agendados/pasados/sin horario).
+  // Limitado a MAX_AUTO_ADVANCES para no encadenar decenas de llamadas al API.
+  useEffect(() => {
+    if (!exhaustedFlag || !newDate) return;
+    if (autoAdvanceCountRef.current >= MAX_AUTO_ADVANCES) {
+      setNoMoreDates(true);
+      return;
+    }
+    setNoMoreDates(false);
+    autoAdvanceCountRef.current++;
+    skippedDatesRef.current.add(toDateStr(newDate));
+    const next = findNextAvailableDate({
+      bizHours: bizHoursRaw,
+      blockedDates: [...blockedDates, ...skippedDatesRef.current],
+      leadMins: 0,
+      maxAdvanceDays: maxAdvance,
+    });
+    if (next) {
+      setNewDate(next);
+      setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    } else {
+      setNoMoreDates(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exhaustedFlag]);
+
+  function handleSelectDate(date) {
+    autoSelectedRef.current = true;
+    autoAdvanceCountRef.current = 0;
+    setNoMoreDates(false);
+    setNewDate(date);
+  }
 
   function isDisabled(d) {
     if (d < todayDate || d > maxDate) return true;
@@ -727,12 +833,6 @@ function ReschedulePanel({
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), d));
-
-  const dayEntry  = newDate ? (bizHoursRaw.find(h => h.day_of_week === newDate.getDay()) ?? null) : null;
-  const openTime  = dayEntry?.open_time  ?? '9:00';
-  const closeTime = dayEntry?.close_time ?? '19:00';
-  const allSlots  = newDate ? generateSlots(openTime, closeTime, appointment.serviceDuration, intervalMins, bufferMins) : [];
-  const grouped   = groupSlots(allSlots);
 
   return (
     <div className="animate-fade-in">
@@ -896,7 +996,7 @@ function ReschedulePanel({
                   const isT      = toDateStr(date) === todayStr;
                   const isSel    = newDate && toDateStr(date) === toDateStr(newDate);
                   return (
-                    <button key={toDateStr(date)} disabled={disabled} onClick={() => setNewDate(date)}
+                    <button key={toDateStr(date)} disabled={disabled} onClick={() => handleSelectDate(date)}
                       className={[
                         'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-150',
                         disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
@@ -917,7 +1017,13 @@ function ReschedulePanel({
 
             {/* Time slots */}
             <div className="card p-5 min-h-[280px] flex flex-col">
-              {!newDate && (
+
+              {/* Spinner de setup: blockedDates aún cargando (evita flash antes del auto-select) */}
+              {!newDate && waitingForSetup && (
+                <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
+              )}
+
+              {!newDate && !waitingForSetup && (
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
                   <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                     <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -927,26 +1033,31 @@ function ReschedulePanel({
                   <p className="text-sm text-ink-3">Selecciona una fecha</p>
                 </div>
               )}
-              {newDate && isFetching && (
+
+              {/* Spinner mientras carga slots o auto-avanza (staffBlocked / businessClosed / agendado) */}
+              {newDate && (isFetching || anyDaySkipFlag || (exhaustedFlag && !noMoreDates)) && !isError && (
                 <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
               )}
-              {newDate && !isFetching && staffBlocked && (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
+
+              {newDate && !isFetching && isError && (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                   <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                    <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-ink">Día no disponible</p>
-                    <p className="text-xs text-ink-3 mt-1">El especialista no estará disponible este día.</p>
+                    <p className="text-sm font-medium text-ink">Error al cargar horarios</p>
+                    <p className="text-xs text-ink-3 mt-1">Verifica tu conexión y elige otro día.</p>
                   </div>
                 </div>
               )}
-              {newDate && !isFetching && !staffBlocked && (
+
+              {/* Área de slots: carga completa, sin bloqueos, sin auto-avance en curso */}
+              {newDate && !isFetching && !anyDaySkipFlag && (!exhaustedFlag || noMoreDates) && !isError && (
                 <div className="space-y-4 flex-1">
-                  {allSlots.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
+                  {allSlots.length === 0 || allSlotsExhausted ? (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                       <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                         <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -954,53 +1065,30 @@ function ReschedulePanel({
                       </div>
                       <div>
                         <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
-                        <p className="text-xs text-ink-3 mt-1">No hay horarios libres para este día.</p>
+                        <p className="text-xs text-ink-3 mt-1">No hay horarios disponibles en las próximas semanas. Intenta seleccionar otra fecha en el calendario.</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!newDate) return;
-                          const next = findNextAvailableDate({
-                            bizHours: bizHoursRaw,
-                            blockedDates: [...blockedDates, toDateStr(newDate)],
-                            maxAdvanceDays: maxAdvance,
-                          });
-                          if (next) {
-                            autoSelectedRef.current = true;
-                            setNewDate(next);
-                            setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
-                          }
-                        }}
-                        className="text-[12px] font-semibold text-gold border border-gold/25 bg-gold/6 rounded-xl px-4 py-2 hover:bg-gold/12 transition-colors cursor-pointer"
-                      >
-                        Ver siguiente fecha disponible →
-                      </button>
                     </div>
                   ) : (
                     Object.entries({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }).map(([key, label]) => {
                       const slots = grouped[key];
                       if (!slots?.length) return null;
-                      const [cH, cM] = closeTime.split(':').map(Number);
-                      const closeMins = cH * 60 + cM;
                       return (
                         <div key={key}>
                           <p className="label-section mb-2">{label}</p>
                           <div className="grid grid-cols-3 gap-2">
                             {slots.map(slot => {
-                              const [sh, sm]  = slot.split(':').map(Number);
-                              const slotStart = sh * 60 + sm;
-                              const slotEnd   = slotStart + appointment.serviceDuration;
-                              const isPast    = isToday && slotStart <= cutoffMins;
-                              const busy      = isPast || slotEnd > closeMins
-                                || appointmentIntervals.some(({ startMin, endMin }) => slotStart < endMin && slotEnd > startMin);
-                              const sel = newTime === slot;
+                              const past    = isSlotPast(slot);
+                              const busy    = isSlotBusy(slot, appointment.serviceDuration, appointmentIntervals, closeMinsForExhaust);
+                              const sel     = newTime === slot;
+                              const unavail = past || busy;
                               return (
-                                <button key={slot} disabled={busy} onClick={() => setNewTime(slot)}
+                                <button key={slot} disabled={unavail} onClick={() => setNewTime(slot)}
                                   className={[
                                     'py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                                    busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : 'cursor-pointer',
-                                    sel  ? 'bg-gold text-on-gold shadow-xs'
-                                         : !busy ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]' : '',
+                                    busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : '',
+                                    past && !busy ? 'text-ink-3/35 bg-raised/40 cursor-not-allowed' : '',
+                                    sel && !unavail ? 'bg-gold text-on-gold shadow-xs'
+                                         : !unavail ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97] cursor-pointer' : '',
                                   ].filter(Boolean).join(' ')}>
                                   {formatTime(slot, timeFmt)}
                                 </button>
