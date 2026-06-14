@@ -65,7 +65,10 @@ async function request(method, path, body, retryCount = 0) {
       timeoutErr.code = 'TIMEOUT';
       throw timeoutErr;
     }
-    if (retryCount < MAX_RETRIES) {
+    // Never blindly retry non-idempotent mutations on a network failure: the
+    // server may have already committed the write (e.g. created the cita)
+    // before the response was lost, and a retry would duplicate it.
+    if (method === 'GET' && retryCount < MAX_RETRIES) {
       await sleep(1000 * (retryCount + 1));
       return request(method, path, body, retryCount + 1);
     }
