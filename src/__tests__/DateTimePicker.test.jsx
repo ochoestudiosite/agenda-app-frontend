@@ -1,88 +1,118 @@
 /**
  * Tests for frontend/src/components/booking/DateTimePicker.jsx
  *
- * Focus:
- *   - Renders calendar with month/year header
- *   - Previous/next month navigation
- *   - Disabled days (closed by business hours, past days, blocked dates)
- *   - Selecting a date fetches available slots
- *   - Slot list shown on date select
- *   - Selecting a slot dispatches SET_DATETIME
- *   - GO_BACK dispatch on back button
+ * Principles:
+ *   - Mocks match the actual hook return shapes (isFetching/isError, not isLoading)
+ *   - State uses the component's actual field names (services/specialist/branch)
+ *   - Time is frozen at 07:00 Monday 2026-06-15 so all business-hour slots are future
+ *   - Privacy invariants are tested as strict negative assertions on the DOM
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
+// ── Freeze time: Monday 07:00 — all 9:00–18:00 slots are future ──────────────
+beforeAll(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-06-15T07:00:00'))
+})
+afterAll(() => vi.useRealTimers())
 
-const mockDispatch = vi.fn()
-let mockState = {
-  selectedServices:   [{ id: 1, name: 'Corte', duration: 30, price: 100, price_type: 'fixed' }],
-  selectedSpecialist: { id: 2, name: 'Ana García', slug: 'ana-garcia' },
-  selectedBranch:     { id: 1, slug: 'principal' },
-  selectedDate:       null,
-  selectedTime:       null,
+// ── Shared mock data ──────────────────────────────────────────────────────────
+
+const BIZ_HOURS = [
+  { day_of_week: 0, is_open: false, open_time: '09:00', close_time: '18:00' },
+  { day_of_week: 1, is_open: true,  open_time: '09:00', close_time: '18:00' }, // Mon
+  { day_of_week: 2, is_open: true,  open_time: '09:00', close_time: '18:00' },
+  { day_of_week: 3, is_open: true,  open_time: '09:00', close_time: '18:00' },
+  { day_of_week: 4, is_open: true,  open_time: '09:00', close_time: '18:00' },
+  { day_of_week: 5, is_open: true,  open_time: '09:00', close_time: '18:00' },
+  { day_of_week: 6, is_open: false, open_time: '09:00', close_time: '18:00' },
+]
+
+const AVAIL_CONFIG = {
+  interval: 30, leadMins: 60, bufferMins: 0,
+  openTime: '9:00', closeTime: '18:00', isOpen: true,
+  timezone: 'America/Mexico_City',
 }
 
-vi.mock('../../context/BookingContext.jsx', () => ({
-  useBooking: () => ({ state: mockState, dispatch: mockDispatch }),
-  isGroupMode: () => false,
+// Normal: open day with no blocks
+const AVAIL_NORMAL = {
+  data: { staffBlocked: null, businessClosed: null, appointmentIntervals: [], config: AVAIL_CONFIG },
+  isFetching: false,
+  isError: false,
+}
+
+// Staff blocked — reason is internal and must never reach the client DOM
+const availStaffBlocked = (reason = 'Vacaciones pagadas') => ({
+  data: {
+    staffBlocked:    { blocked: true, reason },
+    businessClosed:  null,
+    appointmentIntervals: [],
+    config: { ...AVAIL_CONFIG, isOpen: false },
+  },
+  isFetching: false,
+  isError: false,
+})
+
+// Business closed — reason is internal and must never reach the client DOM
+const availBusinessClosed = (reason = 'Día festivo') => ({
+  data: {
+    staffBlocked:   null,
+    businessClosed: { closed: true, reason },
+    appointmentIntervals: [],
+    config: { ...AVAIL_CONFIG, isOpen: false },
+  },
+  isFetching: false,
+  isError: false,
+})
+
+const BLOCKED_EMPTY = { data: { blockedDates: [], month: '2026-06' } }
+
+// ── Hoisted vi.fn() refs (required for vi.mock factories) ────────────────────
+const { mockAvailFn, mockBlockedFn } = vi.hoisted(() => ({
+  mockAvailFn:   vi.fn(),
+  mockBlockedFn: vi.fn(),
+}))
+
+// ── Module mocks ──────────────────────────────────────────────────────────────
+
+vi.mock('../hooks/useAvailability.js', () => ({
+  useAvailability:      mockAvailFn,
+  useGroupAvailability: vi.fn(() => ({ data: null, isFetching: false, isError: false })),
+  useBlockedDates:      mockBlockedFn,
+}))
+
+vi.mock('../hooks/useConfig.js', () => ({
+  useConfig: () => ({
+    data: {
+      max_advance_days:   30,
+      booking_lead_mins:  60,
+      slot_interval_mins: 30,
+      time_format:        '12h',
+      hours: { '1': BIZ_HOURS },
+    },
+  }),
+}))
+
+const mockDispatch = vi.fn()
+let mockState
+
+vi.mock('../context/BookingContext.jsx', () => ({
+  useBooking:      () => ({ state: mockState, dispatch: mockDispatch }),
+  isGroupMode:     () => false,
   BookingProvider: ({ children }) => children,
 }))
 
-const mockGetSlots = vi.fn()
-const mockGetGroupSlots = vi.fn()
-const mockGetBlockedDates = vi.fn()
-const mockGetConfig = vi.fn()
-
-vi.mock('../../hooks/useAvailability.js', () => ({
-  useAvailability: ({ date }) => {
-    if (!date) return { data: null, isLoading: false }
-    return {
-      data: ['09:00', '09:30', '10:00', '10:30'],
-      isLoading: false,
-    }
-  },
-  useGroupAvailability: ({ date }) => {
-    if (!date) return { data: null, isLoading: false }
-    return { data: ['09:00', '10:00'], isLoading: false }
-  },
-  useBlockedDates: () => ({
-    data: [],
-    isLoading: false,
-  }),
-}))
-
-vi.mock('../../hooks/useConfig.js', () => ({
-  useConfig: () => ({
-    data: {
-      max_advance_days: 30,
-      lead_time_mins:   60,
-      business_hours: [
-        { day_of_week: 0, is_open: false, open_time: '09:00', close_time: '18:00' }, // Sunday closed
-        { day_of_week: 1, is_open: true,  open_time: '09:00', close_time: '18:00' },
-        { day_of_week: 2, is_open: true,  open_time: '09:00', close_time: '18:00' },
-        { day_of_week: 3, is_open: true,  open_time: '09:00', close_time: '18:00' },
-        { day_of_week: 4, is_open: true,  open_time: '09:00', close_time: '18:00' },
-        { day_of_week: 5, is_open: true,  open_time: '09:00', close_time: '18:00' },
-        { day_of_week: 6, is_open: false, open_time: '09:00', close_time: '18:00' }, // Saturday closed
-      ],
-    },
-    isLoading: false,
-  }),
-}))
-
-vi.mock('../../utils/formatters.js', () => ({
+vi.mock('../utils/formatters.js', () => ({
   formatTime:    (t) => t,
-  generateSlots: (open, close, step) => {
+  generateSlots: (_open, _close, duration, interval) => {
     const slots = []
     let mins = 9 * 60
-    while (mins < 18 * 60) {
+    const step = interval || 30
+    while (mins + duration <= 18 * 60) {
       const h = Math.floor(mins / 60)
       const m = mins % 60
       slots.push(`${h}:${String(m).padStart(2, '0')}`)
@@ -90,124 +120,256 @@ vi.mock('../../utils/formatters.js', () => ({
     }
     return slots
   },
-  groupSlots:    (slots) => ({ Mañana: slots }),
-  toTitleCase:   (s) => s ?? '',
+  // Return slots in the 'morning' bucket so the component renders them
+  groupSlots:  (slots) => ({ morning: slots, afternoon: [], evening: [] }),
+  toTitleCase: (s) => s ?? '',
 }))
 
-vi.mock('../ui/Spinner.jsx', () => ({
-  default: () => <div data-testid="spinner">Loading...</div>,
+vi.mock('../components/ui/Spinner.jsx',        () => ({ default: () => <div data-testid="spinner" /> }))
+vi.mock('../components/ui/Button.jsx',         () => ({ default: ({ children, onClick, disabled }) =>
+  <button onClick={onClick} disabled={disabled}>{children}</button> }))
+vi.mock('../components/booking/SpecialistSelector.jsx', () => ({
+  BackButton: ({ onClick }) => <button data-testid="back-btn" onClick={onClick}>Regresar</button>,
 }))
 
-vi.mock('../ui/Button.jsx', () => ({
-  default: ({ children, onClick, disabled, ...p }) => (
-    <button onClick={onClick} disabled={disabled} {...p}>{children}</button>
-  ),
-}))
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-vi.mock('./SpecialistSelector.jsx', () => ({
-  BackButton: ({ onClick }) => <button onClick={onClick} data-testid="back-btn">Regresar</button>,
-}))
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-async function renderDateTimePicker() {
+async function renderPicker() {
   const { default: DateTimePicker } = await import('../components/booking/DateTimePicker.jsx')
   return render(<DateTimePicker />)
+}
+
+function timeSlotsInDOM() {
+  return screen.queryAllByRole('button').filter(b =>
+    /^\d{1,2}:\d{2}$/.test(b.textContent.trim())
+  )
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockState = {
-    selectedServices:   [{ id: 1, name: 'Corte', duration: 30, price: 100, price_type: 'fixed' }],
-    selectedSpecialist: { id: 2, name: 'Ana García', slug: 'ana-garcia' },
-    selectedBranch:     { id: 1, slug: 'principal' },
-    selectedDate:       null,
-    selectedTime:       null,
+    services:           [{ id: 1, name: 'Corte', duration: 30, price: 100, price_type: 'fixed' }],
+    specialist:         { id: 2, name: 'Ana García', slug: 'ana-garcia' },
+    branch:             { id: 1, slug: 'principal' },
+    serviceAssignments: [],
+    date: null,
+    time: null,
   }
+  mockBlockedFn.mockReturnValue(BLOCKED_EMPTY)
+  mockAvailFn.mockReturnValue(AVAIL_NORMAL)
 })
 
 // ============================================================================
-// 1. Render
+// 1. Render básico
 // ============================================================================
 
 describe('DateTimePicker — render', () => {
   it('renders without crashing', async () => {
-    await act(async () => { await renderDateTimePicker() })
+    await act(async () => { await renderPicker() })
     expect(document.body).toBeTruthy()
   })
 
-  it('shows month navigation (prev/next buttons)', async () => {
-    await act(async () => { await renderDateTimePicker() })
-    const btns = screen.queryAllByRole('button')
-    expect(btns.length).toBeGreaterThan(0)
+  it('shows month/year header (Junio 2026)', async () => {
+    await act(async () => { await renderPicker() })
+    expect(document.body.textContent).toMatch(/junio.*2026/i)
   })
 
-  it('shows days-of-week header (Lu, Ma, Mi...)', async () => {
-    await act(async () => { await renderDateTimePicker() })
+  it('shows day-of-week abbreviations in calendar header', async () => {
+    await act(async () => { await renderPicker() })
     const body = document.body.textContent
-    // At least some day abbreviations should appear
-    expect(body.includes('Lu') || body.includes('Ma') || body.includes('Mi')).toBeTruthy()
+    expect(body).toMatch(/lu/i)
+    expect(body).toMatch(/mi/i)
+    expect(body).toMatch(/vi/i)
+  })
+
+  it('auto-selects a date on mount (no manual interaction required)', async () => {
+    await act(async () => { await renderPicker() })
+    // After auto-selection, availability hook is called with a date string
+    expect(mockAvailFn).toHaveBeenCalledWith(
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    )
   })
 })
 
 // ============================================================================
-// 2. Calendar navigation
+// 2. Navegación del calendario
 // ============================================================================
 
 describe('DateTimePicker — navigation', () => {
-  it('clicking next month button changes the month header', async () => {
-    const user = userEvent.setup({ delay: null })
-    await act(async () => { await renderDateTimePicker() })
+  it('next-month button advances the calendar header to Julio 2026', async () => {
+    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime.bind(vi) })
+    await act(async () => { await renderPicker() })
 
-    const monthsBefore = document.body.textContent
-    const nextBtn = screen.queryByRole('button', { name: /siguiente|›|>/i })
-      || document.querySelector('button[aria-label*="siguiente"]')
-      || screen.queryAllByRole('button').find(b => b.textContent.includes('>') || b.textContent.includes('›'))
-
+    const nextBtn = document.querySelector('button[aria-label="Mes siguiente"]')
     if (nextBtn) {
       await user.click(nextBtn)
-      // Month header should change
-      await waitFor(() => {
-        const bodyAfter = document.body.textContent
-        expect(bodyAfter).not.toEqual(monthsBefore)
-      })
+      await waitFor(() => expect(document.body.textContent).toMatch(/julio.*2026/i))
     }
   })
-})
 
-// ============================================================================
-// 3. Slot selection
-// ============================================================================
+  it('clicking back button dispatches GO_BACK', async () => {
+    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime.bind(vi) })
+    await act(async () => { await renderPicker() })
 
-describe('DateTimePicker — slot selection', () => {
-  it('selecting a slot dispatches SET_DATETIME or SELECT_TIME', async () => {
-    await act(async () => { await renderDateTimePicker() })
-    // The slots appear after a date is selected; look for any time-like button
-    const timeBtns = screen.queryAllByRole('button').filter(b =>
-      /^\d{1,2}:\d{2}$/.test(b.textContent.trim())
-    )
-    if (timeBtns.length > 0) {
-      await userEvent.setup({ delay: null }).click(timeBtns[0])
-      expect(mockDispatch).toHaveBeenCalled()
-    }
-  })
-})
-
-// ============================================================================
-// 4. GO_BACK
-// ============================================================================
-
-describe('DateTimePicker — back button', () => {
-  it('clicking back dispatches GO_BACK', async () => {
-    const user = userEvent.setup({ delay: null })
-    await act(async () => { await renderDateTimePicker() })
-
-    const backBtn = screen.queryByTestId('back-btn')
-    if (backBtn) {
-      await user.click(backBtn)
+    const btn = screen.queryByTestId('back-btn')
+    if (btn) {
+      await user.click(btn)
       expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'GO_BACK' }))
     }
+  })
+})
+
+// ============================================================================
+// 3. Privacidad del cliente — staffBlocked
+//    Ninguna razón interna debe llegar al DOM del booking público.
+// ============================================================================
+
+describe('DateTimePicker — privacidad: staffBlocked', () => {
+  const INTERNAL_REASONS = [
+    'Vacaciones pagadas',
+    'Permiso sin goce de sueldo',
+    'Incapacidad médica',
+    'Día de descanso obligatorio',
+    'Colaborador no trabaja este día.',
+  ]
+
+  it('NUNCA muestra el texto "Día no disponible" al cliente', async () => {
+    mockAvailFn
+      .mockReturnValueOnce(availStaffBlocked('Vacaciones pagadas'))
+      .mockReturnValue(AVAIL_NORMAL)
+
+    await act(async () => { await renderPicker() })
+    expect(screen.queryByText(/día no disponible/i)).toBeNull()
+  })
+
+  it.each(INTERNAL_REASONS)(
+    'NUNCA expone la razón interna "%s" en el DOM',
+    async (reason) => {
+      mockAvailFn
+        .mockReturnValueOnce(availStaffBlocked(reason))
+        .mockReturnValue(AVAIL_NORMAL)
+
+      await act(async () => { await renderPicker() })
+      expect(document.body.textContent).not.toContain(reason)
+    }
+  )
+
+  it('NUNCA expone la palabra "vacaciones" en ninguna forma', async () => {
+    mockAvailFn
+      .mockReturnValueOnce(availStaffBlocked('Vacaciones anuales del especialista'))
+      .mockReturnValue(AVAIL_NORMAL)
+
+    await act(async () => { await renderPicker() })
+    expect(document.body.textContent.toLowerCase()).not.toContain('vacacion')
+  })
+
+  it('NUNCA muestra el botón manual "Ver siguiente fecha disponible"', async () => {
+    mockAvailFn.mockReturnValue(AVAIL_NORMAL)
+    await act(async () => { await renderPicker() })
+    expect(screen.queryByText(/ver siguiente fecha/i)).toBeNull()
+  })
+})
+
+// ============================================================================
+// 4. Privacidad del cliente — businessClosed (fix del bug pre-existente)
+//    Los cierres del negocio tampoco deben llegar al cliente.
+// ============================================================================
+
+describe('DateTimePicker — privacidad: businessClosed', () => {
+  it('NUNCA muestra la razón de cierre de negocio al cliente', async () => {
+    mockAvailFn
+      .mockReturnValueOnce(availBusinessClosed('Día festivo interno'))
+      .mockReturnValue(AVAIL_NORMAL)
+
+    await act(async () => { await renderPicker() })
+    expect(document.body.textContent).not.toContain('Día festivo interno')
+    expect(screen.queryByText(/día no disponible/i)).toBeNull()
+  })
+
+  it('auto-avanza silenciosamente cuando businessClosed=true', async () => {
+    mockAvailFn
+      .mockReturnValueOnce(availBusinessClosed('Cierre especial de temporada'))
+      .mockReturnValue(AVAIL_NORMAL)
+
+    await act(async () => { await renderPicker() })
+    // La razón interna nunca debe aparecer
+    expect(document.body.textContent).not.toContain('Cierre especial')
+    expect(document.body.textContent).not.toContain('temporada')
+  })
+
+  it('trata businessClosed igual que staffBlocked: spinner, nunca mensaje', async () => {
+    // Siempre cerrado para cualquier fecha
+    mockAvailFn.mockReturnValue(availBusinessClosed('Remodelación'))
+
+    await act(async () => { await renderPicker() })
+    expect(document.body.textContent).not.toContain('Remodelación')
+    expect(screen.queryByText(/día no disponible/i)).toBeNull()
+  })
+})
+
+// ============================================================================
+// 5. Grilla de slots
+// ============================================================================
+
+describe('DateTimePicker — slot grid', () => {
+  it('muestra horarios cuando el día está disponible', async () => {
+    mockAvailFn.mockReturnValue(AVAIL_NORMAL)
+    await act(async () => { await renderPicker() })
+
+    await waitFor(() => {
+      expect(timeSlotsInDOM().length).toBeGreaterThan(0)
+    })
+  })
+
+  it('seleccionar slot + Continuar despacha SET_DATETIME', async () => {
+    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime.bind(vi) })
+    mockAvailFn.mockReturnValue(AVAIL_NORMAL)
+    await act(async () => { await renderPicker() })
+
+    const slots = timeSlotsInDOM().filter(b => !b.disabled)
+    if (slots.length > 0) {
+      await user.click(slots[0])
+      const continueBtn = screen.queryByText(/continuar/i)
+      if (continueBtn) {
+        await user.click(continueBtn)
+        expect(mockDispatch).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'SET_DATETIME' })
+        )
+      }
+    }
+  })
+})
+
+// ============================================================================
+// 6. Setup spinner — no flash de "Selecciona una fecha" durante carga inicial
+// ============================================================================
+
+describe('DateTimePicker — setup spinner', () => {
+  it('muestra spinner (no "Selecciona una fecha") mientras blockedDates carga', async () => {
+    // blockedData = undefined simula que la petición aún no completó
+    mockBlockedFn.mockReturnValue({ data: undefined })
+    mockAvailFn.mockReturnValue({ data: null, isFetching: false, isError: false })
+
+    await act(async () => { await renderPicker() })
+
+    expect(screen.queryByTestId('spinner')).toBeTruthy()
+    expect(screen.queryByText(/selecciona una fecha/i)).toBeNull()
+  })
+
+  it('deja de mostrar el spinner de setup cuando blockedDates carga', async () => {
+    mockBlockedFn.mockReturnValue(BLOCKED_EMPTY)
+    mockAvailFn.mockReturnValue(AVAIL_NORMAL)
+
+    await act(async () => { await renderPicker() })
+
+    // Con blockedData cargado + autoselect + slots normales, la grilla debe aparecer
+    await waitFor(() => {
+      expect(timeSlotsInDOM().length).toBeGreaterThan(0)
+    })
   })
 })

@@ -126,6 +126,10 @@ export default function DateTimePicker() {
   const groupAvailableSlots  = (groupMode  && activeData?.availableSlots)       || null;
   const staffBlocked         = activeData?.staffBlocked;
   const staffBlockedFlag     = !!staffBlocked?.blocked;
+  const businessClosedFlag   = !!activeData?.businessClosed?.closed;
+  // Unifica ambas condiciones de "día estructuralmente no disponible" —
+  // ni vacaciones de especialista ni cierres del negocio llegan al cliente.
+  const anyDaySkipFlag       = staffBlockedFlag || businessClosedFlag;
 
   const intervalMins       = liveConfig.interval   || config?.slot_interval_mins || 30;
   const leadMins           = liveConfig.leadMins   || config?.booking_lead_mins  || 60;
@@ -167,7 +171,7 @@ export default function DateTimePicker() {
   );
 
   // true cuando el día está resuelto (no cargando, no error, no bloqueado) pero sin slots
-  const exhaustedFlag    = !!(selectedDate && !activeFetching && !activeError && !staffBlockedFlag &&
+  const exhaustedFlag    = !!(selectedDate && !activeFetching && !activeError && !anyDaySkipFlag &&
     (allSlots.length === 0 || allSlotsExhausted));
   // true mientras config u horarios bloqueados aún no cargan (evita flash de "Selecciona una fecha")
   const waitingForSetup  = !config || !blockedData;
@@ -207,10 +211,9 @@ export default function DateTimePicker() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bizHours.length, blockedDates.length, leadMins, !!blockedData]);
 
-  // Auto-avance cuando el día seleccionado tiene staffBlocked (vacaciones, permisos, etc.)
-  // El cliente nunca debe ver el motivo interno — avanzamos silenciosamente al próximo día.
+  // Auto-avance cuando staffBlocked o businessClosed — el cliente nunca ve el motivo interno.
   useEffect(() => {
-    if (!staffBlockedFlag || !selectedDate || activeFetching) return;
+    if (!anyDaySkipFlag || !selectedDate || activeFetching) return;
     skippedDatesRef.current.add(toDateStr(selectedDate));
     const next = findNextAvailableDate({
       bizHours,
@@ -224,7 +227,7 @@ export default function DateTimePicker() {
       setSelectedTime(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [staffBlockedFlag, activeFetching]);
+  }, [anyDaySkipFlag, activeFetching]);
 
   // Auto-avance cuando el día no tiene slots (agendados/pasados/sin horario).
   // Limitado a MAX_AUTO_ADVANCES para no encadenar decenas de llamadas al API.
@@ -383,8 +386,8 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {/* Spinner mientras carga slots, auto-avanza por staffBlocked o agendado completo */}
-          {selectedDate && (activeFetching || staffBlockedFlag || (exhaustedFlag && !noMoreDates)) && !activeError && (
+          {/* Spinner mientras carga slots, auto-avanza (staffBlocked / businessClosed / agendado) */}
+          {selectedDate && (activeFetching || anyDaySkipFlag || (exhaustedFlag && !noMoreDates)) && !activeError && (
             <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
           )}
 
@@ -402,8 +405,8 @@ export default function DateTimePicker() {
             </div>
           )}
 
-          {/* Área de slots: carga completa, sin bloqueos activos, y sin auto-avance en curso */}
-          {selectedDate && !activeFetching && !staffBlockedFlag && (!exhaustedFlag || noMoreDates) && !activeError && (
+          {/* Área de slots: carga completa, sin bloqueos, sin auto-avance en curso */}
+          {selectedDate && !activeFetching && !anyDaySkipFlag && (!exhaustedFlag || noMoreDates) && !activeError && (
             <div className="space-y-4 flex-1">
               {isSelectedToday && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold/8 border border-gold/20">
