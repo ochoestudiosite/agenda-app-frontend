@@ -504,7 +504,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
   // when the reschedule date matches the current appointment date.
   const excludeCodes = (group.appointments ?? []).map(a => a.code).filter(Boolean);
 
-  const { data: availData, isFetching } = useGroupAvailability(dateStr, assignments, branchId, excludeCodes);
+  const { data: availData, isFetching, isError } = useGroupAvailability(dateStr, assignments, branchId, excludeCodes);
   const availableSlots = availData?.availableSlots ?? [];
   const totalDuration  = availData?.totalDuration  ?? group.totalDuration;
 
@@ -514,10 +514,20 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
   const { data: blockedData } = useBlockedDates(monthStr, null, branchId, groupSpecialistIds);
   const blockedDates = blockedData?.blockedDates ?? [];
 
+  // true mientras config u horarios bloqueados aún no cargan (evita flash de "Selecciona una fecha")
+  const waitingForSetup = !config || !blockedData;
+  // true cuando el día está resuelto (no cargando, no error) pero sin horarios disponibles para el grupo
+  const exhaustedFlag = !!(newDate && !isFetching && !isError && availableSlots.length === 0);
+
+  const autoSelectedRef     = useRef(false);
+  const skippedDatesRef     = useRef(new Set());
+  const autoAdvanceCountRef = useRef(0);
+  const MAX_AUTO_ADVANCES   = 7;
+  const [noMoreDates, setNoMoreDates] = useState(false);
+
   // Auto-selección del próximo día disponible
-  const autoSelectedRef = useRef(false);
   useEffect(() => {
-    if (autoSelectedRef.current || newDate || bizHoursRaw.length === 0) return;
+    if (autoSelectedRef.current || newDate || bizHoursRaw.length === 0 || !blockedData) return;
     const next = findNextAvailableDate({ bizHours: bizHoursRaw, blockedDates, maxAdvanceDays: maxAdvance });
     if (next) {
       autoSelectedRef.current = true;
@@ -525,7 +535,41 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
       setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bizHoursRaw.length, blockedDates.length]);
+  }, [bizHoursRaw.length, blockedDates.length, !!blockedData]);
+
+  // Auto-avance cuando el día no tiene horarios disponibles para el grupo.
+  // Limitado a MAX_AUTO_ADVANCES para no encadenar decenas de llamadas al API.
+  useEffect(() => {
+    if (!exhaustedFlag || !newDate) return;
+    if (autoAdvanceCountRef.current >= MAX_AUTO_ADVANCES) {
+      setNoMoreDates(true);
+      return;
+    }
+    setNoMoreDates(false);
+    autoAdvanceCountRef.current++;
+    skippedDatesRef.current.add(toDateStr(newDate));
+    const next = findNextAvailableDate({
+      bizHours: bizHoursRaw,
+      blockedDates: [...blockedDates, ...skippedDatesRef.current],
+      maxAdvanceDays: maxAdvance,
+    });
+    if (next) {
+      setNewDate(next);
+      setNewTime(null);
+      setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
+    } else {
+      setNoMoreDates(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exhaustedFlag]);
+
+  function handleSelectDate(date) {
+    autoSelectedRef.current = true;
+    autoAdvanceCountRef.current = 0;
+    setNoMoreDates(false);
+    setNewDate(date);
+    setNewTime(null);
+  }
 
   const today   = new Date(); today.setHours(0,0,0,0);
   const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
@@ -641,7 +685,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
                 <button
                   key={toDateStr(date)}
                   disabled={disabled}
-                  onClick={() => { setNewDate(date); setNewTime(null); }}
+                  onClick={() => handleSelectDate(date)}
                   className={[
                     'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-150',
                     disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
@@ -662,7 +706,13 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
 
         {/* Slots */}
         <div className="card p-5 min-h-[280px] flex flex-col">
-          {!newDate && (
+
+          {/* Spinner de setup: blockedDates aún cargando (evita flash antes del auto-select) */}
+          {!newDate && waitingForSetup && (
+            <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
+          )}
+
+          {!newDate && !waitingForSetup && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
                 <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -672,45 +722,43 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
               <p className="text-sm text-ink-3">Selecciona una fecha</p>
             </div>
           )}
-          {newDate && isFetching && (
+
+          {/* Spinner mientras carga slots o auto-avanza (día sin disponibilidad para el grupo) */}
+          {newDate && (isFetching || (exhaustedFlag && !noMoreDates)) && !isError && (
             <div className="flex-1 flex items-center justify-center"><Spinner size="sm" /></div>
           )}
-          {newDate && !isFetching && availableSlots.length === 0 && (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2">
+
+          {newDate && !isFetching && isError && (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
-                <p className="text-xs text-ink-3 mt-1">No hay horarios libres para este día.</p>
+                <p className="text-sm font-medium text-ink">Error al cargar horarios</p>
+                <p className="text-xs text-ink-3 mt-1">Verifica tu conexión y elige otro día.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!newDate) return;
-                  const next = findNextAvailableDate({
-                    bizHours: bizHoursRaw,
-                    blockedDates: [...blockedDates, toDateStr(newDate)],
-                    maxAdvanceDays: maxAdvance,
-                  });
-                  if (next) {
-                    autoSelectedRef.current = true;
-                    setNewDate(next);
-                    setViewMonth(new Date(next.getFullYear(), next.getMonth(), 1));
-                    setNewTime(null);
-                  }
-                }}
-                className="text-[12px] font-semibold text-gold border border-gold/25 bg-gold/6 rounded-xl px-4 py-2 hover:bg-gold/12 transition-colors cursor-pointer"
-              >
-                Ver siguiente fecha disponible →
-              </button>
             </div>
           )}
-          {newDate && !isFetching && availableSlots.length > 0 && (
+
+          {/* Área de slots: carga completa, sin auto-avance en curso */}
+          {newDate && !isFetching && (!exhaustedFlag || noMoreDates) && !isError && (
             <div className="space-y-4 flex-1">
-              {[['morning','Mañana'], ['afternoon','Tarde'], ['evening','Noche']].map(([key, label]) => {
+              {availableSlots.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
+                  <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
+                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
+                    <p className="text-xs text-ink-3 mt-1">No hay horarios disponibles en las próximas semanas. Intenta seleccionar otra fecha en el calendario.</p>
+                  </div>
+                </div>
+              ) : (
+              [['morning','Mañana'], ['afternoon','Tarde'], ['evening','Noche']].map(([key, label]) => {
                 const slots = groupedSlots[key];
                 if (!slots?.length) return null;
                 return (
@@ -733,7 +781,8 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
                     </div>
                   </div>
                 );
-              })}
+              })
+              )}
             </div>
           )}
         </div>
