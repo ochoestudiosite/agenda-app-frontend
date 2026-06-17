@@ -92,7 +92,7 @@ describe('PhoneInput — handleNumberChange digit rules', () => {
 
     // Only digits reach onChange: '551234'
     const calls = onChange.mock.calls.map(c => c[0].target.value)
-    const lastDigitsOnly = calls[calls.length - 1].replace(/^\+\d+/, '') // strip code
+    const lastDigitsOnly = calls[calls.length - 1].replace(/^\+\d{1,3}/, '') // strip country code
     expect(lastDigitsOnly).toMatch(/^\d+$/)
     expect(lastDigitsOnly).not.toMatch(/[a-zA-Z\s-]/)
   })

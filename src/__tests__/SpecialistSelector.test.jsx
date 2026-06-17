@@ -32,18 +32,18 @@ let mockState = {
 
 let mockIsGroupMode = false
 
-vi.mock('../../context/BookingContext.jsx', () => ({
+vi.mock('../context/BookingContext', () => ({
   useBooking: () => ({ state: mockState, dispatch: mockDispatch }),
   BookingProvider: ({ children }) => children,
   isGroupMode: () => mockIsGroupMode,
 }))
 
 const mockUseServices = vi.fn()
-vi.mock('../../hooks/useServices.js', () => ({
+vi.mock('../hooks/useServices', () => ({
   useServices: () => mockUseServices(),
 }))
 
-vi.mock('../../utils/formatters.js', () => ({
+vi.mock('../utils/formatters', () => ({
   toTitleCase: (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : '',
   formatServicePrice: () => '$100',
   formatCombinedPrice: () => '$100',
@@ -180,7 +180,7 @@ describe('SpecialistSelector — empty state', () => {
       services: [{ id: 'svc99', dbId: 99, name: 'Manicure', duration: 30, price: 0 }],
     }
     await renderSpecialistSelector()
-    expect(screen.getByText(/manicure/i)).toBeTruthy()
+    expect(screen.getAllByText(/manicure/i).length).toBeGreaterThan(0)
   })
 })
 

@@ -27,7 +27,10 @@ vi.mock('framer-motion', () => ({
   }),
 }))
 
-vi.mock('lucide-react', () => new Proxy({}, { get: () => () => null }))
+vi.mock('lucide-react', () => {
+  const noop = () => null
+  return { ChevronLeft: noop, ChevronRight: noop, ArrowUpRight: noop }
+})
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
@@ -37,7 +40,7 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-vi.mock('./LandingServices', () => ({
+vi.mock('../components/landing/LandingServices', () => ({
   SectionHeader: ({ title }) => <h2>{title}</h2>,
 }))
 

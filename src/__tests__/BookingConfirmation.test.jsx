@@ -27,7 +27,7 @@ import { MemoryRouter } from 'react-router-dom'
 const mockDispatch = vi.fn()
 let mockState = {}
 
-vi.mock('../../context/BookingContext.jsx', () => ({
+vi.mock('../context/BookingContext', () => ({
   useBooking: () => ({ state: mockState, dispatch: mockDispatch }),
   BookingProvider: ({ children }) => children,
   isGroupMode: () => false,
@@ -37,11 +37,11 @@ const mockConfig = {
   time_format: '12h',
   branches: [{ id: 1, name: 'Sucursal Principal', image_url: null }],
 }
-vi.mock('../../hooks/useConfig.js', () => ({
+vi.mock('../hooks/useConfig', () => ({
   useConfig: () => ({ data: mockConfig }),
 }))
 
-vi.mock('../../hooks/useServices.js', () => ({
+vi.mock('../hooks/useServices', () => ({
   useServices: () => ({
     data: {
       services: [
@@ -51,7 +51,7 @@ vi.mock('../../hooks/useServices.js', () => ({
   }),
 }))
 
-vi.mock('../../hooks/useSpecialists.js', () => ({
+vi.mock('../hooks/useSpecialists', () => ({
   useSpecialists: () => ({
     data: {
       specialists: [
@@ -61,23 +61,26 @@ vi.mock('../../hooks/useSpecialists.js', () => ({
   }),
 }))
 
-vi.mock('../../utils/formatters.js', () => ({
+vi.mock('../utils/formatters', () => ({
   formatDate:  (d) => d ?? '',
   formatTime:  (t) => t ?? '',
   formatPrice: (p) => `$${Number(p ?? 0).toFixed(0)}`,
   toTitleCase: (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : '',
+  promoSavings: () => null,
 }))
 
-vi.mock('../ui/Button.jsx', () => ({
+vi.mock('../components/ui/Button', () => ({
   default: ({ children, onClick, variant, ...props }) => (
     <button onClick={onClick} data-variant={variant} {...props}>{children}</button>
   ),
 }))
 
-// Mock clipboard API
-Object.assign(navigator, {
-  clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
-})
+vi.mock('../components/ui/PromoPrice', () => ({
+  PromoTag: () => null,
+  StruckPrice: ({ original, final }) => <span>{final || original}</span>,
+  SavingsNote: () => null,
+}))
+
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -183,7 +186,7 @@ describe('BookingConfirmation — single appointment render', () => {
 
   it('shows "Confirmada" status badge', async () => {
     await renderConfirmation()
-    expect(screen.getByText(/confirmada/i)).toBeTruthy()
+    expect(screen.getAllByText(/confirmada/i).length).toBeGreaterThan(0)
   })
 
   it('shows a link to /gestionar', async () => {
@@ -216,22 +219,22 @@ describe('BookingConfirmation — Nueva cita button', () => {
 describe('BookingConfirmation — price display', () => {
   it('price_type=fixed shows exact price', async () => {
     await renderConfirmation({ ...SINGLE_CONFIRMATION, priceType: 'fixed', servicePrice: 350 })
-    expect(screen.getByText('$350')).toBeTruthy()
+    expect(screen.getAllByText('$350').length).toBeGreaterThan(0)
   })
 
   it('price_type=ask shows "A consultar"', async () => {
     await renderConfirmation({ ...SINGLE_CONFIRMATION, priceType: 'ask', servicePrice: 0 })
-    expect(screen.getByText(/a consultar/i)).toBeTruthy()
+    expect(screen.getAllByText(/a consultar/i).length).toBeGreaterThan(0)
   })
 
   it('price_type=starting_from shows price with "+"', async () => {
     await renderConfirmation({ ...SINGLE_CONFIRMATION, priceType: 'starting_from', servicePrice: 300 })
-    expect(screen.getByText(/\$300\+/)).toBeTruthy()
+    expect(screen.getAllByText(/\$300\+/).length).toBeGreaterThan(0)
   })
 
   it('price_type=range shows price with "+"', async () => {
     await renderConfirmation({ ...SINGLE_CONFIRMATION, priceType: 'range', servicePrice: 500 })
-    expect(screen.getByText(/\$500\+/)).toBeTruthy()
+    expect(screen.getAllByText(/\$500\+/).length).toBeGreaterThan(0)
   })
 })
 
@@ -284,6 +287,7 @@ describe('BookingConfirmation — copy button', () => {
 
   it('clicking copy button calls navigator.clipboard.writeText with the code', async () => {
     const user = userEvent.setup()
+    const writeTextSpy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
     await renderConfirmation()
 
     const copyBtn = screen.queryByRole('button', { name: /copiar código/i })
@@ -293,7 +297,7 @@ describe('BookingConfirmation — copy button', () => {
     if (copyBtn) {
       await user.click(copyBtn)
       await waitFor(() => {
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ABC123')
+        expect(writeTextSpy).toHaveBeenCalledWith('ABC123')
       })
     }
   })

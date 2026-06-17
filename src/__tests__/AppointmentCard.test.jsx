@@ -90,19 +90,22 @@ vi.mock('lucide-react', () => ({
 // ---------------------------------------------------------------------------
 
 const CONFIRMED_APPT = {
-  code:         'CITA001',
-  serviceId:    'corte',
-  specialistId: 5,
-  branchId:     1,
-  date:         '2026-06-20',
-  time:         '10:00',
-  clientName:   'Juan García',
-  clientPhone:  '5512345678',
-  status:       'confirmed',
+  code:            'CITA001',
+  serviceId:       'corte',
+  serviceName:     'Corte de cabello',
+  serviceDuration: 30,
+  specialistId:    5,
+  specialistName:  'Ana García',
+  branchId:        1,
+  date:            '2026-06-20',
+  time:            '10:00',
+  clientName:      'Juan García',
+  clientPhone:     '5512345678',
+  status:          'confirmed',
 }
 
 const CANCELLED_APPT = { ...CONFIRMED_APPT, code: 'CITA002', status: 'cancelled' }
-const COMPLETED_APPT = { ...CONFIRMED_APPT, code: 'CITA003', status: 'completed' }
+const COMPLETED_APPT = { ...CONFIRMED_APPT, code: 'CITA003', status: 'completed', date: '2020-01-01' }
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -21,13 +21,13 @@ import React from 'react'
 const mockDispatch = vi.fn()
 const mockState = { step: 1, branch: null, services: [], specialists: [] }
 
-vi.mock('../../context/BookingContext.jsx', () => ({
+vi.mock('../context/BookingContext', () => ({
   useBooking: () => ({ state: mockState, dispatch: mockDispatch }),
   BookingProvider: ({ children }) => children,
   isGroupMode: () => false,
 }))
 
-vi.mock('../../utils/formatters.js', () => ({
+vi.mock('../utils/formatters', () => ({
   toTitleCase: (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : '',
   formatServicePrice: () => '$100',
   formatCombinedPrice: () => '$100',

@@ -24,21 +24,23 @@ import React from 'react'
 const mockDispatch = vi.fn()
 let mockState = { step: 2, branch: null, services: [], specialists: [] }
 
-vi.mock('../../context/BookingContext.jsx', () => ({
+vi.mock('../context/BookingContext', () => ({
   useBooking: () => ({ state: mockState, dispatch: mockDispatch }),
   BookingProvider: ({ children }) => children,
   isGroupMode: () => false,
 }))
 
 const mockUseServices = vi.fn()
-vi.mock('../../hooks/useServices.js', () => ({
+vi.mock('../hooks/useServices', () => ({
   useServices: () => mockUseServices(),
 }))
 
-vi.mock('../../utils/formatters.js', () => ({
+vi.mock('../utils/formatters', () => ({
   toTitleCase: (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : '',
   formatServicePrice: (svc) => `$${svc.price ?? 0}`,
   formatCombinedPrice: (svcs) => `$${svcs.reduce((sum, s) => sum + (s.price ?? 0), 0)}`,
+  promoSavings: () => 0,
+  formatPrice: (p) => `$${p ?? 0}`,
 }))
 
 // ---------------------------------------------------------------------------

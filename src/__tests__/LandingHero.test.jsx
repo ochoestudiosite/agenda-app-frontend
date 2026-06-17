@@ -28,9 +28,10 @@ vi.mock('framer-motion', () => ({
   }),
 }))
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: () => ({ size, className, ...rest }) => null,
-}))
+vi.mock('lucide-react', () => {
+  const noop = () => null
+  return { ArrowUpRight: noop, HelpCircle: noop, ShieldCheck: noop, Clock: noop, Star: noop, Heart: noop }
+})
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
@@ -116,9 +117,10 @@ describe('LandingHero — custom props', () => {
 
   it('CTA link renders with correct href', async () => {
     await act(async () => {
-      await renderHero({ cta: { text: 'Reservar Ahora', href: '#reservar' } })
+      await renderHero({ cta: 'Reservar Ahora' })
     })
-    const links = document.querySelectorAll('a[href*="reservar"]')
-    expect(links.length > 0 || document.body.textContent.includes('Reservar')).toBeTruthy()
+    const links = document.querySelectorAll('a[href="/agendar"]')
+    expect(links.length).toBeGreaterThan(0)
+    expect(document.body.textContent).toContain('Reservar Ahora')
   })
 })

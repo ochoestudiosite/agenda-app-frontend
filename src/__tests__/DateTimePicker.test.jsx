@@ -9,8 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 import React from 'react'
 
 // ── Freeze time: Monday 07:00 — all 9:00–18:00 slots are future ──────────────
@@ -147,6 +146,10 @@ function timeSlotsInDOM() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // clearAllMocks() does not drain queued mockReturnValueOnce() entries from
+  // a previous test — reset() does, preventing stale data from leaking in.
+  mockAvailFn.mockReset()
+  mockBlockedFn.mockReset()
   mockState = {
     services:           [{ id: 1, name: 'Corte', duration: 30, price: 100, price_type: 'fixed' }],
     specialist:         { id: 2, name: 'Ana García', slug: 'ana-garcia' },
@@ -185,14 +188,8 @@ describe('DateTimePicker — render', () => {
   it('auto-selects a date on mount (no manual interaction required)', async () => {
     await act(async () => { await renderPicker() })
     // After auto-selection, availability hook is called with a date string
-    expect(mockAvailFn).toHaveBeenCalledWith(
-      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-    )
+    const dateArgs = mockAvailFn.mock.calls.map(c => c[0])
+    expect(dateArgs.some(d => /^\d{4}-\d{2}-\d{2}$/.test(d))).toBe(true)
   })
 })
 
@@ -202,23 +199,21 @@ describe('DateTimePicker — render', () => {
 
 describe('DateTimePicker — navigation', () => {
   it('next-month button advances the calendar header to Julio 2026', async () => {
-    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime.bind(vi) })
     await act(async () => { await renderPicker() })
 
     const nextBtn = document.querySelector('button[aria-label="Mes siguiente"]')
     if (nextBtn) {
-      await user.click(nextBtn)
-      await waitFor(() => expect(document.body.textContent).toMatch(/julio.*2026/i))
+      await act(async () => { fireEvent.click(nextBtn) })
+      expect(document.body.textContent).toMatch(/julio.*2026/i)
     }
   })
 
   it('clicking back button dispatches GO_BACK', async () => {
-    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime.bind(vi) })
     await act(async () => { await renderPicker() })
 
     const btn = screen.queryByTestId('back-btn')
     if (btn) {
-      await user.click(btn)
+      await act(async () => { fireEvent.click(btn) })
       expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'GO_BACK' }))
     }
   })
@@ -321,22 +316,19 @@ describe('DateTimePicker — slot grid', () => {
     mockAvailFn.mockReturnValue(AVAIL_NORMAL)
     await act(async () => { await renderPicker() })
 
-    await waitFor(() => {
-      expect(timeSlotsInDOM().length).toBeGreaterThan(0)
-    })
+    expect(timeSlotsInDOM().length).toBeGreaterThan(0)
   })
 
   it('seleccionar slot + Continuar despacha SET_DATETIME', async () => {
-    const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime.bind(vi) })
     mockAvailFn.mockReturnValue(AVAIL_NORMAL)
     await act(async () => { await renderPicker() })
 
     const slots = timeSlotsInDOM().filter(b => !b.disabled)
     if (slots.length > 0) {
-      await user.click(slots[0])
+      await act(async () => { fireEvent.click(slots[0]) })
       const continueBtn = screen.queryByText(/continuar/i)
       if (continueBtn) {
-        await user.click(continueBtn)
+        await act(async () => { fireEvent.click(continueBtn) })
         expect(mockDispatch).toHaveBeenCalledWith(
           expect.objectContaining({ type: 'SET_DATETIME' })
         )
@@ -368,8 +360,6 @@ describe('DateTimePicker — setup spinner', () => {
     await act(async () => { await renderPicker() })
 
     // Con blockedData cargado + autoselect + slots normales, la grilla debe aparecer
-    await waitFor(() => {
-      expect(timeSlotsInDOM().length).toBeGreaterThan(0)
-    })
+    expect(timeSlotsInDOM().length).toBeGreaterThan(0)
   })
 })

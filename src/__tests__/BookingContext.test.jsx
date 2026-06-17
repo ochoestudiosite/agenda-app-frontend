@@ -290,10 +290,11 @@ describe('SET_CLIENT', () => {
     renderWithBooking(c => { ctx = c })
 
     act(() => {
-      ctx.dispatch({ type: 'SET_CLIENT', payload: { name: 'María Pérez', phone: '5512345678', email: 'maria@test.com' } })
+      ctx.dispatch({ type: 'SET_CLIENT', payload: { firstName: 'María', lastName: 'Pérez', phone: '5512345678', email: 'maria@test.com' } })
     })
 
-    expect(ctx.state.clientName).toBe('María Pérez')
+    expect(ctx.state.clientFirstName).toBe('María')
+    expect(ctx.state.clientLastName).toBe('Pérez')
     expect(ctx.state.clientPhone).toBe('5512345678')
     expect(ctx.state.clientEmail).toBe('maria@test.com')
   })
@@ -303,7 +304,7 @@ describe('SET_CLIENT', () => {
     renderWithBooking(c => { ctx = c })
 
     act(() => {
-      ctx.dispatch({ type: 'SET_CLIENT', payload: { name: 'Carlos', phone: '5500000001' } })
+      ctx.dispatch({ type: 'SET_CLIENT', payload: { firstName: 'Carlos', lastName: '', phone: '5500000001' } })
     })
 
     expect(ctx.state.clientEmail).toBe('')
@@ -521,7 +522,8 @@ describe('Session persistence (sessionStorage)', () => {
       specialist: null,
       date: null,
       time: null,
-      clientName: '',
+      clientFirstName: '',
+      clientLastName: '',
       clientPhone: '',
       clientEmail: '',
       confirmation: null,

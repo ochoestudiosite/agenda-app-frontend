@@ -184,17 +184,10 @@ describe('AppointmentLookup — onSearch', () => {
   it('calls onSearch with the 6-char uppercase code on valid submit', async () => {
     const user = userEvent.setup()
     const onSearch = vi.fn()
-    render(
-      (() => {
-        const { default: AppointmentLookup } = require('../components/manage/AppointmentLookup.jsx')
-        return <AppointmentLookup onSearch={onSearch} loading={false} />
-      })()
-    )
-    // Re-render via import since it's already cached
     const { onSearch: spy } = await renderLookup({ onSearch })
 
-    const input  = screen.getAllByTestId('code-input')[0]
-    const submit = screen.getAllByTestId('submit-btn')[0]
+    const input  = screen.getByTestId('code-input')
+    const submit = screen.getByTestId('submit-btn')
 
     await user.type(input, 'ZZZ999')
     await user.click(submit)

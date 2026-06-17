@@ -18,9 +18,10 @@ import React from 'react'
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: () => ({ size, className, ...rest }) => <span data-testid="icon" />,
-}))
+vi.mock('lucide-react', () => {
+  const icon = () => <span data-testid="icon" />
+  return { Send: icon, Instagram: icon, Facebook: icon, MessageSquare: icon, Linkedin: icon, ArrowUpRight: icon }
+})
 
 // ---------------------------------------------------------------------------
 // Fixtures

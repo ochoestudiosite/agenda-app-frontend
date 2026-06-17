@@ -597,6 +597,7 @@ export default function ClientForm() {
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Input
+              id="client-first-name"
               label="Nombre(s)"
               placeholder="Ej. Juan"
               value={firstName}
@@ -608,6 +609,7 @@ export default function ClientForm() {
               maxLength={50}
             />
             <Input
+              id="client-last-name"
               label="Apellido(s)"
               placeholder="Ej. García López"
               value={lastName}
@@ -620,6 +622,7 @@ export default function ClientForm() {
             />
           </div>
           <PhoneInput
+            id="client-phone"
             label="Teléfono"
             placeholder="55 1234 5678"
             value={phone}
@@ -631,6 +634,7 @@ export default function ClientForm() {
             helper="10 dígitos (asegúrate de incluir la lada)"
           />
           <Input
+            id="client-email"
             label="Correo electrónico"
             placeholder="tu@correo.com"
             value={email}

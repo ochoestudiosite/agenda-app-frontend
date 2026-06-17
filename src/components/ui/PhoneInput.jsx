@@ -10,7 +10,7 @@ export const COUNTRIES = [
   { code: '+51', name: 'Perú' },
 ];
 
-export default function PhoneInput({ label, error, helper, value = '', onChange, required, className = '', ...props }) {
+export default function PhoneInput({ label, error, helper, value = '', onChange, required, className = '', id, ...props }) {
   const [code, setCode] = useState('+52');
   const [number, setNumber] = useState('');
 
@@ -43,7 +43,7 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
   return (
     <div className="flex flex-col gap-2">
       {label && (
-        <label className="text-sm font-medium text-ink leading-none">
+        <label htmlFor={id} className="text-sm font-medium text-ink leading-none">
           {label}
           {required && <span className="text-gold/70 ml-1 text-xs" aria-hidden="true">*</span>}
         </label>
@@ -75,6 +75,7 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
           </div>
         </div>
         <input
+          id={id}
           type="tel"
           value={number}
           onChange={handleNumberChange}

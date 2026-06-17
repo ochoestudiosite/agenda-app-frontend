@@ -22,7 +22,7 @@ vi.mock('lucide-react', () => ({
   Star: ({ size, fill, className }) => <span data-testid="star">★</span>,
 }))
 
-vi.mock('./LandingServices', () => ({
+vi.mock('../components/landing/LandingServices', () => ({
   SectionHeader: ({ title, subtitle }) => (
     <div>
       <h2>{title}</h2>
@@ -86,28 +86,28 @@ describe('LandingTestimonials — default render', () => {
 
 describe('LandingTestimonials — custom testimonials', () => {
   it('shows custom author names', async () => {
-    await act(async () => { await renderTestimonials({ testimonials: CUSTOM_TESTIMONIALS }) })
+    await act(async () => { await renderTestimonials({ items: CUSTOM_TESTIMONIALS }) })
     expect(document.body.textContent).toContain('Roberto Salinas')
     expect(document.body.textContent).toContain('María López')
   })
 
   it('shows custom testimonial text', async () => {
-    await act(async () => { await renderTestimonials({ testimonials: CUSTOM_TESTIMONIALS }) })
+    await act(async () => { await renderTestimonials({ items: CUSTOM_TESTIMONIALS }) })
     expect(document.body.textContent).toContain('Excelente servicio siempre.')
   })
 
   it('shows author role', async () => {
-    await act(async () => { await renderTestimonials({ testimonials: CUSTOM_TESTIMONIALS }) })
+    await act(async () => { await renderTestimonials({ items: CUSTOM_TESTIMONIALS }) })
     expect(document.body.textContent).toContain('Emprendedor')
   })
 
   it('author initials: "Roberto Salinas" → "RS"', async () => {
-    await act(async () => { await renderTestimonials({ testimonials: CUSTOM_TESTIMONIALS }) })
+    await act(async () => { await renderTestimonials({ items: CUSTOM_TESTIMONIALS }) })
     expect(document.body.textContent).toContain('RS')
   })
 
   it('author initials: "María López" → "ML"', async () => {
-    await act(async () => { await renderTestimonials({ testimonials: CUSTOM_TESTIMONIALS }) })
+    await act(async () => { await renderTestimonials({ items: CUSTOM_TESTIMONIALS }) })
     expect(document.body.textContent).toContain('ML')
   })
 })
@@ -115,15 +115,18 @@ describe('LandingTestimonials — custom testimonials', () => {
 describe('LandingTestimonials — rating', () => {
   it('renders correct star count for rating=5', async () => {
     const one = [{ text: 'Ok', author: 'Test User', rating: 5 }]
-    await act(async () => { await renderTestimonials({ testimonials: one }) })
+    await act(async () => { await renderTestimonials({ items: one }) })
     const stars = screen.queryAllByTestId('star')
-    expect(stars.length).toBe(5)
+    // Marquee duplicates cards; all copies use the same rating so count is a multiple
+    expect(stars.length).toBeGreaterThan(0)
+    expect(stars.length % 5).toBe(0)
   })
 
   it('renders correct star count for rating=4', async () => {
     const one = [{ text: 'Bien', author: 'Test User', rating: 4 }]
-    await act(async () => { await renderTestimonials({ testimonials: one }) })
+    await act(async () => { await renderTestimonials({ items: one }) })
     const stars = screen.queryAllByTestId('star')
-    expect(stars.length).toBe(4)
+    expect(stars.length).toBeGreaterThan(0)
+    expect(stars.length % 4).toBe(0)
   })
 })

@@ -61,7 +61,8 @@ const mockState = {
   specialist: { id: 5, name: 'Ana García', slug: 'ana-garcia' },
   date: '2026-06-20',
   time: '10:00',
-  clientName: '',
+  clientFirstName: '',
+  clientLastName: '',
   clientPhone: '',
   clientEmail: '',
   confirmation: null,
@@ -110,7 +111,8 @@ beforeEach(() => {
     date: '2026-06-20',
     time: '10:00',
     branch: null,
-    clientName: '',
+    clientFirstName: '',
+    clientLastName: '',
     clientPhone: '',
     clientEmail: '',
     confirmation: null,
@@ -134,7 +136,8 @@ describe('ClientForm — render', () => {
 
   it('shows name, phone, and email fields', async () => {
     await renderForm()
-    expect(screen.getByLabelText(/Nombre completo/i)).toBeTruthy()
+    expect(screen.getByLabelText(/Nombre\(s\)/i)).toBeTruthy()
+    expect(screen.getByLabelText(/Apellido\(s\)/i)).toBeTruthy()
     expect(screen.getByLabelText(/Teléfono/i)).toBeTruthy()
     expect(screen.getByLabelText(/Correo electrónico/i)).toBeTruthy()
   })
@@ -157,19 +160,8 @@ describe('ClientForm — name validation', () => {
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/Ingresa tu nombre completo/i)).toBeTruthy()
-    })
-  })
-
-  it('shows error when only one word (no last name)', async () => {
-    const user = userEvent.setup()
-    await renderForm()
-
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Juan')
-    await user.tab() // trigger blur
-
-    await waitFor(() => {
-      expect(screen.getByText(/al menos un nombre y un apellido/i)).toBeTruthy()
+      expect(screen.getByText(/Ingresa tu nombre/i)).toBeTruthy()
+      expect(screen.getByText(/Ingresa tu apellido/i)).toBeTruthy()
     })
   })
 
@@ -177,11 +169,11 @@ describe('ClientForm — name validation', () => {
     const user = userEvent.setup()
     await renderForm()
 
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Juan123 García')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Juan123')
     await user.tab()
 
     await waitFor(() => {
-      expect(screen.getByText(/Solo letras y espacios/i)).toBeTruthy()
+      expect(screen.getByText(/Solo letras, sin números ni símbolos/i)).toBeTruthy()
     })
   })
 
@@ -192,12 +184,12 @@ describe('ClientForm — name validation', () => {
     // Trigger error
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
     await waitFor(() => {
-      expect(screen.queryByText(/Ingresa tu nombre completo/i)).toBeTruthy()
+      expect(screen.queryByText(/Ingresa tu nombre/i)).toBeTruthy()
     })
 
     // Start typing — error should clear
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'J')
-    expect(screen.queryByText(/Ingresa tu nombre completo/i)).toBeNull()
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'J')
+    expect(screen.queryByText(/Ingresa tu nombre\./i)).toBeNull()
   })
 })
 
@@ -210,7 +202,8 @@ describe('ClientForm — phone validation', () => {
     const user = userEvent.setup()
     await renderForm()
 
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Juan García')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Juan')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'García')
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
 
     await waitFor(() => {
@@ -222,7 +215,8 @@ describe('ClientForm — phone validation', () => {
     const user = userEvent.setup()
     await renderForm()
 
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Juan García')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Juan')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'García')
     await user.type(screen.getByLabelText(/Teléfono/i), '123456') // only 6 digits
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
 
@@ -242,7 +236,8 @@ describe('ClientForm — email validation', () => {
     mockMutateAsync.mockResolvedValue({ code: 'ABC123' })
 
     await renderForm()
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Juan García')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Juan')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'García')
     await user.type(screen.getByLabelText(/Teléfono/i), '5512345678')
     // email left empty
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
@@ -257,7 +252,8 @@ describe('ClientForm — email validation', () => {
     const user = userEvent.setup()
     await renderForm()
 
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Juan García')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Juan')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'García')
     await user.type(screen.getByLabelText(/Teléfono/i), '5512345678')
     await user.type(screen.getByLabelText(/Correo electrónico/i), 'not-an-email')
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
@@ -279,7 +275,8 @@ describe('ClientForm — successful submission', () => {
     mockMutateAsync.mockResolvedValue(mockResult)
 
     await renderForm()
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'María López')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'María')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'López')
     await user.type(screen.getByLabelText(/Teléfono/i), '5512345678')
     await user.type(screen.getByLabelText(/Correo electrónico/i), 'maria@test.com')
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
@@ -287,13 +284,14 @@ describe('ClientForm — successful submission', () => {
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
-          serviceIds:   [10],
-          specialistId: 5,
-          date:         '2026-06-20',
-          time:         '10:00',
-          clientName:   'María López',
-          clientPhone:  '5512345678',
-          clientEmail:  'maria@test.com',
+          serviceIds:      [10],
+          specialistId:    5,
+          date:            '2026-06-20',
+          time:            '10:00',
+          clientFirstName: 'María',
+          clientLastName:  'López',
+          clientPhone:     '+525512345678',
+          clientEmail:     'maria@test.com',
         })
       )
     })
@@ -309,14 +307,16 @@ describe('ClientForm — successful submission', () => {
     mockMutateAsync.mockResolvedValue({ code: 'X' })
 
     await renderForm()
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Pedro Ruiz')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Pedro')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'Ruiz')
     await user.type(screen.getByLabelText(/Teléfono/i), '5599887766')
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
 
     await waitFor(() => {
       const clientCall = mockDispatch.mock.calls.find(c => c[0].type === 'SET_CLIENT')
       expect(clientCall).toBeDefined()
-      expect(clientCall[0].payload.name).toBe('Pedro Ruiz')
+      expect(clientCall[0].payload.firstName).toBe('Pedro')
+      expect(clientCall[0].payload.lastName).toBe('Ruiz')
     })
   })
 })
@@ -332,7 +332,8 @@ describe('ClientForm — error handling', () => {
     mockMutateAsync.mockRejectedValue(slotConflict)
 
     await renderForm()
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Ana García')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Ana')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'García')
     await user.type(screen.getByLabelText(/Teléfono/i), '5500000001')
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
 
@@ -353,13 +354,14 @@ describe('ClientForm — error handling', () => {
     mockMutateAsync.mockRejectedValue(quotaErr)
 
     await renderForm()
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Luis Reyes')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Luis')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'Reyes')
     await user.type(screen.getByLabelText(/Teléfono/i), '5500000002')
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
 
     // The component replaces itself with BookingUnavailable
     await waitFor(() => {
-      expect(screen.queryByLabelText(/Nombre completo/i)).toBeNull()
+      expect(screen.queryByLabelText(/Nombre\(s\)/i)).toBeNull()
     })
   })
 
@@ -369,7 +371,8 @@ describe('ClientForm — error handling', () => {
     mockMutateAsync.mockRejectedValue(validationErr)
 
     await renderForm()
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Sofía Morales')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Sofía')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'Morales')
     await user.type(screen.getByLabelText(/Teléfono/i), '5500000003')
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
 
@@ -389,7 +392,8 @@ describe('ClientForm — error handling', () => {
     mockMutateAsync.mockRejectedValue(new Error('Network failure'))
 
     await renderForm()
-    await user.type(screen.getByLabelText(/Nombre completo/i), 'Carlos Ruiz')
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Carlos')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'Ruiz')
     await user.type(screen.getByLabelText(/Teléfono/i), '5500000004')
     await user.click(screen.getByRole('button', { name: /Confirmar/i }))
 

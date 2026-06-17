@@ -257,7 +257,7 @@ describe('Manage — error state', () => {
   it('shows error message when single lookup fails with non-404', async () => {
     mockUseAppointmentLookup.mockReturnValue({
       data: null, isLoading: false, isError: true,
-      error: { status: 500, message: 'Server error' },
+      error: { status: 500 },
     })
     mockUseGroupAppointmentLookup.mockReturnValue(IDLE_QUERY)
 

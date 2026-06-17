@@ -95,6 +95,22 @@ vi.mock('../components/ui/Spinner.jsx', () => ({
   default: () => <span data-testid="spinner" />,
 }))
 
+const mockRequestManageOTP = vi.fn()
+vi.mock('../services/api.js', () => ({
+  api: {
+    requestManageOTP: (...args) => mockRequestManageOTP(...args),
+  },
+}))
+
+vi.mock('../components/booking/OTPPanel.jsx', () => ({
+  default: ({ onVerify, error }) => (
+    <div>
+      {error && <p data-testid="otp-error">{error}</p>}
+      <button data-testid="otp-verify" onClick={() => onVerify('123456')}>Verificar OTP</button>
+    </div>
+  ),
+}))
+
 vi.mock('../utils/formatters.js', () => ({
   formatDate: (d) => d,
   formatTime: (t) => t,
@@ -312,6 +328,7 @@ describe('GroupAppointmentCard — cancel confirm flow', () => {
 
   it('calls useCancelGroupAppointment.mutateAsync with groupCode', async () => {
     const user = userEvent.setup()
+    mockRequestManageOTP.mockResolvedValue({ pendingId: 'pend-1', maskedPhone: '***5678' })
     mockCancelMutateAsync.mockResolvedValue({ status: 'cancelled' })
 
     await renderCard()
@@ -320,13 +337,19 @@ describe('GroupAppointmentCard — cancel confirm flow', () => {
     await waitFor(() => screen.getByRole('button', { name: /Sí, cancelar/i }))
     await user.click(screen.getByRole('button', { name: /Sí, cancelar/i }))
 
+    await waitFor(() => screen.getByTestId('otp-verify'))
+    await user.click(screen.getByTestId('otp-verify'))
+
     await waitFor(() => {
-      expect(mockCancelMutateAsync).toHaveBeenCalledWith('GRP-001')
+      expect(mockCancelMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'GRP-001', pendingId: 'pend-1', otpCode: '123456' })
+      )
     })
   })
 
   it('calls onUpdated after successful cancellation', async () => {
     const user = userEvent.setup()
+    mockRequestManageOTP.mockResolvedValue({ pendingId: 'pend-1', maskedPhone: '***5678' })
     mockCancelMutateAsync.mockResolvedValue({ status: 'cancelled' })
 
     await renderCard()
@@ -334,14 +357,18 @@ describe('GroupAppointmentCard — cancel confirm flow', () => {
     await user.click(screen.getByRole('button', { name: /Cancelar visita/i }))
     await waitFor(() => screen.getByRole('button', { name: /Sí, cancelar/i }))
     await user.click(screen.getByRole('button', { name: /Sí, cancelar/i }))
+
+    await waitFor(() => screen.getByTestId('otp-verify'))
+    await user.click(screen.getByTestId('otp-verify'))
 
     await waitFor(() => {
       expect(mockOnUpdated).toHaveBeenCalled()
     })
   })
 
-  it('shows error toast on cancel failure', async () => {
+  it('shows error in the OTP panel on cancel failure', async () => {
     const user = userEvent.setup()
+    mockRequestManageOTP.mockResolvedValue({ pendingId: 'pend-1', maskedPhone: '***5678' })
     mockCancelMutateAsync.mockRejectedValue(new Error('Error al cancelar'))
 
     await renderCard()
@@ -350,8 +377,11 @@ describe('GroupAppointmentCard — cancel confirm flow', () => {
     await waitFor(() => screen.getByRole('button', { name: /Sí, cancelar/i }))
     await user.click(screen.getByRole('button', { name: /Sí, cancelar/i }))
 
+    await waitFor(() => screen.getByTestId('otp-verify'))
+    await user.click(screen.getByTestId('otp-verify'))
+
     await waitFor(() => {
-      expect(mockToast).toHaveBeenCalledWith('Error al cancelar', 'error')
+      expect(screen.getByTestId('otp-error').textContent).toBe('Error al cancelar')
     })
   })
 })

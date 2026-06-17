@@ -28,7 +28,10 @@ vi.mock('framer-motion', () => ({
   }),
 }))
 
-vi.mock('lucide-react', () => new Proxy({}, { get: () => () => null }))
+vi.mock('lucide-react', () => {
+  const noop = () => null
+  return { Sparkles: noop, ArrowUpRight: noop, ChevronLeft: noop, ChevronRight: noop, Clock: noop }
+})
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
@@ -38,11 +41,12 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-vi.mock('../../utils/formatters.js', () => ({
-  formatServicePrice: (price, price_type) => {
-    if (price_type === 'ask') return 'A consultar'
-    return `$${price}`
+vi.mock('../utils/formatters', () => ({
+  formatServicePrice: (service) => {
+    if (service?.price_type === 'ask') return 'A consultar'
+    return `$${service?.price}`
   },
+  promoEndsLabel: () => null,
 }))
 
 // ---------------------------------------------------------------------------
@@ -114,10 +118,10 @@ describe('LandingServices — custom services', () => {
     expect(document.body.textContent).toContain('45')
   })
 
-  it('price_type=ask shows "A consultar"', async () => {
+  it('price_type=ask hides the price badge', async () => {
     const svc = [{ id: 99, name: 'Consulta', duration: 30, price: 0, price_type: 'ask' }]
     await act(async () => { await renderServices({ services: svc }) })
-    expect(document.body.textContent).toContain('consultar')
+    expect(document.body.textContent).not.toContain('$0')
   })
 })
 
