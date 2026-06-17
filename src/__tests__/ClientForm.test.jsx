@@ -32,13 +32,11 @@ vi.mock('../hooks/useAppointment.js', () => ({
   }),
 }))
 
+// Mutable so UX-1 tests can inject cancellation_policy without re-mocking
+let mockConfigData = { time_format: '12h', branches: [] }
+
 vi.mock('../hooks/useConfig.js', () => ({
-  useConfig: () => ({
-    data: {
-      time_format: '12h',
-      branches: [],
-    },
-  }),
+  useConfig: () => ({ data: mockConfigData }),
 }))
 
 vi.mock('../services/api.js', () => ({
@@ -103,6 +101,7 @@ async function renderForm(stateOverride = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockConfigData = { time_format: '12h', branches: [] }
   // Reset state to single-service defaults
   Object.assign(mockState, {
     services: [{ id: 10, name: 'Corte de cabello', duration: 30, price: 250 }],
@@ -403,5 +402,36 @@ describe('ClientForm — error handling', () => {
         'error'
       )
     })
+  })
+})
+
+// ============================================================================
+// 7. UX-1 — cancellation policy display
+// ============================================================================
+
+describe('ClientForm — UX-1 cancellation policy', () => {
+  it('shows policy block when config.cancellation_policy is set', async () => {
+    mockConfigData = {
+      time_format: '12h',
+      branches: [],
+      cancellation_policy: 'Cancelaciones con menos de 24h tienen cargo del 50%.',
+    }
+
+    await renderForm()
+    expect(screen.getByText(/Política de cancelación/i)).toBeTruthy()
+    expect(screen.getByText(/Cancelaciones con menos de 24h/i)).toBeTruthy()
+  })
+
+  it('does not show policy block when cancellation_policy is null', async () => {
+    mockConfigData = { time_format: '12h', branches: [], cancellation_policy: null }
+
+    await renderForm()
+    expect(screen.queryByText(/Política de cancelación/i)).toBeNull()
+  })
+
+  it('does not show policy block when cancellation_policy is absent', async () => {
+    // mockConfigData reset to default in beforeEach (no cancellation_policy key)
+    await renderForm()
+    expect(screen.queryByText(/Política de cancelación/i)).toBeNull()
   })
 })

@@ -581,6 +581,14 @@ export default function ClientForm() {
         </div>
       )}
 
+      {/* ── Política de cancelación (UX-1) ─────────────────────────────── */}
+      {config?.cancellation_policy && !otpPhase && (
+        <div className="mb-5 px-4 py-4 rounded-2xl border border-edge bg-raised/30">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-3 mb-1.5">Política de cancelación</p>
+          <p className="text-[13px] text-ink-2 leading-relaxed">{config.cancellation_policy}</p>
+        </div>
+      )}
+
       {/* ── Client form / OTP panel ──────────────────────────────────────── */}
       {otpPhase ? (
         <OTPPanel
