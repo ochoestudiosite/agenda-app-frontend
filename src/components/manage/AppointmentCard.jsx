@@ -103,8 +103,10 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
   const isCancelled        = appointment.status === 'cancelled';
-  const apptDateTime       = new Date(`${appointment.date}T${(appointment.time ?? '00:00').padStart(5, '0')}:00`);
-  const isPastAppt         = apptDateTime < new Date();
+  const bizTz      = config?.business_timezone ?? null;
+  const nowStrTz   = bizTz ? new Date().toLocaleString('sv', { timeZone: bizTz }).slice(0, 16) : null;
+  const apptStr    = `${appointment.date} ${(appointment.time ?? '00:00').padStart(5, '0')}`;
+  const isPastAppt = nowStrTz ? apptStr < nowStrTz : new Date(`${appointment.date}T${(appointment.time ?? '00:00').padStart(5, '0')}:00`) < new Date();
 
   const apptDate   = new Date(appointment.date + 'T12:00:00');
   const monthAbbr  = MONTH_SHORT[apptDate.getMonth()];
@@ -205,10 +207,47 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
   async function handleReschedule() {
     if (!newDate || !newTime) return;
+    if (!config?.phone_verification_required) {
+      setManageOtpLoading(true);
+      try {
+        const updated = await rescheduleMutation.mutateAsync({
+          code:         appointment.code,
+          date:         toDateStr(newDate),
+          time:         newTime,
+          branchId:     reBranch?.id     ?? undefined,
+          specialistId: reSpecialist?.id ?? undefined,
+        });
+        toast('Cita reagendada correctamente.', 'success');
+        if (updated?.promoRemovedOnReschedule) {
+          toast('La promoción aplicada ya no es válida para el nuevo horario y fue removida.', 'info');
+        }
+        setMode('view');
+        onUpdated?.(updated);
+      } catch (err) {
+        toast(err.message || 'Error al reagendar.', 'error');
+      } finally {
+        setManageOtpLoading(false);
+      }
+      return;
+    }
     await _requestManageOtp('reschedule');
   }
 
   async function handleCancel() {
+    if (!config?.phone_verification_required) {
+      setManageOtpLoading(true);
+      try {
+        await cancelMutation.mutateAsync({ code: appointment.code });
+        toast('Cita cancelada.', 'info');
+        onUpdated?.({ ...appointment, status: 'cancelled' });
+        setMode('view');
+      } catch (err) {
+        toast(err.message || 'Error al cancelar.', 'error');
+      } finally {
+        setManageOtpLoading(false);
+      }
+      return;
+    }
     await _requestManageOtp('cancel');
   }
 
@@ -758,7 +797,7 @@ function ReschedulePanel({
     const next = findNextAvailableDate({
       bizHours: bizHoursRaw,
       blockedDates,
-      leadMins: 0,
+      leadMins: config?.booking_lead_mins ?? 0,
       maxAdvanceDays: maxAdvance,
     });
     if (next) {

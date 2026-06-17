@@ -52,11 +52,15 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const dayNum    = group.date?.split('-')[2];
 
   // Overall start time = first appointment's time
-  const startTime    = group.appointments?.[0]?.time ?? null;
-  const apptDateTime = (group.date && startTime)
-    ? new Date(`${group.date}T${startTime.padStart(5, '0')}:00`)
-    : null;
-  const isPast = apptDateTime ? apptDateTime < new Date() : (!!group.date && group.date < todayStr);
+  const startTime = group.appointments?.[0]?.time ?? null;
+  const bizTz     = config?.business_timezone ?? null;
+  const nowStrTz  = bizTz ? new Date().toLocaleString('sv', { timeZone: bizTz }).slice(0, 16) : null;
+  const isPast = (() => {
+    if (!group.date) return false;
+    const t = (startTime ?? '23:59').padStart(5, '0');
+    if (nowStrTz) return `${group.date} ${t}` < nowStrTz;
+    return new Date(`${group.date}T${t}:00`) < new Date();
+  })();
 
   // Branch info
   const groupBranchId   = group.appointments?.[0]?.branchId ?? null;
@@ -140,6 +144,23 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   }
 
   async function handleGroupReschedule(date, time) {
+    if (!config?.phone_verification_required) {
+      setManageOtpLoading(true);
+      try {
+        const updated = await rescheduleMutation.mutateAsync({ code: group.groupCode, date, time });
+        setMode('view');
+        onUpdated?.(updated);
+        toast('Visita reagendada correctamente.', 'success');
+        if (updated?.promoRemovedOnReschedule) {
+          toast('La promoción aplicada ya no es válida para el nuevo horario y fue removida.', 'info');
+        }
+      } catch (err) {
+        toast(err.message || 'Error al reagendar.', 'error');
+      } finally {
+        setManageOtpLoading(false);
+      }
+      return;
+    }
     pendingRescheduleRef.current = { date, time };
     await _requestManageOtp('reschedule');
   }
@@ -172,6 +193,20 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   }
 
   async function handleCancel() {
+    if (!config?.phone_verification_required) {
+      setManageOtpLoading(true);
+      try {
+        const updated = await cancelMutation.mutateAsync({ code: group.groupCode });
+        setMode('view');
+        onUpdated?.(updated);
+        toast('Visita cancelada.', 'info');
+      } catch (err) {
+        toast(err.message || 'Error al cancelar.', 'error');
+      } finally {
+        setManageOtpLoading(false);
+      }
+      return;
+    }
     await _requestManageOtp('cancel');
   }
 
@@ -528,7 +563,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
   // Auto-selección del próximo día disponible
   useEffect(() => {
     if (autoSelectedRef.current || newDate || bizHoursRaw.length === 0 || !blockedData) return;
-    const next = findNextAvailableDate({ bizHours: bizHoursRaw, blockedDates, maxAdvanceDays: maxAdvance });
+    const next = findNextAvailableDate({ bizHours: bizHoursRaw, blockedDates, leadMins: config?.booking_lead_mins ?? 0, maxAdvanceDays: maxAdvance });
     if (next) {
       autoSelectedRef.current = true;
       setNewDate(next);

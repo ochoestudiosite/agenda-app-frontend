@@ -37,6 +37,9 @@ vi.mock('../hooks/useAppointment.js', () => ({
   }),
 }))
 
+// Controlled per-test: true = Pro+OTP (default), false = Starter (no OTP)
+let mockPhoneVerificationRequired = true
+
 vi.mock('../hooks/useConfig.js', () => ({
   useConfig: () => ({
     data: {
@@ -44,6 +47,7 @@ vi.mock('../hooks/useConfig.js', () => ({
       branches: [{ id: 1, name: 'Sucursal Principal' }],
       hours: {},
       max_advance_days: 30,
+      phone_verification_required: mockPhoneVerificationRequired,
     },
   }),
 }))
@@ -192,6 +196,7 @@ async function renderCard(group = CONFIRMED_GROUP) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockPhoneVerificationRequired = true // default: Pro+OTP enabled
 })
 
 // ============================================================================
@@ -387,7 +392,68 @@ describe('GroupAppointmentCard — cancel confirm flow', () => {
 })
 
 // ============================================================================
-// 5. Price display
+// 5. Cancel flow — Starter plan (phone_verification_required = false)
+// ============================================================================
+
+describe('GroupAppointmentCard — cancel flow (Starter, no OTP)', () => {
+  beforeEach(() => {
+    mockPhoneVerificationRequired = false
+  })
+
+  it('calls cancelMutation directly after confirm — no OTP panel shown', async () => {
+    const user = userEvent.setup()
+    mockCancelMutateAsync.mockResolvedValue({ status: 'cancelled' })
+
+    await renderCard()
+
+    await user.click(screen.getByRole('button', { name: /Cancelar visita/i }))
+    await waitFor(() => screen.getByRole('button', { name: /Sí, cancelar/i }))
+    await user.click(screen.getByRole('button', { name: /Sí, cancelar/i }))
+
+    await waitFor(() => {
+      expect(mockCancelMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'GRP-001' })
+      )
+      expect(mockCancelMutateAsync).toHaveBeenCalledWith(
+        expect.not.objectContaining({ pendingId: expect.anything() })
+      )
+    })
+    expect(screen.queryByTestId('otp-verify')).toBeNull()
+  })
+
+  it('calls onUpdated after successful cancel without OTP', async () => {
+    const user = userEvent.setup()
+    mockCancelMutateAsync.mockResolvedValue({ status: 'cancelled' })
+
+    await renderCard()
+
+    await user.click(screen.getByRole('button', { name: /Cancelar visita/i }))
+    await waitFor(() => screen.getByRole('button', { name: /Sí, cancelar/i }))
+    await user.click(screen.getByRole('button', { name: /Sí, cancelar/i }))
+
+    await waitFor(() => {
+      expect(mockOnUpdated).toHaveBeenCalled()
+    })
+  })
+
+  it('shows toast error on cancel failure without OTP', async () => {
+    const user = userEvent.setup()
+    mockCancelMutateAsync.mockRejectedValue(new Error('Error al cancelar'))
+
+    await renderCard()
+
+    await user.click(screen.getByRole('button', { name: /Cancelar visita/i }))
+    await waitFor(() => screen.getByRole('button', { name: /Sí, cancelar/i }))
+    await user.click(screen.getByRole('button', { name: /Sí, cancelar/i }))
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith('Error al cancelar', 'error')
+    })
+  })
+})
+
+// ============================================================================
+// 6. Price display
 // ============================================================================
 
 describe('GroupAppointmentCard — price display', () => {
