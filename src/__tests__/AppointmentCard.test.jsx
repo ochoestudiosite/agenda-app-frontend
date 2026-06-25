@@ -97,7 +97,7 @@ const CONFIRMED_APPT = {
   specialistId:    5,
   specialistName:  'Ana García',
   branchId:        1,
-  date:            '2026-06-20',
+  date:            '2027-06-20',
   time:            '10:00',
   clientName:      'Juan García',
   clientPhone:     '5512345678',

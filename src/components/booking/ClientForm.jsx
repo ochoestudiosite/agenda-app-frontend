@@ -603,7 +603,7 @@ export default function ClientForm() {
         />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="grid grid-cols-2 gap-3">
             <Input
               id="client-first-name"
               label="Nombre(s)"
