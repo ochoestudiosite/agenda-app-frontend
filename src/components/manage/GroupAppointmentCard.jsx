@@ -934,7 +934,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
 }
 
 function StatusBadge({ status }) {
-  const cls    = { confirmed: 'badge badge-confirmed', cancelled: 'badge badge-cancelled', rescheduled: 'badge badge-rescheduled' };
-  const labels = { confirmed: 'Confirmada', cancelled: 'Cancelada', rescheduled: 'Reagendada' };
+  const cls    = { confirmed: 'badge badge-confirmed', completed: 'badge badge-confirmed', cancelled: 'badge badge-cancelled', rescheduled: 'badge badge-rescheduled' };
+  const labels = { confirmed: 'Confirmada', completed: 'Completada', cancelled: 'Cancelada', rescheduled: 'Reagendada' };
   return <span className={cls[status] || 'badge'}>{labels[status] || status}</span>;
 }

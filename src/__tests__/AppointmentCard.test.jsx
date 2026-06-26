@@ -200,6 +200,16 @@ describe('AppointmentCard — completed status', () => {
     expect(screen.queryByRole('button', { name: /cancelar/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /reagendar/i })).toBeNull()
   })
+
+  // Regression: StatusBadge's label map had no entry for 'completed', so the
+  // fallback rendered the raw English status string ("completed") directly
+  // to the end customer looking up their appointment by code. Fixed by
+  // mapping it to "Completada", same style as the 'confirmed' badge.
+  it('shows the "Completada" label, not the raw "completed" string', async () => {
+    await renderCard(COMPLETED_APPT)
+    expect(document.body.textContent).toMatch(/Completada/)
+    expect(document.body.textContent).not.toMatch(/\bcompleted\b/)
+  })
 })
 
 // ============================================================================

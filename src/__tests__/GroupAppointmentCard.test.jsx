@@ -471,3 +471,37 @@ describe('GroupAppointmentCard — price display', () => {
     expect(screen.queryAllByText(/A consultar/i).length).toBeGreaterThan(0)
   })
 })
+
+// ============================================================================
+// 7. Completed group status badge (regression)
+//
+// StatusBadge's label map had no entry for 'completed', so a group visit
+// whose backend status is 'completed' (the normal terminal state once the
+// visit has happened) showed the raw English string "completed" to the end
+// customer. Fixed by mapping it to "Completada", same style as 'confirmed'.
+// ============================================================================
+
+describe('GroupAppointmentCard — completed status badge label (regression)', () => {
+  const COMPLETED_GROUP = {
+    ...CONFIRMED_GROUP,
+    groupCode: 'GRP-003',
+    status: 'completed',
+    appointments: CONFIRMED_GROUP.appointments.map(a => ({ ...a, status: 'completed' })),
+  }
+
+  it('shows the "Completada" label, not the raw "completed" string', async () => {
+    await renderCard(COMPLETED_GROUP)
+    expect(document.body.textContent).toMatch(/Completada/)
+    expect(document.body.textContent).not.toMatch(/\bcompleted\b/)
+  })
+
+  // NOTE: action-button gating (`isCancelled`) only checks status==='cancelled',
+  // not 'completed' — so Reagendar/Cancelar visita currently still render for an
+  // already-completed group. That's a pre-existing behavior independent of the
+  // label-mapping fix this test file covers; documented here, not silently
+  // "fixed" as part of an unrelated change. Flagged separately for product review.
+  it('action buttons still render for a completed group today (pre-existing gap, documented not fixed here)', async () => {
+    await renderCard(COMPLETED_GROUP)
+    expect(screen.queryByRole('button', { name: /Cancelar visita/i })).toBeTruthy()
+  })
+})

@@ -1199,6 +1199,7 @@ function ReschedulePanel({
 function StatusBadge({ status }) {
   const map = {
     confirmed:   { cls: 'badge badge-confirmed',   label: 'Confirmada'  },
+    completed:   { cls: 'badge badge-confirmed',   label: 'Completada'  },
     cancelled:   { cls: 'badge badge-cancelled',   label: 'Cancelada'   },
     rescheduled: { cls: 'badge badge-rescheduled', label: 'Reagendada'  },
     no_show:     { cls: 'badge',                   label: 'No asistió'  },
