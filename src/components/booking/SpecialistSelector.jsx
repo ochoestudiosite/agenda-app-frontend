@@ -177,9 +177,11 @@ function SpecialistCard({ specialist, onSelect, delay }) {
   return (
     <button
       onClick={onSelect}
+
       className="group flex sm:flex-col items-start sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge dark:border-white/[0.08] bg-card
                  text-left sm:text-center hover:border-gold/50 dark:hover:border-gold/70 hover:shadow-card
-                 active:scale-[0.99] transition-all duration-240 cursor-pointer animate-fade-up"
+                 active:scale-[0.99] transition-all duration-240 cursor-pointer animate-fade-up
+                 focus:outline-none focus:ring-2 focus:ring-gold/30"
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
       <div className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gold/10 border-2 border-gold/25 mt-0.5 sm:mt-0

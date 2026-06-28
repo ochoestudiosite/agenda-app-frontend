@@ -317,8 +317,11 @@ export default function DateTimePicker() {
                   key={toDateStr(date)}
                   disabled={disabled}
                   onClick={() => handleSelectDate(date)}
+                  aria-disabled={disabled}
+                  aria-label={`${date.getDate()} de ${MONTHS_ES[date.getMonth()]} ${date.getFullYear()}`}
                   className={[
-                    'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-160',
+                    'relative h-9 w-full rounded-full text-sm font-medium transition-all duration-160',
+                    'focus:outline-none focus:ring-2 focus:ring-gold/30',
                     disabled   ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
                     isSelected ? 'bg-gold text-on-gold shadow-xs' : '',
                     !isSelected && isToday && !disabled ? 'text-gold font-semibold' : '',
@@ -427,7 +430,8 @@ export default function DateTimePicker() {
                               }
                               className={[
                                 'py-2.5 rounded-xl text-xs font-medium transition-all duration-160',
-                                busy    ? 'text-ink-3/40 line-through bg-raised/50 cursor-not-allowed' : '',
+                                'focus:outline-none focus:ring-2 focus:ring-gold/30',
+                                busy    ? 'text-ink-3/40 bg-raised/50 cursor-not-allowed' : '',
                                 past && !busy ? 'text-ink-3/35 bg-raised/40 cursor-not-allowed' : '',
                                 sel && !unavail ? 'bg-gold text-on-gold shadow-xs' : '',
                                 !unavail && !sel ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97] cursor-pointer' : '',

@@ -687,23 +687,21 @@ export default function ClientForm() {
                 <div className="space-y-2">
                   <label className="block text-[12px] font-medium text-ink-2">Código promocional</label>
                   <div className="flex gap-2">
-                    <input
-                      type="text"
+                    <Input
                       value={promoInput}
                       onChange={e => { setPromoInput(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')); if (promoStatus) setPromoStatus(null); }}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApplyPromo(); } }}
                       maxLength={24}
                       placeholder="Ej. VERANO20"
-                      autoComplete="off" spellCheck={false}
-                      className="flex-1 h-11 px-3.5 rounded-2xl border border-edge bg-raised/40 text-[14px] font-semibold tracking-wider uppercase text-ink placeholder:text-ink-3 placeholder:font-normal placeholder:normal-case focus:outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/15 transition-all"
+                      autoComplete="off"
+                      spellCheck={false}
+                      error={promoStatus && !promoStatus.ok ? promoStatus.message : undefined}
+                      className="flex-1 font-semibold tracking-wider uppercase"
                     />
                     <Button type="button" variant="subtle" onClick={handleApplyPromo} loading={promoChecking} disabled={!promoInput.trim()} className="shrink-0">
                       Aplicar
                     </Button>
                   </div>
-                  {promoStatus && !promoStatus.ok && (
-                    <p className="text-[12px] text-amber-600 dark:text-amber-400">{promoStatus.message}</p>
-                  )}
                 </div>
               )}
             </div>

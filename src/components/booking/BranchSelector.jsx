@@ -21,7 +21,8 @@ export default function BranchSelector({ branches }) {
             onClick={() => select(branch)}
             className="w-full text-left group flex items-center gap-4 p-5 rounded-2xl border border-edge bg-card
                        hover:border-gold/40 hover:shadow-card active:scale-[0.99]
-                       transition-all duration-240 cursor-pointer animate-fade-up"
+                       transition-all duration-240 cursor-pointer animate-fade-up
+                       focus:outline-none focus:ring-2 focus:ring-gold/30"
             style={{ animationDelay: `${i * 40}ms`, animationFillMode: 'both' }}
           >
             <div className="relative shrink-0 w-14 h-14 rounded-full overflow-hidden flex items-center justify-center

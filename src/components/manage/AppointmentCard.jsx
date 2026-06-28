@@ -7,6 +7,8 @@ import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
 import { useSpecialists } from '../../hooks/useSpecialists';
 import { useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointment';
+import { useRescheduleFlow } from '../../hooks/useRescheduleFlow';
+import { useCancelFlow } from '../../hooks/useCancelFlow';
 import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
@@ -63,20 +65,27 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
 
-  // Manage OTP state (cancel / reschedule ownership)
-  const [manageOtpPendingId,   setManageOtpPendingId]   = useState(null);
-  const [manageOtpPhone,       setManageOtpPhone]       = useState(null);
-  const [manageOtpKey,         setManageOtpKey]         = useState(0);
-  const [manageOtpError,       setManageOtpError]       = useState(null);
-  const [manageOtpLoading,     setManageOtpLoading]     = useState(false);
-  const [manageResendCooldown, setManageResendCooldown] = useState(0);
-  const manageResendInFlightRef = useRef(false);
+  const rescheduleMutation = useRescheduleAppointment();
+  const cancelMutation     = useCancelAppointment();
 
-  useEffect(() => {
-    if (manageResendCooldown <= 0) return;
-    const t = setInterval(() => setManageResendCooldown(c => Math.max(0, c - 1)), 1000);
-    return () => clearInterval(t);
-  }, [manageResendCooldown]);
+  const rescheduleFlow = useRescheduleFlow({
+    phoneVerificationRequired: config?.phone_verification_required,
+    rescheduleMutation,
+    requestOtpFn: () => api.requestManageOTP({ code: appointment.code }),
+    onSuccess: (updated) => { setMode('view'); onUpdated?.(updated); },
+    onOtpReady: () => setMode('reschedule-otp'),
+    toastFn: toast,
+  });
+
+  const cancelFlow = useCancelFlow({
+    phoneVerificationRequired: config?.phone_verification_required,
+    cancelMutation,
+    requestOtpFn: () => api.requestManageOTP({ code: appointment.code }),
+    onSuccess: () => { onUpdated?.({ ...appointment, status: 'cancelled' }); setMode('view'); },
+    onOtpReady: () => setMode('cancel-otp'),
+    toastFn: toast,
+    successMessage: 'Cita cancelada.',
+  });
 
   const effectiveSpecialistId = reSpecialist?.id || appointment.specialistId;
   const effectiveBranchId     = reBranch?.id     || appointment.branchId;
@@ -101,9 +110,6 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const isToday    = dateStr === todayStr;
   const nowMins    = nowMinutesInTz(bizTz);
   const cutoffMins = isToday ? nowMins + leadMins : 0;
-
-  const rescheduleMutation = useRescheduleAppointment();
-  const cancelMutation     = useCancelAppointment();
   const isCancelled        = appointment.status === 'cancelled';
   // Mientras config no ha cargado, bizTz es null e isPastDateTime cae a hora
   // local del navegador como aproximación segura (nunca bloquea acciones).
@@ -131,130 +137,19 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     setMode('reschedule');
   }
 
-  async function _requestManageOtp(action) {
-    setManageOtpLoading(true);
-    setManageOtpError(null);
-    try {
-      const { pendingId, maskedPhone } = await api.requestManageOTP({ code: appointment.code });
-      setManageOtpPendingId(pendingId);
-      setManageOtpPhone(maskedPhone);
-      setManageOtpKey(k => k + 1);
-      setManageResendCooldown(60);
-      setMode(action === 'cancel' ? 'cancel-otp' : 'reschedule-otp');
-    } catch (err) {
-      toast(err.message || 'Error al enviar el código.', 'error');
-    } finally {
-      setManageOtpLoading(false);
-    }
-  }
-
-  async function handleResendManageOtp() {
-    if (manageResendCooldown > 0 || manageOtpLoading || manageResendInFlightRef.current) return;
-    manageResendInFlightRef.current = true;
-    setManageOtpLoading(true);
-    try {
-      const { pendingId, maskedPhone } = await api.requestManageOTP({ code: appointment.code });
-      setManageOtpPendingId(pendingId);
-      setManageOtpPhone(maskedPhone);
-      setManageOtpKey(k => k + 1);
-      setManageResendCooldown(60);
-      setManageOtpError(null);
-    } catch (err) {
-      setManageOtpError(err.message || 'Error al reenviar.');
-      setManageResendCooldown(15);
-    } finally {
-      manageResendInFlightRef.current = false;
-      setManageOtpLoading(false);
-    }
-  }
-
-  async function handleCancelOtpVerify(otpCode) {
-    setManageOtpLoading(true);
-    setManageOtpError(null);
-    try {
-      await cancelMutation.mutateAsync({ code: appointment.code, pendingId: manageOtpPendingId, otpCode });
-      toast('Cita cancelada.', 'info');
-      onUpdated?.({ ...appointment, status: 'cancelled' });
-      setMode('view');
-    } catch (err) {
-      setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
-      setManageOtpKey(k => k + 1);
-    } finally {
-      setManageOtpLoading(false);
-    }
-  }
-
-  async function handleRescheduleOtpVerify(otpCode) {
-    setManageOtpLoading(true);
-    setManageOtpError(null);
-    try {
-      const updated = await rescheduleMutation.mutateAsync({
-        code:         appointment.code,
-        date:         toDateStr(newDate),
-        time:         newTime,
-        branchId:     reBranch?.id     ?? undefined,
-        specialistId: reSpecialist?.id ?? undefined,
-        pendingId:    manageOtpPendingId,
-        otpCode,
-      });
-      toast('Cita reagendada correctamente.', 'success');
-      if (updated?.promoRemovedOnReschedule) {
-        toast('La promoción aplicada ya no es válida para el nuevo horario y fue removida.', 'info');
-      }
-      setMode('view');
-      onUpdated?.(updated);
-    } catch (err) {
-      setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
-      setManageOtpKey(k => k + 1);
-    } finally {
-      setManageOtpLoading(false);
-    }
-  }
-
-  async function handleReschedule() {
+  function handleReschedule() {
     if (!newDate || !newTime) return;
-    if (!config?.phone_verification_required) {
-      setManageOtpLoading(true);
-      try {
-        const updated = await rescheduleMutation.mutateAsync({
-          code:         appointment.code,
-          date:         toDateStr(newDate),
-          time:         newTime,
-          branchId:     reBranch?.id     ?? undefined,
-          specialistId: reSpecialist?.id ?? undefined,
-        });
-        toast('Cita reagendada correctamente.', 'success');
-        if (updated?.promoRemovedOnReschedule) {
-          toast('La promoción aplicada ya no es válida para el nuevo horario y fue removida.', 'info');
-        }
-        setMode('view');
-        onUpdated?.(updated);
-      } catch (err) {
-        toast(err.message || 'Error al reagendar.', 'error');
-      } finally {
-        setManageOtpLoading(false);
-      }
-      return;
-    }
-    await _requestManageOtp('reschedule');
+    rescheduleFlow.initiateReschedule({
+      code:         appointment.code,
+      date:         toDateStr(newDate),
+      time:         newTime,
+      branchId:     reBranch?.id     ?? undefined,
+      specialistId: reSpecialist?.id ?? undefined,
+    });
   }
 
-  async function handleCancel() {
-    if (!config?.phone_verification_required) {
-      setManageOtpLoading(true);
-      try {
-        await cancelMutation.mutateAsync({ code: appointment.code });
-        toast('Cita cancelada.', 'info');
-        onUpdated?.({ ...appointment, status: 'cancelled' });
-        setMode('view');
-      } catch (err) {
-        toast(err.message || 'Error al cancelar.', 'error');
-      } finally {
-        setManageOtpLoading(false);
-      }
-      return;
-    }
-    await _requestManageOtp('cancel');
+  function handleCancel() {
+    cancelFlow.initiateCancel({ code: appointment.code });
   }
 
   return (
@@ -520,7 +415,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           <div className="flex gap-2.5">
             <Button
               variant="danger"
-              loading={manageOtpLoading}
+              loading={cancelFlow.isPending}
               onClick={handleCancel}
             >
               Sí, cancelar
@@ -533,14 +428,14 @@ export default function AppointmentCard({ appointment, onUpdated }) {
       {/* ── Cancel OTP verification ──────────────────────────────────────────── */}
       {mode === 'cancel-otp' && (
         <OTPPanel
-          key={manageOtpKey}
-          phone={manageOtpPhone}
-          loading={manageOtpLoading || cancelMutation.isPending}
-          error={manageOtpError}
-          resendCooldown={manageResendCooldown}
-          onVerify={handleCancelOtpVerify}
-          onResend={handleResendManageOtp}
-          onBack={() => { setMode('cancel-confirm'); setManageOtpError(null); }}
+          key={cancelFlow.otpKey}
+          phone={cancelFlow.otpPhone}
+          loading={cancelFlow.isPending || cancelMutation.isPending}
+          error={cancelFlow.otpError}
+          resendCooldown={cancelFlow.resendCooldown}
+          onVerify={(otpCode) => cancelFlow.handleOtpVerify(otpCode, { code: appointment.code })}
+          onResend={cancelFlow.handleResend}
+          onBack={() => { setMode('cancel-confirm'); cancelFlow.resetOtp(); }}
           backLabel="Volver"
         />
       )}
@@ -548,14 +443,14 @@ export default function AppointmentCard({ appointment, onUpdated }) {
       {/* ── Reschedule OTP verification overlay ─────────────────────────────── */}
       {mode === 'reschedule-otp' && (
         <OTPPanel
-          key={manageOtpKey}
-          phone={manageOtpPhone}
-          loading={manageOtpLoading || rescheduleMutation.isPending}
-          error={manageOtpError}
-          resendCooldown={manageResendCooldown}
-          onVerify={handleRescheduleOtpVerify}
-          onResend={handleResendManageOtp}
-          onBack={() => { setMode('reschedule'); setManageOtpError(null); }}
+          key={rescheduleFlow.otpKey}
+          phone={rescheduleFlow.otpPhone}
+          loading={rescheduleFlow.isPending || rescheduleMutation.isPending}
+          error={rescheduleFlow.otpError}
+          resendCooldown={rescheduleFlow.resendCooldown}
+          onVerify={rescheduleFlow.handleOtpVerify}
+          onResend={rescheduleFlow.handleResend}
+          onBack={() => { setMode('reschedule'); rescheduleFlow.resetOtp(); }}
           backLabel="Volver a elegir horario"
         />
       )}
@@ -586,7 +481,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           cutoffMins={cutoffMins}
           onConfirm={handleReschedule}
           onCancel={() => setMode('view')}
-          isLoading={manageOtpLoading}
+          isLoading={rescheduleFlow.isPending}
         />
       )}
     </div>
@@ -972,7 +867,8 @@ function ReschedulePanel({
                   onClick={() => { setReSpecialist(s); setNewDate(null); setNewTime(null); setReschedStep('datetime'); }}
                   className="group flex sm:flex-col items-start sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge bg-card
                              text-left sm:text-center hover:border-gold/40 hover:shadow-card
-                             active:scale-[0.99] transition-all duration-200 cursor-pointer animate-fade-up"
+                             active:scale-[0.99] transition-all duration-200 cursor-pointer animate-fade-up
+                             focus:outline-none focus:ring-2 focus:ring-gold/30"
                   style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}
                 >
                   <div className="shrink-0 w-14 h-14 rounded-full bg-raised border-2 border-edge mt-0.5 sm:mt-0
@@ -1057,7 +953,8 @@ function ReschedulePanel({
                   return (
                     <button key={toDateStr(date)} disabled={disabled} onClick={() => handleSelectDate(date)}
                       className={[
-                        'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-150',
+                        'relative h-9 w-full rounded-full text-sm font-medium transition-all duration-150',
+                        'focus:outline-none focus:ring-2 focus:ring-gold/30',
                         disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
                         isSel    ? 'bg-gold text-on-gold shadow-xs' : '',
                         !isSel && isT && !disabled ? 'text-gold font-semibold' : '',
@@ -1144,7 +1041,8 @@ function ReschedulePanel({
                                 <button key={slot} disabled={unavail} onClick={() => setNewTime(slot)}
                                   className={[
                                     'py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                                    busy ? 'text-ink-3/40 line-through cursor-not-allowed bg-raised/50' : '',
+                                    'focus:outline-none focus:ring-2 focus:ring-gold/30',
+                                    busy ? 'text-ink-3/40 cursor-not-allowed bg-raised/50' : '',
                                     past && !busy ? 'text-ink-3/35 bg-raised/40 cursor-not-allowed' : '',
                                     sel && !unavail ? 'bg-gold text-on-gold shadow-xs'
                                          : !unavail ? 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97] cursor-pointer' : '',

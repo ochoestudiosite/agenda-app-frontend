@@ -7,6 +7,8 @@ import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
 import { useSpecialists } from '../../hooks/useSpecialists';
 import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../hooks/useAppointment';
+import { useRescheduleFlow } from '../../hooks/useRescheduleFlow';
+import { useCancelFlow } from '../../hooks/useCancelFlow';
 import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
@@ -73,140 +75,32 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const cancelMutation     = useCancelGroupAppointment();
   const rescheduleMutation = useRescheduleGroupAppointment();
 
-  // Manage OTP state (cancel / reschedule ownership)
-  const [manageOtpPendingId,   setManageOtpPendingId]   = useState(null);
-  const [manageOtpPhone,       setManageOtpPhone]       = useState(null);
-  const [manageOtpKey,         setManageOtpKey]         = useState(0);
-  const [manageOtpError,       setManageOtpError]       = useState(null);
-  const [manageOtpLoading,     setManageOtpLoading]     = useState(false);
-  const [manageResendCooldown, setManageResendCooldown] = useState(0);
-  const manageResendInFlightRef = useRef(false);
-  const pendingRescheduleRef    = useRef(null); // { date, time } stored while waiting for OTP
+  const rescheduleFlow = useRescheduleFlow({
+    phoneVerificationRequired: config?.phone_verification_required,
+    rescheduleMutation,
+    requestOtpFn: () => api.requestManageOTP({ code: group.groupCode }),
+    onSuccess: (updated) => { setMode('view'); onUpdated?.(updated); },
+    onOtpReady: () => setMode('reschedule-otp'),
+    toastFn: toast,
+    successMessage: 'Visita reagendada correctamente.',
+  });
 
-  useEffect(() => {
-    if (manageResendCooldown <= 0) return;
-    const t = setInterval(() => setManageResendCooldown(c => Math.max(0, c - 1)), 1000);
-    return () => clearInterval(t);
-  }, [manageResendCooldown]);
+  const cancelFlow = useCancelFlow({
+    phoneVerificationRequired: config?.phone_verification_required,
+    cancelMutation,
+    requestOtpFn: () => api.requestManageOTP({ code: group.groupCode }),
+    onSuccess: (updated) => { setMode('view'); onUpdated?.(updated); },
+    onOtpReady: () => setMode('cancel-otp'),
+    toastFn: toast,
+    successMessage: 'Visita cancelada.',
+  });
 
-  async function _requestManageOtp(action) {
-    setManageOtpLoading(true);
-    setManageOtpError(null);
-    try {
-      const { pendingId, maskedPhone } = await api.requestManageOTP({ code: group.groupCode });
-      setManageOtpPendingId(pendingId);
-      setManageOtpPhone(maskedPhone);
-      setManageOtpKey(k => k + 1);
-      setManageResendCooldown(60);
-      setMode(action === 'cancel' ? 'cancel-otp' : 'reschedule-otp');
-    } catch (err) {
-      toast(err.message || 'Error al enviar el código.', 'error');
-    } finally {
-      setManageOtpLoading(false);
-    }
+  function handleGroupReschedule(date, time) {
+    rescheduleFlow.initiateReschedule({ code: group.groupCode, date, time });
   }
 
-  async function handleResendManageOtp() {
-    if (manageResendCooldown > 0 || manageOtpLoading || manageResendInFlightRef.current) return;
-    manageResendInFlightRef.current = true;
-    setManageOtpLoading(true);
-    try {
-      const { pendingId, maskedPhone } = await api.requestManageOTP({ code: group.groupCode });
-      setManageOtpPendingId(pendingId);
-      setManageOtpPhone(maskedPhone);
-      setManageOtpKey(k => k + 1);
-      setManageResendCooldown(60);
-      setManageOtpError(null);
-    } catch (err) {
-      setManageOtpError(err.message || 'Error al reenviar.');
-      setManageResendCooldown(15);
-    } finally {
-      manageResendInFlightRef.current = false;
-      setManageOtpLoading(false);
-    }
-  }
-
-  async function handleCancelOtpVerify(otpCode) {
-    setManageOtpLoading(true);
-    setManageOtpError(null);
-    try {
-      const updated = await cancelMutation.mutateAsync({ code: group.groupCode, pendingId: manageOtpPendingId, otpCode });
-      setMode('view');
-      onUpdated?.(updated);
-      toast('Visita cancelada.', 'info');
-    } catch (err) {
-      setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
-      setManageOtpKey(k => k + 1);
-    } finally {
-      setManageOtpLoading(false);
-    }
-  }
-
-  async function handleGroupReschedule(date, time) {
-    if (!config?.phone_verification_required) {
-      setManageOtpLoading(true);
-      try {
-        const updated = await rescheduleMutation.mutateAsync({ code: group.groupCode, date, time });
-        setMode('view');
-        onUpdated?.(updated);
-        toast('Visita reagendada correctamente.', 'success');
-        if (updated?.promoRemovedOnReschedule) {
-          toast('La promoción aplicada ya no es válida para el nuevo horario y fue removida.', 'info');
-        }
-      } catch (err) {
-        toast(err.message || 'Error al reagendar.', 'error');
-      } finally {
-        setManageOtpLoading(false);
-      }
-      return;
-    }
-    pendingRescheduleRef.current = { date, time };
-    await _requestManageOtp('reschedule');
-  }
-
-  async function handleRescheduleOtpVerify(otpCode) {
-    if (!pendingRescheduleRef.current) return;
-    setManageOtpLoading(true);
-    setManageOtpError(null);
-    try {
-      const { date, time } = pendingRescheduleRef.current;
-      const updated = await rescheduleMutation.mutateAsync({
-        code: group.groupCode,
-        date,
-        time,
-        pendingId: manageOtpPendingId,
-        otpCode,
-      });
-      setMode('view');
-      onUpdated?.(updated);
-      toast('Visita reagendada correctamente.', 'success');
-      if (updated?.promoRemovedOnReschedule) {
-        toast('La promoción aplicada ya no es válida para el nuevo horario y fue removida.', 'info');
-      }
-    } catch (err) {
-      setManageOtpError(err.message || 'Código incorrecto. Intenta de nuevo.');
-      setManageOtpKey(k => k + 1);
-    } finally {
-      setManageOtpLoading(false);
-    }
-  }
-
-  async function handleCancel() {
-    if (!config?.phone_verification_required) {
-      setManageOtpLoading(true);
-      try {
-        const updated = await cancelMutation.mutateAsync({ code: group.groupCode });
-        setMode('view');
-        onUpdated?.(updated);
-        toast('Visita cancelada.', 'info');
-      } catch (err) {
-        toast(err.message || 'Error al cancelar.', 'error');
-      } finally {
-        setManageOtpLoading(false);
-      }
-      return;
-    }
-    await _requestManageOtp('cancel');
+  function handleCancel() {
+    cancelFlow.initiateCancel({ code: group.groupCode });
   }
 
   return (
@@ -448,7 +342,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           <div className="flex gap-2.5">
             <Button
               variant="danger"
-              loading={manageOtpLoading}
+              loading={cancelFlow.isPending}
               onClick={handleCancel}
             >
               Sí, cancelar
@@ -461,14 +355,14 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
       {/* Cancel OTP verification */}
       {mode === 'cancel-otp' && (
         <OTPPanel
-          key={manageOtpKey}
-          phone={manageOtpPhone}
-          loading={manageOtpLoading || cancelMutation.isPending}
-          error={manageOtpError}
-          resendCooldown={manageResendCooldown}
-          onVerify={handleCancelOtpVerify}
-          onResend={handleResendManageOtp}
-          onBack={() => { setMode('cancel-confirm'); setManageOtpError(null); }}
+          key={cancelFlow.otpKey}
+          phone={cancelFlow.otpPhone}
+          loading={cancelFlow.isPending || cancelMutation.isPending}
+          error={cancelFlow.otpError}
+          resendCooldown={cancelFlow.resendCooldown}
+          onVerify={(otpCode) => cancelFlow.handleOtpVerify(otpCode, { code: group.groupCode })}
+          onResend={cancelFlow.handleResend}
+          onBack={() => { setMode('cancel-confirm'); cancelFlow.resetOtp(); }}
           backLabel="Volver"
         />
       )}
@@ -476,14 +370,14 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
       {/* Reschedule OTP verification overlay */}
       {mode === 'reschedule-otp' && (
         <OTPPanel
-          key={manageOtpKey}
-          phone={manageOtpPhone}
-          loading={manageOtpLoading || rescheduleMutation.isPending}
-          error={manageOtpError}
-          resendCooldown={manageResendCooldown}
-          onVerify={handleRescheduleOtpVerify}
-          onResend={handleResendManageOtp}
-          onBack={() => { setMode('reschedule'); setManageOtpError(null); }}
+          key={rescheduleFlow.otpKey}
+          phone={rescheduleFlow.otpPhone}
+          loading={rescheduleFlow.isPending || rescheduleMutation.isPending}
+          error={rescheduleFlow.otpError}
+          resendCooldown={rescheduleFlow.resendCooldown}
+          onVerify={rescheduleFlow.handleOtpVerify}
+          onResend={rescheduleFlow.handleResend}
+          onBack={() => { setMode('reschedule'); rescheduleFlow.resetOtp(); }}
           backLabel="Volver a elegir horario"
         />
       )}
@@ -494,7 +388,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           group={group}
           config={config}
           timeFmt={timeFmt}
-          isLoading={manageOtpLoading}
+          isLoading={rescheduleFlow.isPending}
           onCancel={() => setMode('view')}
           onConfirm={handleGroupReschedule}
         />
@@ -729,7 +623,8 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
                   disabled={disabled}
                   onClick={() => handleSelectDate(date)}
                   className={[
-                    'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-150',
+                    'relative h-9 w-full rounded-full text-sm font-medium transition-all duration-150',
+                    'focus:outline-none focus:ring-2 focus:ring-gold/30',
                     disabled ? 'text-ink-3/30 cursor-not-allowed' : 'cursor-pointer',
                     isSel    ? 'bg-gold text-on-gold shadow-xs' : '',
                     !isSel && isT && !disabled ? 'text-gold font-semibold' : '',
@@ -813,6 +708,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
                           <button key={slot} onClick={() => setNewTime(slot)}
                             className={[
                               'py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer',
+                              'focus:outline-none focus:ring-2 focus:ring-gold/30',
                               sel ? 'bg-gold text-on-gold shadow-xs'
                                   : 'bg-raised text-ink-2 hover:bg-edge hover:text-ink active:scale-[0.97]',
                             ].join(' ')}>

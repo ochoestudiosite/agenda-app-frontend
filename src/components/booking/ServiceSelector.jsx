@@ -90,7 +90,8 @@ export default function ServiceSelector() {
             <button
               onClick={() => dispatch({ type: 'CONFIRM_SERVICES' })}
               className="w-full py-3 rounded-xl bg-gold text-on-gold font-semibold text-sm tracking-wide
-                         hover:bg-gold/90 active:scale-[0.98] transition-all duration-160 cursor-pointer"
+                         hover:bg-gold/90 active:scale-[0.98] transition-all duration-160 cursor-pointer
+                         focus:outline-none focus:ring-2 focus:ring-gold/30"
             >
               Continuar
             </button>
@@ -111,6 +112,7 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
       onClick={onToggle}
       className={`w-full text-left group flex items-center gap-4 p-4 rounded-2xl border
                   transition-all duration-240 cursor-pointer animate-fade-up
+                  focus:outline-none focus:ring-2 focus:ring-gold/30
                   ${isSelected
                     ? 'border-gold bg-gold/5 shadow-card'
                     : isDisabled
