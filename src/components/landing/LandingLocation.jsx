@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Phone, Clock, Mail, Navigation } from 'lucide-react';
+import { nowPartsInTz } from '../../utils/businessTime';
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -149,18 +150,18 @@ function buildHoursDisplay(hours, hoursTextOverride) {
   return { display: lines.join('\n'), closedDays: closed };
 }
 
-// Returns true when the current local time falls within the branch's hours for today.
-// Uses browser local time as an approximation (business and client are typically co-located).
-function isOpenNow(hours) {
+// Returns true when the current time in the business's own timezone falls
+// within the branch's hours for today — un cliente visitando desde otra zona
+// horaria debe ver "Abierto ahora" segun la hora del negocio, no la suya.
+function isOpenNow(hours, tz) {
   if (!hours || !hours.length) return false;
-  const now   = new Date();
-  const dow   = now.getDay();
-  const today = hours.find(h => h.day_of_week === dow);
+  const { hour, minute, weekday } = nowPartsInTz(tz);
+  const today = hours.find(h => h.day_of_week === weekday);
   if (!today?.is_open) return false;
   const [oh, om] = (today.open_time  || '').split(':').map(Number);
   const [ch, cm] = (today.close_time || '').split(':').map(Number);
   if (isNaN(oh) || isNaN(ch)) return false;
-  const cur = now.getHours() * 60 + now.getMinutes();
+  const cur = hour * 60 + minute;
   return cur >= oh * 60 + om && cur < ch * 60 + cm;
 }
 
@@ -174,7 +175,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
   const loc     = locations[Math.min(activeIdx, locations.length - 1)];
   const hours   = getBranchHours(config, loc.branch_id);
   const { display: hoursDisplay, closedDays } = buildHoursDisplay(hours, '');
-  const openNow = isOpenNow(hours);
+  const openNow = isOpenNow(hours, config?.business_timezone ?? null);
 
   const infoRows = [
     loc.address && { icon: MapPin, label: 'Dirección', value: loc.address },
