@@ -10,7 +10,7 @@ export const COUNTRIES = [
   { code: '+51', name: 'Perú' },
 ];
 
-export default function PhoneInput({ label, error, helper, value = '', onChange, required, className = '', id, ...props }) {
+export default function PhoneInput({ label, error, helper, value = '', onChange, onBlur, required, disabled, className = '', id, placeholder = '55 1234 5678', ...props }) {
   const [code, setCode] = useState('+52');
   const [number, setNumber] = useState('');
 
@@ -40,6 +40,12 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
     onChange({ target: { value: code + newNum } });
   };
 
+  const handleContainerBlur = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      onBlur?.({ target: { value: code + number } });
+    }
+  };
+
   return (
     <div className="flex flex-col gap-2">
       {label && (
@@ -48,19 +54,24 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
           {required && <span className="text-gold/70 ml-1 text-xs" aria-hidden="true">*</span>}
         </label>
       )}
-      <div className={[
-        'flex items-center w-full bg-card border rounded-xl overflow-hidden',
-        'transition-all duration-160 ease-spring',
-        'focus-within:outline-none focus-within:ring-2 focus-within:ring-gold/30 focus-within:border-gold',
-        error
-          ? 'border-red-500 focus-within:ring-red-500/20 focus-within:border-red-500'
-          : 'border-edge hover:border-edge-strong',
-        className,
-      ].join(' ')}>
+      <div
+        onBlur={handleContainerBlur}
+        className={[
+          'flex items-center w-full bg-card border rounded-xl overflow-hidden',
+          'transition-all duration-160 ease-spring',
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-gold/30 focus-within:border-gold',
+          error
+            ? 'border-red-500 focus-within:ring-red-500/20 focus-within:border-red-500'
+            : 'border-edge hover:border-edge-strong',
+          disabled ? 'opacity-50 pointer-events-none' : '',
+          className,
+        ].join(' ')}
+      >
         <div className="relative border-r border-edge shrink-0 bg-page/50">
-          <select 
-            value={code} 
+          <select
+            value={code}
             onChange={handleCodeChange}
+            disabled={disabled}
             className="w-[7rem] h-[50px] bg-transparent text-[0.9375rem] pl-4 pr-7 appearance-none cursor-pointer focus:outline-none text-ink"
           >
             {COUNTRIES.map(c => (
@@ -78,6 +89,8 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
           type="tel"
           value={number}
           onChange={handleNumberChange}
+          placeholder={placeholder}
+          disabled={disabled}
           className="flex-1 h-[50px] bg-transparent px-4 text-[0.9375rem] text-ink placeholder:text-ink-3 focus:outline-none w-full"
           {...props}
         />

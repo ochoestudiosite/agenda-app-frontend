@@ -16,12 +16,9 @@ const promoTagProps = o => ({
   discountAmount: o.discountAmount,
 });
 import Button from '../ui/Button';
+import EntityAvatar from '../ui/EntityAvatar';
 
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-
-function initials(name) {
-  return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
-}
 
 function displayPrice(priceType, price) {
   if (priceType === 'ask') return 'A consultar';
@@ -157,24 +154,14 @@ export default function BookingConfirmation() {
                   return (
                     <div key={appt.code || appt.id || i} className="flex items-start gap-3">
                       {/* Service avatar */}
-                      <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
-                        {svcObj?.imageUrl
-                          ? <img src={svcObj.imageUrl} alt={appt.serviceName} className="w-full h-full object-cover" />
-                          : <span className="text-[11px] font-bold text-gold">{initials(appt.serviceName)}</span>
-                        }
-                      </div>
+                      <EntityAvatar size="summary" name={appt.serviceName} imageUrl={svcObj?.imageUrl} className="mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-semibold text-ink leading-snug">
                           {toTitleCase(appt.serviceName)}
                         </p>
                         {/* Specialist mini-avatar + info */}
                         <div className="flex items-center gap-1.5 mt-1">
-                          <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                            {spec?.avatarUrl
-                              ? <img src={spec.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
-                              : <span className="text-[8px] font-bold text-gold">{initials(appt.specialistName)}</span>
-                            }
-                          </div>
+                          <EntityAvatar size="summary-mini" name={appt.specialistName} imageUrl={spec?.avatarUrl} />
                           <p className="text-[11px] text-ink-3 leading-none">
                             {toTitleCase(appt.specialistName)}
                             {' · '}
@@ -205,12 +192,7 @@ export default function BookingConfirmation() {
             {branch?.name && (
               <div className="px-6 py-4 border-b border-edge">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                    {branch?.image_url
-                      ? <img src={branch.image_url} alt={branch.name} className="w-full h-full object-cover" />
-                      : <span className="text-sm font-bold text-gold">{initials(branch.name)}</span>
-                    }
-                  </div>
+                  <EntityAvatar size="confirm" name={branch.name} imageUrl={branch?.image_url} />
                   <div>
                     <p className="label-section">Sucursal</p>
                     <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(branch.name)}</p>
@@ -254,12 +236,7 @@ export default function BookingConfirmation() {
                 <div className="space-y-2.5">
                   {confirmation.services.map((svc, i) => (
                     <div key={svc.id || svc.slug || i} className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 mt-0.5">
-                        {svc.imageUrl
-                          ? <img src={svc.imageUrl} alt={svc.serviceName} className="w-full h-full object-cover" />
-                          : <span className="text-[11px] font-bold text-gold">{initials(svc.serviceName)}</span>
-                        }
-                      </div>
+                      <EntityAvatar size="summary" name={svc.serviceName} imageUrl={svc.imageUrl} className="mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-semibold text-ink leading-snug truncate">
                           {toTitleCase(svc.serviceName)}
@@ -286,12 +263,7 @@ export default function BookingConfirmation() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
-                    {service?.imageUrl
-                      ? <img src={service.imageUrl} alt={confirmation?.serviceName} className="w-full h-full object-cover" />
-                      : <span className="text-sm font-bold text-gold">{initials(confirmation?.serviceName)}</span>
-                    }
-                  </div>
+                  <EntityAvatar size="confirm" name={confirmation?.serviceName} imageUrl={service?.imageUrl} />
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] font-semibold text-ink leading-snug truncate">
                       {toTitleCase(confirmation?.serviceName)}
@@ -321,12 +293,7 @@ export default function BookingConfirmation() {
             {/* ── SINGLE: specialist ──────────────────────────────────────── */}
             <div className={`px-6 py-4 ${branch?.name ? 'border-b border-edge' : ''}`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                  {specialist?.avatarUrl
-                    ? <img src={specialist.avatarUrl} alt={confirmation?.specialistName} className="w-full h-full object-cover" />
-                    : <span className="text-sm font-bold text-gold">{initials(confirmation?.specialistName)}</span>
-                  }
-                </div>
+                <EntityAvatar size="confirm" name={confirmation?.specialistName} imageUrl={specialist?.avatarUrl} />
                 <div>
                   <p className="label-section">Especialista</p>
                   <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(confirmation?.specialistName)}</p>
@@ -338,12 +305,7 @@ export default function BookingConfirmation() {
             {branch?.name && (
               <div className="px-6 py-4 border-b border-edge">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                    {branch?.image_url
-                      ? <img src={branch.image_url} alt={branch.name} className="w-full h-full object-cover" />
-                      : <span className="text-sm font-bold text-gold">{initials(branch.name)}</span>
-                    }
-                  </div>
+                  <EntityAvatar size="confirm" name={branch.name} imageUrl={branch?.image_url} />
                   <div>
                     <p className="label-section">Sucursal</p>
                     <p className="text-[14px] font-semibold text-ink mt-0.5">{toTitleCase(branch.name)}</p>

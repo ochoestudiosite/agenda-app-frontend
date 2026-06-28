@@ -11,15 +11,12 @@ import PhoneInput, { COUNTRIES } from '../ui/PhoneInput';
 import Button from '../ui/Button';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import { useToast } from '../ui/Toast';
+import EntityAvatar from '../ui/EntityAvatar';
 import { BackButton } from './SpecialistSelector';
 import BookingUnavailable from './BookingUnavailable';
 import OTPPanel from './OTPPanel';
 
 const PERSON_WORD_RE = /^[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+$/;
-
-function initials(name) {
-  return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
-}
 
 function namePartErr(label, v) {
   const s = (v || '').trim();
@@ -35,16 +32,32 @@ function namePartErr(label, v) {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-// PhoneInput caps the national number at 10 digits. The minimum is 9 (not 7)
-// so the total digit count (country code + number) always reaches the 10
-// digits the booking API requires (POST /api/appointments matches /^\+?\d{10,15}$/).
+// Expected national-number length per country. Argentina mobile numbers carry
+// an extra "9" mobile prefix in full international notation (10-11 digits);
+// kept as a range rather than a single value to avoid rejecting real numbers.
+const PHONE_DIGIT_RULES = {
+  '+52': [10, 10], // México
+  '+1':  [10, 10], // USA/Canadá
+  '+57': [10, 10], // Colombia
+  '+54': [10, 11], // Argentina
+  '+34': [9, 9],   // España
+  '+56': [9, 9],   // Chile
+  '+51': [9, 9],   // Perú
+};
+
+// PhoneInput caps the national number at 10 digits, so the total digit count
+// (country code + number) reaches the 10 digits the booking API requires
+// (POST /api/appointments matches /^\+?\d{10,15}$/) for the countries that need 10.
 function phoneErr(v) {
   const phone = (v || '').trim();
   const country = COUNTRIES.find(c => phone.startsWith(c.code));
   const codeDigits = country ? country.code.replace(/\D/g, '').length : 0;
   const nationalDigits = phone.replace(/\D/g, '').length - codeDigits;
-  if (nationalDigits < 9 || nationalDigits > 10) {
-    return 'Teléfono inválido. Ingresa los 9 o 10 dígitos de tu número.';
+  const [min, max] = (country && PHONE_DIGIT_RULES[country.code]) || [9, 10];
+  if (nationalDigits < min || nationalDigits > max) {
+    return min === max
+      ? `Teléfono inválido. Ingresa los ${min} dígitos de tu número.`
+      : `Teléfono inválido. Ingresa entre ${min} y ${max} dígitos de tu número.`;
   }
   return null;
 }
@@ -422,12 +435,7 @@ export default function ClientForm() {
                 return (
                   <div key={i} className="flex items-start gap-3">
                     {/* Service avatar */}
-                    <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
-                      {a.service?.imageUrl
-                        ? <img src={a.service.imageUrl} alt={a.service.name} className="w-full h-full object-cover" />
-                        : <span className="text-[11px] font-bold text-gold">{initials(a.service?.name)}</span>
-                      }
-                    </div>
+                    <EntityAvatar size="summary" name={a.service?.name} imageUrl={a.service?.imageUrl} className="mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 min-w-0">
                         <p className="text-[14px] font-semibold text-ink leading-tight">
@@ -437,12 +445,7 @@ export default function ClientForm() {
                       </div>
                       {/* Specialist mini-avatar + info */}
                       <div className="flex items-center gap-1.5 mt-1">
-                        <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                          {a.specialist?.avatarUrl
-                            ? <img src={a.specialist.avatarUrl} alt={a.specialist.name} className="w-full h-full object-cover" />
-                            : <span className="text-[8px] font-bold text-gold">{initials(a.specialist?.name)}</span>
-                          }
-                        </div>
+                        <EntityAvatar size="summary-mini" name={a.specialist?.name} imageUrl={a.specialist?.avatarUrl} />
                         <p className="text-xs text-ink-3 leading-none">
                           {toTitleCase(a.specialist.name)}
                           {' · '}
@@ -458,12 +461,7 @@ export default function ClientForm() {
               })}
               {displayBranch?.name && (
                 <div className="flex items-center gap-3 pt-0.5">
-                  <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                    {displayBranch.image_url
-                      ? <img src={displayBranch.image_url} alt={displayBranch.name} className="w-full h-full object-cover" />
-                      : <span className="text-[11px] font-bold text-gold">{initials(displayBranch.name)}</span>
-                    }
-                  </div>
+                  <EntityAvatar size="summary" name={displayBranch.name} imageUrl={displayBranch.image_url} />
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
                     <p className="text-[13px] font-semibold text-ink">{toTitleCase(displayBranch.name)}</p>
@@ -478,12 +476,7 @@ export default function ClientForm() {
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Servicios</p>
                   {displayServices.map((svc, i) => (
                     <div key={i} className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
-                        {svc.imageUrl
-                          ? <img src={svc.imageUrl} alt={svc.name} className="w-full h-full object-cover" />
-                          : <span className="text-[11px] font-bold text-gold">{initials(svc.name)}</span>
-                        }
-                      </div>
+                      <EntityAvatar size="summary" name={svc.name} imageUrl={svc.imageUrl} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
                           <p className="text-[13px] font-semibold text-ink leading-snug truncate">{toTitleCase(svc.name)}</p>
@@ -500,12 +493,7 @@ export default function ClientForm() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0">
-                    {displayServices[0]?.imageUrl
-                      ? <img src={displayServices[0].imageUrl} alt={displayServices[0].name} className="w-full h-full object-cover" />
-                      : <span className="text-[11px] font-bold text-gold">{initials(displayServices[0]?.name)}</span>
-                    }
-                  </div>
+                  <EntityAvatar size="summary" name={displayServices[0]?.name} imageUrl={displayServices[0]?.imageUrl} />
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-0.5">Servicio</p>
                     <div className="flex items-center gap-2 min-w-0">
@@ -521,12 +509,7 @@ export default function ClientForm() {
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                  {state.specialist?.avatarUrl
-                    ? <img src={state.specialist.avatarUrl} alt={state.specialist.name} className="w-full h-full object-cover" />
-                    : <span className="text-[11px] font-bold text-gold">{initials(state.specialist?.name)}</span>
-                  }
-                </div>
+                <EntityAvatar size="summary" name={state.specialist?.name} imageUrl={state.specialist?.avatarUrl} />
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Especialista</p>
                   <p className="text-[13px] font-semibold text-ink">{toTitleCase(state.specialist?.name)}</p>
@@ -534,12 +517,7 @@ export default function ClientForm() {
               </div>
               {displayBranch?.name && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
-                    {displayBranch.image_url
-                      ? <img src={displayBranch.image_url} alt={displayBranch.name} className="w-full h-full object-cover" />
-                      : <span className="text-[11px] font-bold text-gold">{initials(displayBranch.name)}</span>
-                    }
-                  </div>
+                  <EntityAvatar size="summary" name={displayBranch.name} imageUrl={displayBranch.image_url} />
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
                     <p className="text-[13px] font-semibold text-ink">{toTitleCase(displayBranch.name)}</p>

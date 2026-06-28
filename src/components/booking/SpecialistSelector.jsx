@@ -2,6 +2,7 @@ import { useServices } from '../../hooks/useServices';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { toTitleCase } from '../../utils/formatters';
+import EntityAvatar from '../ui/EntityAvatar';
 
 export default function SpecialistSelector() {
   const { data, isLoading, isFetching, isError } = useServices();
@@ -184,20 +185,14 @@ function SpecialistCard({ specialist, onSelect, delay }) {
                  focus:outline-none focus:ring-2 focus:ring-gold/30"
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
-      <div className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gold/10 border-2 border-gold/25 mt-0.5 sm:mt-0
-                      group-hover:border-gold/60 flex items-center justify-center transition-all duration-240 overflow-hidden">
+      <EntityAvatar
+        size="selector-sm"
+        imageUrl={specialist.avatarUrl}
+        lazyLoad
+        className="mt-0.5 sm:mt-0 group-hover:border-gold/60"
+      >
         <span className="font-display text-xl font-bold text-gold">{specialist.initials}</span>
-        {specialist.avatarUrl && (
-          <img
-            src={specialist.avatarUrl}
-            alt={specialist.name}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0, transition: 'opacity 200ms ease' }}
-            onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
-            onError={e => { e.currentTarget.style.display = 'none'; }}
-          />
-        )}
-      </div>
+      </EntityAvatar>
       <div className="flex-1 sm:flex-none min-w-0">
         <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160">
           {toTitleCase(specialist.name)}

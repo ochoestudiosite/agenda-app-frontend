@@ -3,6 +3,7 @@ import { useConfig } from '../../hooks/useConfig';
 import { useBooking } from '../../context/BookingContext';
 import { formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, promoEndsLabel, toTitleCase } from '../../utils/formatters';
 import { BackButton } from './SpecialistSelector';
+import EntityAvatar from '../ui/EntityAvatar';
 
 export default function ServiceSelector() {
   const { data, isLoading, isError } = useServices();
@@ -122,24 +123,19 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
       {/* Circular avatar — image when available, duration fallback otherwise */}
-      <div className={`relative shrink-0 w-14 h-14 rounded-full overflow-hidden flex flex-col items-center justify-center
-                       border-2 transition-all duration-240
-                       ${isSelected
-                         ? 'border-gold/60 bg-gold/10'
-                         : 'border-gold/20 bg-gold/8 group-hover:border-gold/55 group-hover:bg-gold/15'}`}>
-        <span className="font-display text-sm font-bold text-gold leading-none">{service.duration}</span>
-        <span className="text-[0.5625rem] text-ink-3 font-medium mt-0.5">min</span>
-        {hasImage && (
-          <img
-            src={service.imageUrl}
-            alt={service.name}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0, transition: 'opacity 200ms ease' }}
-            onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
-            onError={e => { e.currentTarget.style.display = 'none'; }}
-          />
-        )}
-      </div>
+      <EntityAvatar
+        size="selector"
+        name={service.name}
+        imageUrl={service.imageUrl}
+        selected={isSelected}
+        lazyLoad
+        className={!isSelected ? 'group-hover:border-gold/55 group-hover:bg-gold/15' : ''}
+      >
+        <div className="flex flex-col items-center justify-center">
+          <span className="font-display text-sm font-bold text-gold leading-none">{service.duration}</span>
+          <span className="text-[0.5625rem] text-ink-3 font-medium mt-0.5">min</span>
+        </div>
+      </EntityAvatar>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
