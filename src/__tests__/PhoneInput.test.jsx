@@ -270,3 +270,54 @@ describe('PhoneInput — label / error / helper / required props', () => {
     expect(screen.queryByText('Helper text')).toBeNull()
   })
 })
+
+// ============================================================================
+// 6. Prop disabled
+// ============================================================================
+
+describe('PhoneInput — prop disabled', () => {
+  it('disabled=true → el <select> tiene atributo disabled', async () => {
+    const { default: PhoneInput } = await import('../components/ui/PhoneInput.jsx')
+    render(<PhoneInput onChange={vi.fn()} disabled />)
+    const select = document.querySelector('select')
+    expect(select.disabled).toBe(true)
+  })
+
+  it('disabled=true → el <input type="tel"> tiene atributo disabled', async () => {
+    const { default: PhoneInput } = await import('../components/ui/PhoneInput.jsx')
+    render(<PhoneInput onChange={vi.fn()} disabled />)
+    const input = document.querySelector('input[type="tel"]')
+    expect(input.disabled).toBe(true)
+  })
+
+  it('disabled=true → el contenedor tiene clase opacity-50 pointer-events-none', async () => {
+    const { default: PhoneInput } = await import('../components/ui/PhoneInput.jsx')
+    render(<PhoneInput onChange={vi.fn()} disabled />)
+    // El contenedor es el div que envuelve select + input
+    const container = document.querySelector('div.flex.items-center')
+    expect(container.className).toMatch(/opacity-50/)
+    expect(container.className).toMatch(/pointer-events-none/)
+  })
+
+  it('disabled=false → el <select> no tiene atributo disabled', async () => {
+    const { default: PhoneInput } = await import('../components/ui/PhoneInput.jsx')
+    render(<PhoneInput onChange={vi.fn()} disabled={false} />)
+    const select = document.querySelector('select')
+    expect(select.disabled).toBe(false)
+  })
+
+  it('disabled ausente → el <input type="tel"> no tiene atributo disabled', async () => {
+    const { default: PhoneInput } = await import('../components/ui/PhoneInput.jsx')
+    render(<PhoneInput onChange={vi.fn()} />)
+    const input = document.querySelector('input[type="tel"]')
+    expect(input.disabled).toBe(false)
+  })
+
+  it('disabled ausente → el contenedor no tiene clase opacity-50', async () => {
+    const { default: PhoneInput } = await import('../components/ui/PhoneInput.jsx')
+    render(<PhoneInput onChange={vi.fn()} />)
+    const container = document.querySelector('div.flex.items-center')
+    expect(container.className).not.toMatch(/opacity-50/)
+    expect(container.className).not.toMatch(/pointer-events-none/)
+  })
+})
