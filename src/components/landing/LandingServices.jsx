@@ -4,6 +4,7 @@ import * as LucideIcons from 'lucide-react';
 import { Sparkles, ArrowUpRight, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatServicePrice, promoEndsLabel } from '../../utils/formatters';
+import { useConfig } from '../../hooks/useConfig';
 
 const VISIBLE_DESKTOP = 6;
 
@@ -119,6 +120,8 @@ export default function LandingServices({ services = [], customServices, useCust
 }
 
 function ServiceCard({ service, i, buttonText }) {
+  const { data: config } = useConfig();
+  const bizTz     = config?.business_timezone ?? null;
   const IconComp  = service.icon ? (LucideIcons[service.icon] || Sparkles) : Sparkles;
   const duration  = service.duration || service.duration_mins;
   const priceType = service.priceType || service.price_type || 'fixed';
@@ -188,11 +191,11 @@ function ServiceCard({ service, i, buttonText }) {
                     : 'Promo'}
                 </span>
               )}
-              {service.promo && promoEndsLabel(service.promo.endsAt) && (
+              {service.promo && promoEndsLabel(service.promo.endsAt, bizTz) && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide
                                  bg-card/85 backdrop-blur-md border border-edge/50 text-ink
                                  shadow-[0_4px_16px_rgba(0,0,0,0.18)]">
-                  {promoEndsLabel(service.promo.endsAt)}
+                  {promoEndsLabel(service.promo.endsAt, bizTz)}
                 </span>
               )}
             </div>

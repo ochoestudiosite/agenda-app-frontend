@@ -41,6 +41,10 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
+vi.mock('../hooks/useConfig', () => ({
+  useConfig: () => ({ data: null }),
+}))
+
 vi.mock('../utils/formatters', () => ({
   formatServicePrice: (service) => {
     if (service?.price_type === 'ask') return 'A consultar'

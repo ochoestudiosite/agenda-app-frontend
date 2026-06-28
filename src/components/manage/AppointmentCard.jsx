@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
+import { findNextAvailableDate, todayDateInTz, nowMinutesInTz, isPastDateTime } from '../../utils/businessTime';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
@@ -95,18 +96,18 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const staffBlocked   = availData?.staffBlocked   ?? null;
   const businessClosed = availData?.businessClosed ?? null;
 
-  const todayStr   = toDateStr(new Date());
+  const bizTz      = config?.business_timezone ?? null;
+  const todayStr   = toDateStr(todayDateInTz(bizTz));
   const isToday    = dateStr === todayStr;
-  const nowMins    = new Date().getHours() * 60 + new Date().getMinutes();
+  const nowMins    = nowMinutesInTz(bizTz);
   const cutoffMins = isToday ? nowMins + leadMins : 0;
 
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
   const isCancelled        = appointment.status === 'cancelled';
-  const bizTz      = config?.business_timezone ?? null;
-  const nowStrTz   = bizTz ? new Date().toLocaleString('sv', { timeZone: bizTz }).slice(0, 16) : null;
-  const apptStr    = `${appointment.date} ${(appointment.time ?? '00:00').padStart(5, '0')}`;
-  const isPastAppt = nowStrTz ? apptStr < nowStrTz : new Date(`${appointment.date}T${(appointment.time ?? '00:00').padStart(5, '0')}:00`) < new Date();
+  // Mientras config no ha cargado, bizTz es null e isPastDateTime cae a hora
+  // local del navegador como aproximación segura (nunca bloquea acciones).
+  const isPastAppt = isPastDateTime(appointment.date, appointment.time, bizTz);
 
   const maxReschedules      = config?.max_reschedules ?? null;
   const rescheduleCount     = appointment.rescheduleCount ?? 0;
@@ -701,30 +702,6 @@ function ReBack({ onClick: handleClick, label }) {
 
 // ── ReschedulePanel ────────────────────────────────────────────────────────────
 
-// Mismo algoritmo que DateTimePicker — próxima fecha con disponibilidad potencial
-function findNextAvailableDate({ bizHours = [], blockedDates = [], leadMins = 0, maxAdvanceDays = 30 }) {
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const closedDays = new Set(bizHours.filter(h => !h.is_open).map(h => h.day_of_week));
-  const todayEntry = bizHours.find(h => h.day_of_week === now.getDay());
-  const closeMins  = todayEntry ? (() => {
-    const [ch, cm] = (todayEntry.close_time || '19:00').split(':').map(Number);
-    return ch * 60 + cm;
-  })() : 19 * 60;
-  const tooLate = !todayEntry || !todayEntry.is_open || (nowMins + leadMins + 30 >= closeMins);
-  const candidate = new Date(now); candidate.setHours(0, 0, 0, 0);
-  if (tooLate) candidate.setDate(candidate.getDate() + 1);
-  for (let i = 0; i <= maxAdvanceDays + 7; i++) {
-    const ds = toDateStr(candidate);
-    const dow = candidate.getDay();
-    if (!closedDays.has(dow) && !blockedDates.includes(ds) && !blockedDates.includes(`recurring:${dow}`)) {
-      return new Date(candidate);
-    }
-    candidate.setDate(candidate.getDate() + 1);
-  }
-  return null;
-}
-
 function slotToMinutes(slot) {
   if (!slot) return 0;
   const [h, m] = slot.split(':').map(Number);
@@ -755,6 +732,7 @@ function ReschedulePanel({
   const maxAdvance   = config?.max_advance_days   ?? 30;
   const intervalMins = config?.slot_interval_mins ?? 30;
   const timeFmt      = config?.time_format        ?? '12h';
+  const tz           = config?.business_timezone  ?? null;
 
   const filteredSpecialists = allSpecialists.filter(s => {
     if (effectiveBranchId && s.branchIds?.length) {
@@ -784,7 +762,7 @@ function ReschedulePanel({
   // true mientras config u horarios bloqueados aún no cargan (evita flash de "Selecciona una fecha")
   const waitingForSetup    = !config || !blockedData;
 
-  const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+  const todayDate = todayDateInTz(tz);
   const maxDate   = new Date(todayDate); maxDate.setDate(maxDate.getDate() + maxAdvance);
   const todayStr  = toDateStr(todayDate);
 
@@ -823,6 +801,7 @@ function ReschedulePanel({
   useEffect(() => {
     if (autoSelectedRef.current || newDate || reschedStep !== 'datetime' || !bizHoursRaw.length || !blockedData) return;
     const next = findNextAvailableDate({
+      tz,
       bizHours: bizHoursRaw,
       blockedDates,
       leadMins: config?.booking_lead_mins ?? 0,
@@ -841,6 +820,7 @@ function ReschedulePanel({
     if (!anyDaySkipFlag || !newDate || isFetching) return;
     skippedDatesRef.current.add(toDateStr(newDate));
     const next = findNextAvailableDate({
+      tz,
       bizHours: bizHoursRaw,
       blockedDates: [...blockedDates, ...skippedDatesRef.current],
       leadMins: 0,
@@ -865,6 +845,7 @@ function ReschedulePanel({
     autoAdvanceCountRef.current++;
     skippedDatesRef.current.add(toDateStr(newDate));
     const next = findNextAvailableDate({
+      tz,
       bizHours: bizHoursRaw,
       blockedDates: [...blockedDates, ...skippedDatesRef.current],
       leadMins: 0,

@@ -4,6 +4,7 @@ import { isGroupMode } from '../../context/BookingContext';
 import { useAvailability, useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { formatTime, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
+import { findNextAvailableDate, todayDateInTz, nowMinutesInTz } from '../../utils/businessTime';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import { BackButton } from './SpecialistSelector';
@@ -25,41 +26,6 @@ function minutesToSlot(mins) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-/**
- * Encuentra la próxima fecha con disponibilidad potencial.
- * Salta: días pasados, días cerrados del negocio, fechas bloqueadas.
- * "Potencialmente disponible" = no estructuralmente bloqueado.
- * La verificación de slots ocupados ocurre al seleccionar la fecha.
- */
-function findNextAvailableDate({ bizHours = [], blockedDates = [], leadMins = 60, maxAdvanceDays = 30 }) {
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const closedDays = new Set(bizHours.filter(h => !h.is_open).map(h => h.day_of_week));
-
-  // ¿Hoy tiene tiempo restante suficiente?
-  const todayEntry = bizHours.find(h => h.day_of_week === now.getDay());
-  const closeMins  = todayEntry ? (() => {
-    const [ch, cm] = (todayEntry.close_time || '19:00').split(':').map(Number);
-    return ch * 60 + cm;
-  })() : 19 * 60;
-
-  const tooLate = !todayEntry || !todayEntry.is_open || (nowMins + leadMins + 30 >= closeMins);
-
-  const candidate = new Date(now);
-  candidate.setHours(0, 0, 0, 0);
-  if (tooLate) candidate.setDate(candidate.getDate() + 1);
-
-  for (let i = 0; i <= maxAdvanceDays + 7; i++) {
-    const ds = toDateStr(candidate);
-    const dow = candidate.getDay();
-    if (!closedDays.has(dow) && !blockedDates.includes(ds) && !blockedDates.includes(`recurring:${dow}`)) {
-      return new Date(candidate);
-    }
-    candidate.setDate(candidate.getDate() + 1);
-  }
-  return null;
-}
-
 function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins) {
   const start = slotToMinutes(slot);
   const end   = start + duration;
@@ -73,7 +39,8 @@ export default function DateTimePicker() {
   const { state, dispatch } = useBooking();
   const { data: config }   = useConfig();
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const tz         = config?.business_timezone || null;
+  const today      = todayDateInTz(tz);
   const maxAdvance = config?.max_advance_days ?? 30;
   const maxDate    = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
 
@@ -157,10 +124,9 @@ export default function DateTimePicker() {
     : (selectedDate ? generateSlots(openTime, closeTime, duration, intervalMins, bufferMins) : []);
   const grouped = groupSlots(allSlots);
 
-  const now             = new Date();
   const todayStr        = toDateStr(today);
   const isSelectedToday = !!selectedDate && toDateStr(selectedDate) === todayStr;
-  const cutoffMins      = now.getHours() * 60 + now.getMinutes() + leadMins;
+  const cutoffMins      = nowMinutesInTz(tz) + leadMins;
 
   function isSlotPast(slot) {
     return isSelectedToday && slotToMinutes(slot) <= cutoffMins;
@@ -198,6 +164,7 @@ export default function DateTimePicker() {
   useEffect(() => {
     if (autoSelectedRef.current || selectedDate || bizHours.length === 0 || !blockedData) return;
     const next = findNextAvailableDate({
+      tz,
       bizHours,
       blockedDates,
       leadMins,
@@ -216,6 +183,7 @@ export default function DateTimePicker() {
     if (!anyDaySkipFlag || !selectedDate || activeFetching) return;
     skippedDatesRef.current.add(toDateStr(selectedDate));
     const next = findNextAvailableDate({
+      tz,
       bizHours,
       blockedDates: [...blockedDates, ...skippedDatesRef.current],
       leadMins: 0,
@@ -242,6 +210,7 @@ export default function DateTimePicker() {
     autoAdvanceCountRef.current++;
     skippedDatesRef.current.add(toDateStr(selectedDate));
     const next = findNextAvailableDate({
+      tz,
       bizHours,
       blockedDates: [...blockedDates, ...skippedDatesRef.current],
       leadMins: 0,

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
+import { findNextAvailableDate, todayDateInTz, isPastDateTime } from '../../utils/businessTime';
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
 import { useSpecialists } from '../../hooks/useSpecialists';
@@ -44,7 +45,6 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const allCancelled = group.appointments?.every(a => a.status === 'cancelled');
   const status       = allCancelled ? 'cancelled' : group.status;
   const isCancelled  = status === 'cancelled';
-  const todayStr     = toDateStr(new Date());
 
   // Date box values
   const apptDate  = new Date(group.date + 'T12:00:00');
@@ -54,13 +54,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   // Overall start time = first appointment's time
   const startTime = group.appointments?.[0]?.time ?? null;
   const bizTz     = config?.business_timezone ?? null;
-  const nowStrTz  = bizTz ? new Date().toLocaleString('sv', { timeZone: bizTz }).slice(0, 16) : null;
-  const isPast = (() => {
-    if (!group.date) return false;
-    const t = (startTime ?? '23:59').padStart(5, '0');
-    if (nowStrTz) return `${group.date} ${t}` < nowStrTz;
-    return new Date(`${group.date}T${t}:00`) < new Date();
-  })();
+  const isPast    = group.date ? isPastDateTime(group.date, startTime ?? '23:59', bizTz) : false;
 
   const maxReschedules      = config?.max_reschedules ?? null;
   const rescheduleCount     = group.appointments?.[0]?.rescheduleCount ?? 0;
@@ -511,35 +505,9 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
 
 // ── GroupReschedulePanel ───────────────────────────────────────────────────────
 
-// Próxima fecha con disponibilidad potencial (igual que AppointmentCard y DateTimePicker)
-function findNextAvailableDate({ bizHours = [], blockedDates = [], leadMins = 0, maxAdvanceDays = 30 }) {
-  const now = new Date();
-  const nowMins = now.getHours() * 60 + now.getMinutes();
-  const closedDays = new Set(bizHours.filter(h => !h.is_open).map(h => h.day_of_week));
-  const todayEntry = bizHours.find(h => h.day_of_week === now.getDay());
-  const closeMins  = todayEntry ? (() => {
-    const [ch, cm] = (todayEntry.close_time || '19:00').split(':').map(Number);
-    return ch * 60 + cm;
-  })() : 19 * 60;
-  const tooLate = !todayEntry || !todayEntry.is_open || (nowMins + leadMins + 30 >= closeMins);
-  const candidate = new Date(now); candidate.setHours(0, 0, 0, 0);
-  if (tooLate) candidate.setDate(candidate.getDate() + 1);
-  for (let i = 0; i <= maxAdvanceDays + 7; i++) {
-    const y = candidate.getFullYear();
-    const m = String(candidate.getMonth() + 1).padStart(2, '0');
-    const d = String(candidate.getDate()).padStart(2, '0');
-    const ds = `${y}-${m}-${d}`;
-    const dow = candidate.getDay();
-    if (!closedDays.has(dow) && !blockedDates.includes(ds) && !blockedDates.includes(`recurring:${dow}`)) {
-      return new Date(candidate);
-    }
-    candidate.setDate(candidate.getDate() + 1);
-  }
-  return null;
-}
-
 function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCancel, onConfirm }) {
   const maxAdvance   = config?.max_advance_days ?? 30;
+  const tz            = config?.business_timezone ?? null;
   const hoursByBranch = config?.hours ?? {};
 
   const branchId = group.appointments?.[0]?.branchId ?? null;
@@ -591,7 +559,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
   // Auto-selección del próximo día disponible
   useEffect(() => {
     if (autoSelectedRef.current || newDate || bizHoursRaw.length === 0 || !blockedData) return;
-    const next = findNextAvailableDate({ bizHours: bizHoursRaw, blockedDates, leadMins: config?.booking_lead_mins ?? 0, maxAdvanceDays: maxAdvance });
+    const next = findNextAvailableDate({ tz, bizHours: bizHoursRaw, blockedDates, leadMins: config?.booking_lead_mins ?? 0, maxAdvanceDays: maxAdvance });
     if (next) {
       autoSelectedRef.current = true;
       setNewDate(next);
@@ -612,6 +580,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
     autoAdvanceCountRef.current++;
     skippedDatesRef.current.add(toDateStr(newDate));
     const next = findNextAvailableDate({
+      tz,
       bizHours: bizHoursRaw,
       blockedDates: [...blockedDates, ...skippedDatesRef.current],
       maxAdvanceDays: maxAdvance,
@@ -634,7 +603,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
     setNewTime(null);
   }
 
-  const today   = new Date(); today.setHours(0,0,0,0);
+  const today   = todayDateInTz(tz);
   const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + maxAdvance);
   const todayStr = toDateStr(today);
 

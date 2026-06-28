@@ -35,6 +35,10 @@ vi.mock('../hooks/useServices', () => ({
   useServices: () => mockUseServices(),
 }))
 
+vi.mock('../hooks/useConfig', () => ({
+  useConfig: () => ({ data: null }),
+}))
+
 vi.mock('../utils/formatters', () => ({
   toTitleCase: (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : '',
   formatServicePrice: (svc) => `$${svc.price ?? 0}`,

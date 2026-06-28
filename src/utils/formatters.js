@@ -52,11 +52,14 @@ export function promoSavings(services) {
 }
 
 // Etiqueta corta de vigencia de una promo: "hasta el 19 jun" (null sin fecha de fin).
-export function promoEndsLabel(endsAt) {
+// `tz`: IANA timezone del negocio (config.business_timezone). La expiración real
+// se valida server-side contra TIMESTAMPTZ/NOW(); esto solo evita que la etiqueta
+// muestre un día distinto al que realmente aplica cerca de la medianoche del negocio.
+export function promoEndsLabel(endsAt, tz) {
   if (!endsAt) return null;
   const d = new Date(endsAt);
   if (isNaN(d)) return null;
-  return `hasta el ${d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}`;
+  return `hasta el ${d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', timeZone: tz || undefined })}`;
 }
 
 // Combined price display for a list of selected services.

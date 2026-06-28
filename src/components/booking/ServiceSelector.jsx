@@ -1,4 +1,5 @@
 import { useServices } from '../../hooks/useServices';
+import { useConfig } from '../../hooks/useConfig';
 import { useBooking } from '../../context/BookingContext';
 import { formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, promoEndsLabel, toTitleCase } from '../../utils/formatters';
 import { BackButton } from './SpecialistSelector';
@@ -101,6 +102,8 @@ export default function ServiceSelector() {
 }
 
 function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
+  const { data: config } = useConfig();
+  const bizTz    = config?.business_timezone ?? null;
   const hasImage = Boolean(service.imageUrl);
 
   return (
@@ -150,9 +153,9 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
                   ? `−${Number(service.promo.discountValue)}%`
                   : 'Promo'}
               </span>
-              {promoEndsLabel(service.promo.endsAt) && (
+              {promoEndsLabel(service.promo.endsAt, bizTz) && (
                 <span className="shrink-0 text-[0.625rem] font-semibold text-gold/80">
-                  {promoEndsLabel(service.promo.endsAt)}
+                  {promoEndsLabel(service.promo.endsAt, bizTz)}
                 </span>
               )}
             </>
