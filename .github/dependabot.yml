@@ -7,9 +7,48 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "America/Mexico_City"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     groups:
-      production-deps:
-        dependency-type: "production"
-      dev-deps:
+      # Group all dev-dep patches/minors into one PR
+      dev-dependencies:
         dependency-type: "development"
+        update-types: ["minor", "patch"]
+      # Group production patches into one PR (minors are reviewed individually)
+      production-patches:
+        dependency-type: "production"
+        update-types: ["patch"]
+    ignore:
+      # ── Major version upgrades require a planned migration sprint ──────────
+      # React 19 has breaking changes in refs, forwardRef, and ReactDOM API.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      # React Router v7 is a full rewrite — incompatible with current routes.
+      - dependency-name: "react-router-dom"
+        update-types: ["version-update:semver-major"]
+      # Tailwind v4 replaces tailwind.config.js with CSS-based config.
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      # lucide-react v1+ dropped all brand icons — requires SVG audit.
+      - dependency-name: "lucide-react"
+        update-types: ["version-update:semver-major"]
+      # Vite major versions change config APIs and plugin compatibility.
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      # TanStack Query major releases change cache/mutation API shapes.
+      - dependency-name: "@tanstack/react-query"
+        update-types: ["version-update:semver-major"]
+      # Framer Motion major releases change animation API surface.
+      - dependency-name: "framer-motion"
+        update-types: ["version-update:semver-major"]
+      # Testing Library major releases often require test rewrites.
+      - dependency-name: "@testing-library/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@testing-library/user-event"
+        update-types: ["version-update:semver-major"]
+      # @types/react must match the installed React major — never auto-bump.
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
