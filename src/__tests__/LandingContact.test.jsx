@@ -20,7 +20,7 @@ import React from 'react'
 
 vi.mock('lucide-react', () => {
   const icon = () => <span data-testid="icon" />
-  return { Send: icon, Instagram: icon, Facebook: icon, MessageSquare: icon, Linkedin: icon, ArrowUpRight: icon }
+  return { Send: icon, MessageSquare: icon, ArrowUpRight: icon }
 })
 
 // ---------------------------------------------------------------------------
