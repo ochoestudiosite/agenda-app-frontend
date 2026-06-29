@@ -99,6 +99,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     mode === 'reschedule' ? appointment.code : null,
   );
   const appointmentIntervals = availData?.appointmentIntervals || [];
+  const busySlots       = availData?.busySlots || [];
   const bufferMins     = availData?.config?.bufferMins   || 0;
   const leadMins       = availData?.config?.leadMins     || 0;
   const closeTime      = availData?.config?.closeTime    || '19:00';
@@ -475,6 +476,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           newDate={newDate}       setNewDate={d => { setNewDate(d); setNewTime(null); }}
           newTime={newTime}       setNewTime={setNewTime}
           appointmentIntervals={appointmentIntervals}
+          busySlots={busySlots}
           bufferMins={bufferMins}  isFetching={isFetching}
           isError={availError}
           isToday={isToday}
@@ -597,16 +599,21 @@ function ReBack({ onClick: handleClick, label }) {
 
 // ── ReschedulePanel ────────────────────────────────────────────────────────────
 
-function slotToMinutes(slot) {
+export function slotToMinutes(slot) {
   if (!slot) return 0;
   const [h, m] = slot.split(':').map(Number);
   return h * 60 + m;
 }
 
-function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins) {
+// busyMinutesSet covers everything the server already resolved into busySlots —
+// real appointments, staff_blocks partial-day blocks, and the specialist's own
+// external Google Calendar busy intervals. appointmentIntervals is kept as a
+// fallback overlap check (defensive — should already be a subset of busySlots).
+export function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins, busyMinutesSet) {
   const start = slotToMinutes(slot);
   const end   = start + duration;
   if (end > closeTimeMins) return true;
+  if (busyMinutesSet?.has(start)) return true;
   return appointmentIntervals.some(({ startMin, endMin }) =>
     start < endMin && end > startMin
   );
@@ -620,10 +627,11 @@ function ReschedulePanel({
   effectiveSpecialistId, effectiveBranchId,
   staffBlocked, businessClosed, viewMonth, setViewMonth,
   newDate, setNewDate, newTime, setNewTime,
-  appointmentIntervals, bufferMins = 0, isFetching, isError,
+  appointmentIntervals, busySlots = [], bufferMins = 0, isFetching, isError,
   isToday = false, cutoffMins = 0,
   onConfirm, onCancel, isLoading,
 }) {
+  const busyMinutesSet = new Set(busySlots.map(slotToMinutes));
   const maxAdvance   = config?.max_advance_days   ?? 30;
   const intervalMins = config?.slot_interval_mins ?? 30;
   const timeFmt      = config?.time_format        ?? '12h';
@@ -672,7 +680,7 @@ function ReschedulePanel({
   }
   const closeMinsForExhaust = slotToMinutes(closeTime);
   const allSlotsExhausted   = allSlots.length > 0 && allSlots.every(s =>
-    isSlotPast(s) || isSlotBusy(s, appointment.serviceDuration, appointmentIntervals, closeMinsForExhaust)
+    isSlotPast(s) || isSlotBusy(s, appointment.serviceDuration, appointmentIntervals, closeMinsForExhaust, busyMinutesSet)
   );
   // true cuando el día está resuelto (no cargando, no error, no bloqueado) pero sin slots
   const exhaustedFlag = !!(newDate && !isFetching && !isError && !anyDaySkipFlag &&
@@ -1034,7 +1042,7 @@ function ReschedulePanel({
                           <div className="grid grid-cols-3 gap-2">
                             {slots.map(slot => {
                               const past    = isSlotPast(slot);
-                              const busy    = isSlotBusy(slot, appointment.serviceDuration, appointmentIntervals, closeMinsForExhaust);
+                              const busy    = isSlotBusy(slot, appointment.serviceDuration, appointmentIntervals, closeMinsForExhaust, busyMinutesSet);
                               const sel     = newTime === slot;
                               const unavail = past || busy;
                               return (

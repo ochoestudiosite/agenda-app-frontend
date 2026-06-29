@@ -338,6 +338,71 @@ describe('DateTimePicker — slot grid', () => {
 })
 
 // ============================================================================
+// 5b. busySlots — bloqueos que NO son citas reales (staff_blocks, Google Calendar)
+//
+// Bug real: el backend ya calcula busySlots (citas + staff_blocks parciales +
+// freebusy de Google Calendar del especialista), pero el componente solo
+// revisaba appointmentIntervals (citas reales) para deshabilitar horarios.
+// Cualquier bloqueo sin una cita real de por medio (vacaciones parciales,
+// eventos de Google Calendar) era invisible en la UI aunque el backend ya
+// lo hubiera calculado correctamente.
+// ============================================================================
+
+describe('DateTimePicker — busySlots (bloqueos externos, ej. Google Calendar)', () => {
+  it('deshabilita un slot presente en busySlots aunque appointmentIntervals esté vacío', async () => {
+    mockAvailFn.mockReturnValue({
+      data: { ...AVAIL_NORMAL.data, appointmentIntervals: [], busySlots: ['9:30'] },
+      isFetching: false,
+      isError: false,
+    })
+    await act(async () => { await renderPicker() })
+
+    const slot930 = timeSlotsInDOM().find(b => b.textContent.trim() === '9:30')
+    expect(slot930).toBeTruthy()
+    expect(slot930.disabled).toBe(true)
+  })
+
+  it('un slot que NO está en busySlots permanece habilitado', async () => {
+    mockAvailFn.mockReturnValue({
+      data: { ...AVAIL_NORMAL.data, appointmentIntervals: [], busySlots: ['9:30'] },
+      isFetching: false,
+      isError: false,
+    })
+    await act(async () => { await renderPicker() })
+
+    const slot10 = timeSlotsInDOM().find(b => b.textContent.trim() === '10:00')
+    expect(slot10).toBeTruthy()
+    expect(slot10.disabled).toBe(false)
+  })
+
+  it('sin busySlots en la respuesta (undefined) → no rompe, todos los slots futuros habilitados', async () => {
+    mockAvailFn.mockReturnValue({
+      data: { ...AVAIL_NORMAL.data, appointmentIntervals: [], busySlots: undefined },
+      isFetching: false,
+      isError: false,
+    })
+    await act(async () => { await renderPicker() })
+
+    const slots = timeSlotsInDOM()
+    expect(slots.length).toBeGreaterThan(0)
+    expect(slots.every(b => !b.disabled)).toBe(true)
+  })
+
+  it('busySlots con formato "09:30" (zero-padded) coincide igual que "9:30"', async () => {
+    mockAvailFn.mockReturnValue({
+      data: { ...AVAIL_NORMAL.data, appointmentIntervals: [], busySlots: ['09:30'] },
+      isFetching: false,
+      isError: false,
+    })
+    await act(async () => { await renderPicker() })
+
+    const slot930 = timeSlotsInDOM().find(b => b.textContent.trim() === '9:30')
+    expect(slot930).toBeTruthy()
+    expect(slot930.disabled).toBe(true)
+  })
+})
+
+// ============================================================================
 // 6. Setup spinner — no flash de "Selecciona una fecha" durante carga inicial
 // ============================================================================
 

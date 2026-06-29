@@ -26,10 +26,15 @@ function minutesToSlot(mins) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins) {
+// busyMinutesSet covers everything the server already resolved into busySlots —
+// real appointments, staff_blocks partial-day blocks, and the specialist's own
+// external Google Calendar busy intervals. appointmentIntervals is kept as a
+// fallback overlap check (defensive — should already be a subset of busySlots).
+function isSlotBusy(slot, duration, appointmentIntervals, closeTimeMins, busyMinutesSet) {
   const start = slotToMinutes(slot);
   const end   = start + duration;
   if (end > closeTimeMins) return true;
+  if (busyMinutesSet?.has(start)) return true;
   return appointmentIntervals.some(({ startMin, endMin }) =>
     start < endMin && end > startMin
   );
@@ -90,6 +95,11 @@ export default function DateTimePicker() {
   const liveConfig           = activeData?.config || {};
   const timezone             = liveConfig.timezone || config?.business_timezone || null;
   const appointmentIntervals = (!groupMode && activeData?.appointmentIntervals) || [];
+  // slotToMinutes tolerates both "9:00" and "09:00", so this Set comparison is
+  // safe even though the server's busySlots strings are always zero-padded.
+  const busyMinutesSet       = !groupMode && activeData?.busySlots
+    ? new Set(activeData.busySlots.map(slotToMinutes))
+    : null;
   const groupAvailableSlots  = (groupMode  && activeData?.availableSlots)       || null;
   const staffBlocked         = activeData?.staffBlocked;
   const staffBlockedFlag     = !!staffBlocked?.blocked;
@@ -133,7 +143,7 @@ export default function DateTimePicker() {
   }
   const closeMinsForExhaust = slotToMinutes(closeTime);
   const allSlotsExhausted   = allSlots.length > 0 && allSlots.every(s =>
-    isSlotPast(s) || (!groupMode && isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust))
+    isSlotPast(s) || (!groupMode && isSlotBusy(s, duration, appointmentIntervals, closeMinsForExhaust, busyMinutesSet))
   );
 
   // true cuando el día está resuelto (no cargando, no error, no bloqueado) pero sin slots
@@ -415,7 +425,7 @@ export default function DateTimePicker() {
                       <div className="grid grid-cols-3 gap-2">
                         {slots.map(slot => {
                           const past    = isSlotPast(slot);
-                          const busy    = !groupMode && isSlotBusy(slot, duration, appointmentIntervals, closeMins);
+                          const busy    = !groupMode && isSlotBusy(slot, duration, appointmentIntervals, closeMins, busyMinutesSet);
                           const sel     = selectedTime === slot;
                           const unavail = past || busy;
                           return (

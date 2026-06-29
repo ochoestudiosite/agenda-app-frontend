@@ -293,3 +293,44 @@ describe('AppointmentCard — reschedule flow', () => {
     })
   })
 })
+
+// ============================================================================
+// 7. isSlotBusy — busySlots (bloqueos externos, ej. Google Calendar)
+//
+// Bug real: el backend ya calcula busySlots (citas + staff_blocks parciales +
+// freebusy de Google Calendar del especialista) para el flujo de reprogramación,
+// pero ReschedulePanel solo revisaba appointmentIntervals (citas reales) para
+// deshabilitar horarios. Cualquier bloqueo sin una cita real de por medio era
+// invisible en la UI de "Reagendar" aunque el backend ya lo hubiera calculado.
+//
+// isSlotBusy/slotToMinutes son funciones puras exportadas desde AppointmentCard.jsx
+// — se prueban directamente en vez de reproducir el flujo completo de UI
+// (Reagendar → elegir fecha → grilla de horarios), que requeriría mockear varias
+// capas adicionales (useBlockedDates, business hours, etc.) sin agregar señal real.
+// ============================================================================
+
+describe('AppointmentCard — isSlotBusy (busySlots)', () => {
+  it('marca un slot como ocupado si su minuto está en busyMinutesSet, aunque appointmentIntervals esté vacío', async () => {
+    const { isSlotBusy, slotToMinutes } = await import('../components/manage/AppointmentCard.jsx')
+    const busyMinutesSet = new Set([slotToMinutes('9:30')])
+    expect(isSlotBusy('9:30', 30, [], 18 * 60, busyMinutesSet)).toBe(true)
+  })
+
+  it('un slot fuera de busyMinutesSet y sin overlap con appointmentIntervals no está ocupado', async () => {
+    const { isSlotBusy, slotToMinutes } = await import('../components/manage/AppointmentCard.jsx')
+    const busyMinutesSet = new Set([slotToMinutes('9:30')])
+    expect(isSlotBusy('10:00', 30, [], 18 * 60, busyMinutesSet)).toBe(false)
+  })
+
+  it('sin busyMinutesSet (undefined) sigue funcionando con la lógica anterior de appointmentIntervals', async () => {
+    const { isSlotBusy } = await import('../components/manage/AppointmentCard.jsx')
+    const intervals = [{ startMin: 9 * 60, endMin: 10 * 60 }]
+    expect(isSlotBusy('9:30', 30, intervals, 18 * 60, undefined)).toBe(true)
+    expect(isSlotBusy('10:30', 30, intervals, 18 * 60, undefined)).toBe(false)
+  })
+
+  it('un slot que excede la hora de cierre sigue marcado ocupado independientemente de busyMinutesSet', async () => {
+    const { isSlotBusy } = await import('../components/manage/AppointmentCard.jsx')
+    expect(isSlotBusy('17:45', 30, [], 18 * 60, new Set())).toBe(true)
+  })
+})
