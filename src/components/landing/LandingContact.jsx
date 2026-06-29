@@ -1,4 +1,31 @@
-import { Send, Instagram, Facebook, MessageSquare, Linkedin, ArrowUpRight } from 'lucide-react';
+import { Send, MessageSquare, ArrowUpRight } from 'lucide-react';
+
+function InstagramIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function FacebookIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+    </svg>
+  );
+}
+
+function LinkedinIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
+      <circle cx="4" cy="4" r="2" />
+    </svg>
+  );
+}
 
 function TikTokIcon({ size = 18 }) {
   return (
@@ -17,12 +44,12 @@ function YoutubeIcon({ size = 18 }) {
 }
 
 const SOCIAL_CONFIG = [
-  { key: 'instagram', label: 'Instagram', Icon: Instagram, urlFn: v => `https://instagram.com/${v}` },
-  { key: 'facebook', label: 'Facebook', Icon: Facebook, urlFn: v => `https://facebook.com/${v}` },
+  { key: 'instagram', label: 'Instagram', Icon: InstagramIcon, urlFn: v => `https://instagram.com/${v}` },
+  { key: 'facebook', label: 'Facebook', Icon: FacebookIcon, urlFn: v => `https://facebook.com/${v}` },
   { key: 'whatsapp', label: 'WhatsApp', Icon: MessageSquare, urlFn: v => `https://wa.me/${v}` },
   { key: 'tiktok', label: 'TikTok', Icon: TikTokIcon, urlFn: v => `https://tiktok.com/@${v}` },
   { key: 'youtube', label: 'YouTube', Icon: YoutubeIcon, urlFn: v => `https://youtube.com/@${v}` },
-  { key: 'linkedin', label: 'LinkedIn', Icon: Linkedin, urlFn: v => `https://linkedin.com/in/${v}` },
+  { key: 'linkedin', label: 'LinkedIn', Icon: LinkedinIcon, urlFn: v => `https://linkedin.com/in/${v}` },
 ];
 
 export default function LandingContact({ businessName, socials = {}, config = {} }) {
