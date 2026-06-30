@@ -152,3 +152,67 @@ describe('api.request — AbortSignal (F-007)', () => {
     expect(err).toBeInstanceOf(TypeError)
   })
 })
+
+describe('api.request — X-Tenant-Domain header (custom domain resolution)', () => {
+  let fetchSpy
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) })
+    vi.stubGlobal('fetch', fetchSpy)
+    vi.stubGlobal('import', {
+      meta: {
+        env: { VITE_API_URL: 'http://api.cita24.com', VITE_PUBLIC_DOMAIN: 'cita24.com', MODE: 'test' },
+      },
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  function mockHostname(hostname) {
+    vi.stubGlobal('window', { location: { hostname } })
+  }
+
+  it('sends X-Tenant-Domain when on a custom domain', async () => {
+    mockHostname('belleza.ocheostudio.site')
+    const { api } = await import('../services/api.js')
+    await api.getConfig()
+
+    const [, opts] = fetchSpy.mock.calls[0]
+    expect(opts.headers['X-Tenant-Domain']).toBe('belleza.ocheostudio.site')
+    expect(opts.headers['X-Tenant-Slug']).toBeUndefined()
+  })
+
+  it('sends X-Tenant-Slug (not X-Tenant-Domain) on a *.cita24.com subdomain', async () => {
+    mockHostname('mibarberia.cita24.com')
+    const { api } = await import('../services/api.js')
+    await api.getConfig()
+
+    const [, opts] = fetchSpy.mock.calls[0]
+    expect(opts.headers['X-Tenant-Slug']).toBe('mibarberia')
+    expect(opts.headers['X-Tenant-Domain']).toBeUndefined()
+  })
+
+  it('sends neither header on localhost (dev environment)', async () => {
+    mockHostname('localhost')
+    const { api } = await import('../services/api.js')
+    await api.getConfig()
+
+    const [, opts] = fetchSpy.mock.calls[0]
+    expect(opts.headers['X-Tenant-Slug']).toBeUndefined()
+    expect(opts.headers['X-Tenant-Domain']).toBeUndefined()
+  })
+
+  it('sends neither header on the root cita24.com domain', async () => {
+    mockHostname('cita24.com')
+    const { api } = await import('../services/api.js')
+    await api.getConfig()
+
+    const [, opts] = fetchSpy.mock.calls[0]
+    expect(opts.headers['X-Tenant-Slug']).toBeUndefined()
+    expect(opts.headers['X-Tenant-Domain']).toBeUndefined()
+  })
+})

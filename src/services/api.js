@@ -20,17 +20,30 @@ function getTenantSlug() {
   return sub;
 }
 
+// Returns the current hostname when it is a tenant-owned custom domain
+// (not a *.cita24.com subdomain and not localhost). The backend resolves
+// the tenant from this header via its verified custom domain registry.
+function getCustomDomain() {
+  const publicDomain = (import.meta.env.VITE_PUBLIC_DOMAIN || 'cita24.com').toLowerCase();
+  const host = window.location.hostname.toLowerCase();
+  if (!host || host === 'localhost' || host === '127.0.0.1') return null;
+  if (host === publicDomain || host.endsWith(`.${publicDomain}`)) return null;
+  return host; // e.g. 'belleza.ocheostudio.site'
+}
+
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
 const TIMEOUT_MS = 15_000;
 
 async function request(method, path, body, retryCount = 0, options = {}) {
-  const slug = getTenantSlug();
+  const slug        = getTenantSlug();
+  const customDomain = getCustomDomain();
   const headers = {};
   const MAX_RETRIES = 2;
 
   if (body) headers['Content-Type'] = 'application/json';
-  if (slug) headers['X-Tenant-Slug'] = slug;
+  if (slug)         headers['X-Tenant-Slug']   = slug;
+  else if (customDomain) headers['X-Tenant-Domain'] = customDomain;
 
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), TIMEOUT_MS);
