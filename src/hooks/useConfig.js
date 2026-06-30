@@ -22,9 +22,9 @@ function clearCache() {
 export function useConfig() {
   return useQuery({
     queryKey: ['config'],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
-        const data = await api.getConfig();
+        const data = await api.getConfig({ signal });
         try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* storage unavailable */ }
         return data;
       } catch (err) {
@@ -34,6 +34,9 @@ export function useConfig() {
       }
     },
     initialData:          readCache,
+    // initialDataUpdatedAt: 0 forces a background refetch on every mount even
+    // when staleTime is 10s. This is intentional: config is critical (business
+    // hours, features, branches) and localStorage may be stale across sessions.
     initialDataUpdatedAt: 0,
     staleTime:            10 * 1000,
     refetchOnWindowFocus: true,

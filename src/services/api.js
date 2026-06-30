@@ -24,7 +24,7 @@ const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
 const TIMEOUT_MS = 15_000;
 
-async function request(method, path, body, retryCount = 0) {
+async function request(method, path, body, retryCount = 0, options = {}) {
   const slug = getTenantSlug();
   const headers = {};
   const MAX_RETRIES = 2;
@@ -34,6 +34,10 @@ async function request(method, path, body, retryCount = 0) {
 
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
 
   try {
     const res = await fetch(`${BASE}${path}`, {
@@ -61,6 +65,12 @@ async function request(method, path, body, retryCount = 0) {
     // Only retry genuine network failures (no .status property).
     if (error.status) throw error;
     if (error.name === 'AbortError') {
+      // Distinguish external cancellation (React Query unmount) from our timeout.
+      if (options.signal?.aborted) {
+        const cancelErr = new Error('Request cancelled');
+        cancelErr.code = 'CANCELLED';
+        throw cancelErr;
+      }
       const timeoutErr = new Error('La solicitud tardó demasiado. Verifica tu conexión.');
       timeoutErr.code = 'TIMEOUT';
       throw timeoutErr;
@@ -70,50 +80,50 @@ async function request(method, path, body, retryCount = 0) {
     // before the response was lost, and a retry would duplicate it.
     if (method === 'GET' && retryCount < MAX_RETRIES) {
       await sleep(1000 * (retryCount + 1));
-      return request(method, path, body, retryCount + 1);
+      return request(method, path, body, retryCount + 1, options);
     }
     throw error;
   }
 }
 
 export const api = {
-  getConfig:   () => request('GET', '/config'),
-  getServices: () => request('GET', '/services'),
-  getSpecialists: () => request('GET', '/services/specialists'),
-  getGroupAvailability: (date, assignments, branchId, excludeCodes) => {
+  getConfig:      (options = {}) => request('GET', '/config', null, 0, options),
+  getServices:    (options = {}) => request('GET', '/services', null, 0, options),
+  getSpecialists: (options = {}) => request('GET', '/services/specialists', null, 0, options),
+  getGroupAvailability: (date, assignments, branchId, excludeCodes, options = {}) => {
     // assignments = [{serviceId, specialistId}]
     const assignmentsParam = assignments.map(a => `${a.serviceId}:${a.specialistId}`).join(',');
     const p = new URLSearchParams({ date, assignments: assignmentsParam });
     if (branchId) p.set('branchId', String(branchId));
     if (excludeCodes?.length) p.set('excludeCodes', excludeCodes.join(','));
-    return request('GET', `/availability/group?${p}`);
+    return request('GET', `/availability/group?${p}`, null, 0, options);
   },
   createGroupAppointment: (body) => request('POST', '/appointments/group', body),
-  getGroupAppointment: (code) => request('GET', `/appointments/group/${code}`),
+  getGroupAppointment: (code, options = {}) => request('GET', `/appointments/group/${code}`, null, 0, options),
   rescheduleGroupAppointment: (code, body) => request('PUT', `/appointments/group/${code}`, body),
   cancelGroupAppointment:     (code, body) => request('DELETE', `/appointments/group/${code}`, body),
-  getAvailability: (date, specialistId, branchId, serviceId, excludeCode, serviceIds) => {
+  getAvailability: (date, specialistId, branchId, serviceId, excludeCode, serviceIds, options = {}) => {
     const p = new URLSearchParams({ date });
     if (specialistId) p.set('specialistId', specialistId);
     if (branchId)     p.set('branchId', String(branchId));
     if (serviceIds)   p.set('serviceIds', serviceIds);
     else if (serviceId) p.set('serviceId', serviceId);
     if (excludeCode)  p.set('excludeCode', excludeCode);
-    return request('GET', `/availability?${p}`);
+    return request('GET', `/availability?${p}`, null, 0, options);
   },
-  getBlockedDates: (month, specialistId, branchId, specialistIds) => {
+  getBlockedDates: (month, specialistId, branchId, specialistIds, options = {}) => {
     const p = new URLSearchParams({ month });
     if (specialistIds)      p.set('specialistIds', specialistIds);
     else if (specialistId)  p.set('specialistId', specialistId);
     if (branchId) p.set('branchId', String(branchId));
-    return request('GET', `/availability/blocked-dates?${p}`);
+    return request('GET', `/availability/blocked-dates?${p}`, null, 0, options);
   },
   requestOTP:          (body) => request('POST', '/appointments/request-otp', body),
   confirmOTP:          (body) => request('POST', '/appointments/confirm-otp', body),
   validatePromo:       (body) => request('POST', '/appointments/validate-promo', body),
   requestManageOTP:    (body) => request('POST', '/appointments/request-manage-otp', body),
   createAppointment:   (body) => request('POST', '/appointments', body),
-  getAppointment:      (code) => request('GET', `/appointments/${code}`),
+  getAppointment:      (code, options = {}) => request('GET', `/appointments/${code}`, null, 0, options),
   rescheduleAppointment: (code, body) => request('PUT', `/appointments/${code}`, body),
   cancelAppointment:   (code, body) => request('DELETE', `/appointments/${code}`, body),
 };

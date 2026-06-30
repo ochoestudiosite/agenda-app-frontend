@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
+import { useConfig } from '../hooks/useConfig';
+import { useServices } from '../hooks/useServices';
 import LandingNavbar from '../components/landing/LandingNavbar';
 import LandingHero from '../components/landing/LandingHero';
 import LandingServices from '../components/landing/LandingServices';
@@ -29,34 +29,10 @@ function inferParentOrigin() {
 }
 
 export default function Home() {
-  const { data: config, isLoading: loadingConfig, isError: configError } = useQuery({
-    queryKey: ['config'],
-    queryFn: api.getConfig,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    retry: 2,
-  });
+  const { data: config, isLoading: loadingConfig, isError: configIsError, error: configError } = useConfig();
+  const { data: catalogData, isLoading: loadingCatalog } = useServices();
 
-  const { data: servicesData, isLoading: loadingServices } = useQuery({
-    queryKey: ['services'],
-    queryFn: api.getServices,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    retry: 2,
-  });
-
-  const { data: staffData, isLoading: loadingStaff } = useQuery({
-    queryKey: ['specialists'],
-    queryFn: api.getSpecialists,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-    retry: 2,
-  });
-
-  const isLoading = loadingConfig || loadingServices || loadingStaff;
+  const isLoading = loadingConfig || loadingCatalog;
 
   // Hash navigation on hard refresh: the browser tries to scroll to #section
   // before React has rendered the sections. Once loading completes and the DOM
@@ -139,8 +115,8 @@ export default function Home() {
   }
 
   const bc = previewConfig || savedConfig;
-  const services = servicesData?.services || servicesData?.data || [];
-  const staff = staffData?.specialists || staffData?.data || [];
+  const services = catalogData?.services || [];
+  const staff    = catalogData?.specialists || [];
 
   // Note: brand token application (colour, surface, ink, fonts, radius, button
   // shape) lives in components/BrandTokensApplier.jsx and is mounted once at
@@ -160,9 +136,26 @@ export default function Home() {
     return <LandingSkeleton />;
   }
 
+  // Tenant deleted or suspended — no point retrying.
+  if (configIsError && !previewConfig && (configError?.status === 403 || configError?.status === 404)) {
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '2rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+          </svg>
+        </div>
+        <div>
+          <p style={{ fontWeight: 700, fontSize: 16, color: '#111', margin: '0 0 4px' }}>Este negocio no está disponible</p>
+          <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>La página que buscas no existe o ya no está activa.</p>
+        </div>
+      </div>
+    );
+  }
+
   // If config failed to load (network error, server down) and we're not in
   // preview mode, show a minimal error state instead of the skeleton forever.
-  if (configError && !previewConfig) {
+  if (configIsError && !previewConfig) {
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '2rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
         <div style={{ width: 48, height: 48, borderRadius: 12, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B' }}>

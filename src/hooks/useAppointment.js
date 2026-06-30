@@ -4,7 +4,7 @@ import { api } from '../services/api';
 export function useAppointmentLookup(code) {
   return useQuery({
     queryKey: ['appointment', code],
-    queryFn: () => api.getAppointment(code),
+    queryFn: ({ signal }) => api.getAppointment(code, { signal }),
     enabled: !!code,
     retry: false,
   });
@@ -15,7 +15,7 @@ export function useAppointmentLookup(code) {
 export function useGroupAppointmentLookup(code, enabled = true) {
   return useQuery({
     queryKey: ['groupAppointment', code],
-    queryFn: () => api.getGroupAppointment(code),
+    queryFn: ({ signal }) => api.getGroupAppointment(code, { signal }),
     enabled: !!code && enabled,
     retry: false,
   });

@@ -172,9 +172,10 @@ export default function ClientForm() {
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const id = setTimeout(() => setResendCooldown(c => c - 1), 1000);
-    return () => clearTimeout(id);
-  }, [resendCooldown]);
+    const id = setInterval(() => setResendCooldown(c => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resendCooldown > 0]);
 
   function validate() {
     const errs = {};

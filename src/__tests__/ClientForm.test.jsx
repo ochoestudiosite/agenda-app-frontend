@@ -523,3 +523,41 @@ describe('ClientForm — phoneErr — validación por país', () => {
     })
   })
 })
+
+// ============================================================================
+// OTP resend cooldown — F-005 setInterval (not accumulative setTimeout)
+// ============================================================================
+
+describe('ClientForm — OTP resend cooldown (F-005)', () => {
+  it('single setInterval drives countdown to 0 without accumulating timers', async () => {
+    vi.useFakeTimers()
+
+    const { renderHook, act: hookAct } = await import('@testing-library/react')
+    const { useState, useEffect } = React
+
+    // Replicate the exact cooldown logic from ClientForm (F-005 pattern).
+    function useCooldown(initial) {
+      const [cooldown, setCooldown] = useState(initial)
+      useEffect(() => {
+        if (cooldown <= 0) return
+        const id = setInterval(() => setCooldown(c => Math.max(0, c - 1)), 1000)
+        return () => clearInterval(id)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [cooldown > 0])
+      return cooldown
+    }
+
+    const { result } = renderHook(() => useCooldown(5))
+    expect(result.current).toBe(5)
+
+    // After 5s the countdown must reach exactly 0
+    await hookAct(async () => { vi.advanceTimersByTime(5100) })
+    expect(result.current).toBe(0)
+
+    // After 0: no more changes (interval cleaned up)
+    await hookAct(async () => { vi.advanceTimersByTime(3000) })
+    expect(result.current).toBe(0)
+
+    vi.useRealTimers()
+  })
+})

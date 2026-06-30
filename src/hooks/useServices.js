@@ -4,8 +4,8 @@ import { api } from '../services/api';
 export function useServices() {
   return useQuery({
     queryKey: ['services'],
-    queryFn: async () => {
-      const [s, sp] = await Promise.all([api.getServices(), api.getSpecialists()]);
+    queryFn: async ({ signal }) => {
+      const [s, sp] = await Promise.all([api.getServices({ signal }), api.getSpecialists({ signal })]);
       return { services: s.services, specialists: sp.specialists };
     },
     staleTime: 0,

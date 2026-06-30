@@ -4,7 +4,7 @@ import { api } from '../services/api';
 export function useSpecialists() {
   return useQuery({
     queryKey: ['specialists'],
-    queryFn: api.getSpecialists,
+    queryFn: ({ signal }) => api.getSpecialists({ signal }),
     staleTime: 300_000,
   });
 }

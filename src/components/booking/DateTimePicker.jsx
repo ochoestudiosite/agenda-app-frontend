@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useAvailability, useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
@@ -68,9 +68,13 @@ export default function DateTimePicker() {
   const selectedServices = state.services ?? [];
   const groupMode        = isGroupMode(state);
 
-  const groupAssignments = groupMode
-    ? state.serviceAssignments.map(a => ({ serviceId: a.service.id, specialistId: a.specialist.id }))
-    : null;
+  const groupAssignments = useMemo(
+    () => groupMode
+      ? state.serviceAssignments.map(a => ({ serviceId: a.service.id, specialistId: a.specialist.id }))
+      : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [groupMode, state.serviceAssignments]
+  );
   const serviceIdsParam = !groupMode && selectedServices.length > 0
     ? selectedServices.map(s => s.id).join(',')
     : null;
@@ -191,6 +195,10 @@ export default function DateTimePicker() {
   // Auto-avance cuando staffBlocked o businessClosed — el cliente nunca ve el motivo interno.
   useEffect(() => {
     if (!anyDaySkipFlag || !selectedDate || activeFetching) return;
+    if (skippedDatesRef.current.size >= MAX_AUTO_ADVANCES) {
+      setNoMoreDates(true);
+      return;
+    }
     skippedDatesRef.current.add(toDateStr(selectedDate));
     const next = findNextAvailableDate({
       tz,

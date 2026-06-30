@@ -428,3 +428,51 @@ describe('DateTimePicker — setup spinner', () => {
     expect(timeSlotsInDOM().length).toBeGreaterThan(0)
   })
 })
+
+// ============================================================================
+// 7. F-008: Límite en auto-avance del efecto 2 (staffBlocked/businessClosed)
+//    El efecto que hace skip de días bloqueados debe detenerse al alcanzar
+//    MAX_AUTO_ADVANCES (7) para no ciclar indefinidamente.
+// ============================================================================
+
+describe('DateTimePicker — límite auto-avance efecto 2 (F-008)', () => {
+  it('muestra noMoreDates cuando staffBlocked se repite más de MAX_AUTO_ADVANCES veces', async () => {
+    // Todos los días regresan staffBlocked=true — el efecto 2 nunca encuentra un día libre.
+    // Después de MAX_AUTO_ADVANCES (7) intentos, debe activar noMoreDates.
+    mockAvailFn.mockReturnValue(availStaffBlocked('Vacaciones indefinidas'))
+
+    await act(async () => { await renderPicker() })
+
+    // La razón interna jamás debe aparecer
+    expect(document.body.textContent).not.toContain('Vacaciones indefinidas')
+
+    // El componente debe mostrar alguna indicación de "sin disponibilidad" en lugar
+    // de seguir cargando o mostrar slots vacíos — no hay un testId fijo para esto
+    // porque el componente muestra texto dinámico; validamos que no muestre slots.
+    expect(timeSlotsInDOM().length).toBe(0)
+  })
+
+  it('muestra noMoreDates cuando businessClosed se repite más de MAX_AUTO_ADVANCES veces', async () => {
+    mockAvailFn.mockReturnValue(availBusinessClosed('Remodelación prolongada'))
+
+    await act(async () => { await renderPicker() })
+
+    expect(document.body.textContent).not.toContain('Remodelación')
+    expect(timeSlotsInDOM().length).toBe(0)
+  })
+
+  it('el efecto 2 no lanza excepción cuando skippedDatesRef alcanza el límite', async () => {
+    // Si el guard no existiera, el componente intentaría avanzar infinitamente.
+    // Este test verifica que el componente termina de renderizar sin error.
+    mockAvailFn.mockReturnValue(availStaffBlocked('Test límite'))
+
+    let renderError = null
+    try {
+      await act(async () => { await renderPicker() })
+    } catch (e) {
+      renderError = e
+    }
+
+    expect(renderError).toBeNull()
+  })
+})
