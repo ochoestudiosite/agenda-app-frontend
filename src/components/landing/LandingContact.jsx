@@ -112,7 +112,7 @@ export default function LandingContact({ businessName, socials = {}, config = {}
           {/* Links column */}
           {footerLinks.length > 0 && (
             <div className="md:col-span-3 lg:col-span-2">
-              <h4 className="text-[10px] font-bold text-ink uppercase tracking-[0.22em] mb-5">Explorar</h4>
+              <h4 className="text-[11px] font-bold text-ink uppercase tracking-[0.22em] mb-5">Explorar</h4>
               <ul className="space-y-3.5">
                 {footerLinks.map(l => (
                   <li key={l.name}>
@@ -131,7 +131,7 @@ export default function LandingContact({ businessName, socials = {}, config = {}
 
           {/* Newsletter column */}
           <div className="md:col-span-4 lg:col-span-4">
-            <h4 className="text-[10px] font-bold text-ink uppercase tracking-[0.22em] mb-5">Novedades</h4>
+            <h4 className="text-[11px] font-bold text-ink uppercase tracking-[0.22em] mb-5">Novedades</h4>
             <p className="text-[13px] text-ink-2 leading-relaxed mb-4">{newsletterText}</p>
             <form
               onSubmit={(e) => e.preventDefault()}

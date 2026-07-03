@@ -28,14 +28,14 @@ function Card({ t }) {
       </div>
 
       {/* Quote */}
-      <blockquote className="flex-1 text-[13.5px] leading-[1.75] text-section-contrast-text/80 font-medium">
+      <blockquote className="flex-1 text-[14px] leading-[1.75] text-section-contrast-text/80 font-medium">
         "{t.text}"
       </blockquote>
 
       {/* Author */}
       <figcaption className="flex items-center gap-3 pt-4 border-t border-section-contrast-text/10">
         <div
-          className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-[11px] font-extrabold text-on-gold select-none"
+          className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-[12px] font-extrabold text-on-gold select-none"
           style={{ background: 'linear-gradient(135deg, rgb(var(--gold-light)) 0%, rgb(var(--gold)) 100%)' }}
         >
           {initials(t.author)}
@@ -43,7 +43,7 @@ function Card({ t }) {
         <div className="min-w-0">
           <p className="text-[13px] font-semibold text-section-contrast-text leading-tight truncate">{t.author}</p>
           {t.role && (
-            <p className="text-[10px] uppercase tracking-[0.14em] font-semibold text-section-contrast-muted truncate">{t.role}</p>
+            <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-section-contrast-muted truncate">{t.role}</p>
           )}
         </div>
       </figcaption>

@@ -96,7 +96,7 @@ export default function LandingNavbar({ businessName, config = {} }) {
               <a
                 key={link.name}
                 href={link.href}
-                className="px-3 py-1.5 text-[13.5px] font-medium text-ink-2 hover:text-ink hover:bg-raised rounded-lg transition-colors"
+                className="px-3 py-1.5 text-[14px] font-medium text-ink-2 hover:text-ink hover:bg-raised rounded-lg transition-colors"
               >
                 {link.name}
               </a>

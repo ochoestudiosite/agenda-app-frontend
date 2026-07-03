@@ -8,15 +8,15 @@ export default function LandingContact({ businessName, socials = {}, config = {}
       <div className="section-container">
         {/* Bottom bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[11px] font-medium text-ink-3">
+          <p className="text-[12px] font-medium text-ink-3">
             {copyrightText || `© ${new Date().getFullYear()} ${brandTitle}. Todos los derechos reservados.`}
           </p>
           <div className="flex items-center gap-5">
-            <a href="#" className="text-[11px] font-medium text-ink-3 hover:text-ink transition-colors">
+            <a href="#" className="text-[12px] font-medium text-ink-3 hover:text-ink transition-colors">
               Privacidad
             </a>
 
-            <a href="#" className="text-[11px] font-medium text-ink-3 hover:text-ink transition-colors">
+            <a href="#" className="text-[12px] font-medium text-ink-3 hover:text-ink transition-colors">
               Términos
             </a>
 
@@ -27,8 +27,8 @@ export default function LandingContact({ businessName, socials = {}, config = {}
               aria-label="Desarrollado con Cita24"
               className="sm:inline-flex items-center gap-2 opacity-40 hover:opacity-70 transition-opacity duration-200 group"
             >
-              <span className="text-[9.5px] font-medium text-ink-3 tracking-wide">Impulsado por</span>
-              <span className="max-sm:ml-1 text-[11.5px] font-black tracking-tight leading-none text-ink-3 group-hover:text-ink transition-colors">
+              <span className="text-[10px] font-medium text-ink-3 tracking-wide">Impulsado por</span>
+              <span className="max-sm:ml-1 text-[12px] font-black tracking-tight leading-none text-ink-3 group-hover:text-ink transition-colors">
                 Cita<span className="text-gold">24</span>
               </span>
             </a>

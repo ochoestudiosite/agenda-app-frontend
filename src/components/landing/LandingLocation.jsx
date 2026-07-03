@@ -204,7 +204,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-gold">
+          <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gold">
             <span className="w-6 h-px bg-gold" />
             {title || 'Encuéntranos'}
           </div>
@@ -319,7 +319,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                   <div className="rounded-2xl bg-card/85 backdrop-blur-xl border border-edge/40 px-5 py-4 flex items-center justify-between gap-4 shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
                     <div className="min-w-0">
                       {openNow ? (
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+                        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
                           <span className="relative flex w-1.5 h-1.5">
                             <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
                             <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -327,7 +327,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                           Abierto ahora
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gold/80">
+                        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-gold/80">
                           <span className="w-1.5 h-1.5 rounded-full bg-gold/60 shrink-0" />
                           Agenda en línea
                         </div>
@@ -367,7 +367,7 @@ function InfoRow({ icon: Icon, label, value, extra, small, isLast }) {
         <Icon size={16} strokeWidth={2} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-3">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-3">{label}</p>
         <p className={`mt-1 font-medium text-ink leading-snug whitespace-pre-line ${small ? 'text-sm break-all' : 'text-base'}`}>
           {value}
         </p>

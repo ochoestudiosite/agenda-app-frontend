@@ -60,14 +60,14 @@ export default function StepIndicator({ currentStep, hasBranch = false, onNaviga
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    <span className={`text-[10px] font-bold tabular-nums leading-none ${isCurrent ? 'text-gold' : 'text-ink-3/40'}`}>
+                    <span className={`text-[11px] font-bold tabular-nums leading-none ${isCurrent ? 'text-gold' : 'text-ink-3/40'}`}>
                       {idx + 1}
                     </span>
                   )}
                 </button>
 
                 <span className={[
-                  'hidden sm:block text-[10px] font-medium whitespace-nowrap transition-colors duration-200',
+                  'hidden sm:block text-[11px] font-medium whitespace-nowrap transition-colors duration-200',
                   isCurrent   ? 'text-ink font-semibold'
                   : isCompleted ? 'text-ink-3'
                                 : 'text-ink-3/40',
@@ -82,10 +82,10 @@ export default function StepIndicator({ currentStep, hasBranch = false, onNaviga
 
       {/* Current step label — mobile only */}
       <div className="mt-3 flex items-center justify-between sm:hidden">
-        <span className="text-[11px] font-semibold text-gold uppercase tracking-widest">
+        <span className="text-[12px] font-semibold text-gold uppercase tracking-widest">
           {STEPS.find(s => s.n === currentStep)?.label ?? ''}
         </span>
-        <span className="text-[11px] text-ink-3 tabular-nums">
+        <span className="text-[12px] text-ink-3 tabular-nums">
           {stepIdx + 1} de {STEPS.length}
         </span>
       </div>

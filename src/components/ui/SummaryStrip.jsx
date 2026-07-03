@@ -15,7 +15,7 @@ function AvatarStack({ avatars }) {
         >
           {a.src
             ? <img src={a.src} alt="" className="w-full h-full object-cover" />
-            : <span className="text-[9px] font-bold text-gold leading-none select-none">{a.initials}</span>
+            : <span className="text-[10px] font-bold text-gold leading-none select-none">{a.initials}</span>
           }
         </div>
       ))}
@@ -24,7 +24,7 @@ function AvatarStack({ avatars }) {
           className="w-8 h-8 rounded-full border-2 border-card bg-raised flex items-center justify-center"
           style={{ marginLeft: '-8px', zIndex: 0, position: 'relative' }}
         >
-          <span className="text-[9px] font-bold text-ink-3 leading-none">+{extra}</span>
+          <span className="text-[10px] font-bold text-ink-3 leading-none">+{extra}</span>
         </div>
       )}
     </div>
@@ -51,14 +51,14 @@ function SummaryItem({ item }) {
         </div>
       )}
       <div className="min-w-0 max-w-[160px]">
-        <p className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-gold/70 leading-none mb-1">
+        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-gold/70 leading-none mb-1">
           {item.category}
         </p>
-        <p className="text-[12.5px] font-semibold text-ink leading-snug truncate">
+        <p className="text-[13px] font-semibold text-ink leading-snug truncate">
           {item.label}
         </p>
         {item.sub && (
-          <p className="text-[10.5px] text-ink-3 leading-none mt-0.5 truncate">
+          <p className="text-[11px] text-ink-3 leading-none mt-0.5 truncate">
             {item.sub}
           </p>
         )}

@@ -9,8 +9,8 @@ const SIZE_MAP = {
 const TEXT_MAP = {
   selector:       'text-sm',
   'selector-sm':  'text-xl',
-  summary:        'text-[11px]',
-  'summary-mini': 'text-[8px]',
+  summary:        'text-[12px]',
+  'summary-mini': 'text-[10px]',
   confirm:        'text-sm',
 };
 

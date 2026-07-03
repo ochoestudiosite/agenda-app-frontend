@@ -82,7 +82,7 @@ export default function ServiceSelector() {
                   {formatCombinedPrice(selected)}
                 </span>
                 {promoSavings(selected) > 0 && (
-                  <p className="text-[11px] font-semibold text-gold tabular-nums">
+                  <p className="text-[12px] font-semibold text-gold tabular-nums">
                     Ahorras {formatPrice(promoSavings(selected))}
                   </p>
                 )}
@@ -146,13 +146,13 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
           </p>
           {service.promo && (
             <>
-              <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold uppercase tracking-wide bg-gold text-on-gold">
+              <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide bg-gold text-on-gold">
                 {service.promo.discountType === 'percent'
                   ? `−${Number(service.promo.discountValue)}%`
                   : 'Promo'}
               </span>
               {promoEndsLabel(service.promo.endsAt, bizTz) && (
-                <span className="shrink-0 text-[0.625rem] font-semibold text-gold/80">
+                <span className="shrink-0 text-[11px] font-semibold text-gold/80">
                   {promoEndsLabel(service.promo.endsAt, bizTz)}
                 </span>
               )}
@@ -163,7 +163,7 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
           <p className="text-xs text-ink-3 mt-0.5 leading-snug line-clamp-2">{service.description}</p>
         )}
         {hasImage && (
-          <span className="inline-flex items-center gap-1 mt-1.5 text-[0.6875rem] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[12px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
             {service.duration} min
           </span>
         )}

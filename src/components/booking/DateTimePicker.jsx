@@ -279,7 +279,7 @@ export default function DateTimePicker() {
             Con <span className="text-ink font-medium">{specialistLabel}</span>
           </p>
           {timezone && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
@@ -320,7 +320,7 @@ export default function DateTimePicker() {
 
           <div className="grid grid-cols-7 mb-2">
             {DAYS_ES.map(d => (
-              <div key={d} className="text-center text-[0.6875rem] font-medium text-ink-3 py-1">{d}</div>
+              <div key={d} className="text-center text-[12px] font-medium text-ink-3 py-1">{d}</div>
             ))}
           </div>
 
@@ -488,7 +488,7 @@ export default function DateTimePicker() {
                       <p className="text-[13px] font-semibold text-ink leading-tight truncate">
                         {toTitleCase(service.name)}
                       </p>
-                      <p className="text-[11px] text-ink-3 mt-0.5">
+                      <p className="text-[12px] text-ink-3 mt-0.5">
                         {toTitleCase(specialist.name)} · {service.duration} min
                       </p>
                     </div>
@@ -496,7 +496,7 @@ export default function DateTimePicker() {
                       <p className="text-[12px] font-semibold text-gold tabular-nums whitespace-nowrap">
                         {formatTime(minutesToSlot(startMins), timeFmt)}
                       </p>
-                      <p className="text-[11px] text-ink-3 mt-0.5 tabular-nums whitespace-nowrap">
+                      <p className="text-[12px] text-ink-3 mt-0.5 tabular-nums whitespace-nowrap">
                         hasta {formatTime(minutesToSlot(endMins), timeFmt)}
                       </p>
                     </div>
@@ -505,7 +505,7 @@ export default function DateTimePicker() {
               ))}
             </div>
             <div className="mt-3 pt-3 border-t border-edge flex items-center justify-between">
-              <span className="text-[11px] font-medium text-ink-3">Duración total</span>
+              <span className="text-[12px] font-medium text-ink-3">Duración total</span>
               <span className="text-[12px] font-semibold text-ink tabular-nums">
                 {state.serviceAssignments.reduce((s, a) => s + (a.service.duration || 0), 0)} min —
                 {' terminamos a las '}

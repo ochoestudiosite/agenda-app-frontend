@@ -32,7 +32,7 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-edge/60 bg-card/60 backdrop-blur text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.18em] text-ink-2 mb-8"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-edge/60 bg-card/60 backdrop-blur text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] text-ink-2 mb-8"
           >
             <span className="relative flex w-1.5 h-1.5">
               <span className="absolute inset-0 rounded-full bg-gold animate-ping opacity-60" />
@@ -120,7 +120,7 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
                   <span className="w-7 h-7 rounded-full bg-gold/10 text-gold flex items-center justify-center">
                     <Icon size={13} strokeWidth={2.2} />
                   </span>
-                  <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-ink-2">
+                  <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-ink-2">
                     {text}
                   </span>
                 </div>

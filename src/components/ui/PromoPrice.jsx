@@ -22,7 +22,7 @@ export function promoConceptLabel({ promotionType, promotionValue, discountType,
 export function PromoBadge({ discountType, discountValue, className = '' }) {
   const label = promoConceptLabel({ discountType, discountValue }) || 'PROMO';
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold uppercase tracking-wide bg-gold text-on-gold shrink-0 ${className}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide bg-gold text-on-gold shrink-0 ${className}`}>
       {label}
     </span>
   );
@@ -47,7 +47,7 @@ export function PromoTag({ promotionName, promotionType, promotionValue, promoti
   const title = [name, concept, promotionCode ? `código ${promotionCode}` : null].filter(Boolean).join(' · ');
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/12 text-gold border border-gold/25 text-[0.625rem] font-semibold shrink-0 max-w-full ${className}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/12 text-gold border border-gold/25 text-[11px] font-semibold shrink-0 max-w-full ${className}`}
       title={title}
     >
       <PromoStar className="w-2.5 h-2.5 shrink-0" />
@@ -59,8 +59,8 @@ export function PromoTag({ promotionName, promotionType, promotionValue, promoti
 }
 
 const SIZES = {
-  sm: { struck: 'text-[10.5px]', final: 'text-[13px]' },
-  md: { struck: 'text-[11px]',   final: 'text-[14px]' },
+  sm: { struck: 'text-[11px]', final: 'text-[13px]' },
+  md: { struck: 'text-[12px]',   final: 'text-[14px]' },
   lg: { struck: 'text-xs',       final: 'text-[17px]' },
   xl: { struck: 'text-xs',       final: 'text-[18px]' },
 };
@@ -81,7 +81,7 @@ export function StruckPrice({ original, final: finalStr, size = 'md', className 
 export function SavingsNote({ amount, promoName = null, verb = 'Ahorras', className = '' }) {
   if (!(Number(amount) > 0)) return null;
   return (
-    <p className={`flex items-center justify-end gap-1 text-[11px] font-semibold text-gold tabular-nums ${className}`}>
+    <p className={`flex items-center justify-end gap-1 text-[12px] font-semibold text-gold tabular-nums ${className}`}>
       <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
         <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z" />
       </svg>

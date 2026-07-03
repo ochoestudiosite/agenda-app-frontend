@@ -10,7 +10,7 @@ export default function Input({ label, error, helper, className = '', id, ...pro
       <input
         id={id}
         className={[
-          'w-full bg-card border rounded-xl px-4 text-[0.9375rem] text-ink',
+          'w-full bg-card border rounded-xl px-4 text-[16px] text-ink',
           'placeholder:text-ink-3 min-h-[52px]',
           'transition-all duration-160 ease-spring',
           'focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold',

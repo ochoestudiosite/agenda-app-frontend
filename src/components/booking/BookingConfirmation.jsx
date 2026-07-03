@@ -115,7 +115,7 @@ export default function BookingConfirmation() {
               )}
             </div>
           </div>
-          <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-gold/12 text-gold border border-gold/25">
+          <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold bg-gold/12 text-gold border border-gold/25">
             Confirmada
           </span>
         </div>
@@ -123,7 +123,7 @@ export default function BookingConfirmation() {
         {/* Date + Time */}
         <div className="px-6 py-4 flex items-center gap-4 border-b border-edge">
           <div className="w-12 h-12 rounded-2xl bg-gold/8 border border-gold/20 flex flex-col items-center justify-center shrink-0">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
             <span className="text-[22px] font-bold text-gold leading-tight tabular-nums">{dayNum}</span>
           </div>
           <div className="flex-1">
@@ -162,7 +162,7 @@ export default function BookingConfirmation() {
                         {/* Specialist mini-avatar + info */}
                         <div className="flex items-center gap-1.5 mt-1">
                           <EntityAvatar size="summary-mini" name={appt.specialistName} imageUrl={spec?.avatarUrl} />
-                          <p className="text-[11px] text-ink-3 leading-none">
+                          <p className="text-[12px] text-ink-3 leading-none">
                             {toTitleCase(appt.specialistName)}
                             {' · '}
                             <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
@@ -359,7 +359,7 @@ export default function BookingConfirmation() {
       )}
 
       {/* Tip */}
-      <p className="text-center text-[11.5px] text-ink-3 mb-5 leading-relaxed">
+      <p className="text-center text-[12px] text-ink-3 mb-5 leading-relaxed">
         Accede a{' '}
         <Link to="/gestionar" className="text-gold font-medium hover:underline underline-offset-2">
           Gestionar

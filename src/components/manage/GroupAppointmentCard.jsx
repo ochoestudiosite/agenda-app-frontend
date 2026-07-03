@@ -135,7 +135,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
         {/* Date + Time */}
         <div className="px-6 py-4 flex items-center gap-4 border-b border-edge">
           <div className="w-12 h-12 rounded-2xl bg-gold/8 border border-gold/20 flex flex-col items-center justify-center shrink-0">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
             <span className="text-[22px] font-bold text-gold leading-tight tabular-nums">{dayNum}</span>
           </div>
           <div className="flex-1">
@@ -167,7 +167,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                   <div className="w-9 h-9 rounded-full border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden mt-0.5">
                     {svcObj?.imageUrl
                       ? <img src={svcObj.imageUrl} alt={appt.serviceName} className="w-full h-full object-cover" />
-                      : <span className="text-[11px] font-bold text-gold">{initials(appt.serviceName)}</span>
+                      : <span className="text-[12px] font-bold text-gold">{initials(appt.serviceName)}</span>
                     }
                   </div>
                   <div className="min-w-0 flex-1">
@@ -179,10 +179,10 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                       <div className="w-5 h-5 rounded-full border border-gold/30 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
                         {specialist?.avatarUrl
                           ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover" />
-                          : <span className="text-[8px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                          : <span className="text-[10px] font-bold text-gold">{initials(appt.specialistName)}</span>
                         }
                       </div>
-                      <p className="text-[11px] text-ink-3 leading-none">
+                      <p className="text-[12px] text-ink-3 leading-none">
                         {toTitleCase(appt.specialistName)}
                         {' · '}
                         <span className="text-gold font-medium">{formatTime(appt.time, timeFmt)}</span>
@@ -198,7 +198,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                       />
                     )}
                     {appt.status === 'cancelled' && (
-                      <span className="badge badge-cancelled text-[10px] mt-1.5 inline-block">Cancelada</span>
+                      <span className="badge badge-cancelled text-[11px] mt-1.5 inline-block">Cancelada</span>
                     )}
                   </div>
                   {appt.discountAmount > 0 && appt.originalPrice != null ? (
@@ -308,7 +308,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                 ) : (
                   <div className="flex flex-col gap-1.5">
                     {reschedRemaining === 1 && (
-                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium px-0.5">
+                      <p className="text-[12px] text-amber-600 dark:text-amber-400 font-medium px-0.5">
                         Solo puedes reagendar 1 vez más.
                       </p>
                     )}
@@ -569,7 +569,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
           {' · '}{group.appointments?.length} {group.appointments?.length === 1 ? 'servicio' : 'servicios'}
         </p>
         {config?.business_timezone && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
@@ -608,7 +608,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
           </div>
           <div className="grid grid-cols-7 mb-2">
             {DAYS_ES.map(d => (
-              <div key={d} className="text-center text-[0.6875rem] font-medium text-ink-3 py-1">{d}</div>
+              <div key={d} className="text-center text-[12px] font-medium text-ink-3 py-1">{d}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-y-1">
@@ -745,17 +745,17 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
                         <div className="w-7 h-7 rounded-full border border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 overflow-hidden">
                           {specialist?.avatarUrl
                             ? <img src={specialist.avatarUrl} alt={appt.specialistName} className="w-full h-full object-cover"/>
-                            : <span className="text-[9px] font-bold text-gold">{initials(appt.specialistName)}</span>
+                            : <span className="text-[10px] font-bold text-gold">{initials(appt.specialistName)}</span>
                           }
                         </div>
                         <div className="min-w-0">
                           <p className="text-[12px] font-semibold text-ink leading-snug truncate">{toTitleCase(appt.serviceName)}</p>
-                          <p className="text-[10px] text-ink-3 truncate">{toTitleCase(appt.specialistName)}</p>
+                          <p className="text-[11px] text-ink-3 truncate">{toTitleCase(appt.specialistName)}</p>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[11px] font-bold text-gold tabular-nums">{formatTime(appt.startStr, timeFmt)}</p>
-                        <p className="text-[10px] text-ink-3">{appt.serviceDuration} min</p>
+                        <p className="text-[12px] font-bold text-gold tabular-nums">{formatTime(appt.startStr, timeFmt)}</p>
+                        <p className="text-[11px] text-ink-3">{appt.serviceDuration} min</p>
                       </div>
                     </div>
                   </div>
@@ -777,7 +777,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
                 })()}
               </span>
               {Number(group.totalDiscount) > 0 && (
-                <p className="text-[10px] font-semibold text-gold tabular-nums">
+                <p className="text-[11px] font-semibold text-gold tabular-nums">
                   Incluye ahorro de {formatPrice(group.totalDiscount)} por promoción
                 </p>
               )}

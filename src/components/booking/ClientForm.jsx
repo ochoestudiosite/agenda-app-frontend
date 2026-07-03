@@ -404,7 +404,7 @@ export default function ClientForm() {
         {/* Date + Time header */}
         <div className="px-5 py-4 flex items-center gap-4 bg-raised/40 border-b border-edge">
           <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex flex-col items-center justify-center shrink-0">
-            <span className="text-[8px] font-bold uppercase tracking-widest text-gold leading-none">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gold leading-none">
               {state.date
                 ? new Date(state.date + 'T12:00:00').toLocaleDateString('es-MX', { month: 'short' })
                 : '—'}
@@ -419,7 +419,7 @@ export default function ClientForm() {
           </div>
           {groupMode && (
             <div className="ml-auto text-right">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Total</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-3">Total</p>
               <p className="text-[13px] font-bold text-gold tabular-nums">{totalDuration} min</p>
             </div>
           )}
@@ -464,7 +464,7 @@ export default function ClientForm() {
                 <div className="flex items-center gap-3 pt-0.5">
                   <EntityAvatar size="summary" name={displayBranch.name} imageUrl={displayBranch.image_url} />
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
                     <p className="text-[13px] font-semibold text-ink">{toTitleCase(displayBranch.name)}</p>
                   </div>
                 </div>
@@ -474,7 +474,7 @@ export default function ClientForm() {
             <>
               {selectedServices.length > 1 ? (
                 <div className="space-y-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Servicios</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-3">Servicios</p>
                   {displayServices.map((svc, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <EntityAvatar size="summary" name={svc.name} imageUrl={svc.imageUrl} />
@@ -496,7 +496,7 @@ export default function ClientForm() {
                 <div className="flex items-center gap-3">
                   <EntityAvatar size="summary" name={displayServices[0]?.name} imageUrl={displayServices[0]?.imageUrl} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3 mb-0.5">Servicio</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-3 mb-0.5">Servicio</p>
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="text-[14px] font-semibold text-ink leading-snug">{toTitleCase(displayServices[0]?.name)}</p>
                       {displayServices[0]?.promo && <PromoTag promotionName={displayServices[0].promo.name} promotionType={displayServices[0].promo.discountType} promotionValue={displayServices[0].promo.discountValue} discountAmount={displayServices[0].promo.discountAmount} />}
@@ -512,7 +512,7 @@ export default function ClientForm() {
               <div className="flex items-center gap-3">
                 <EntityAvatar size="summary" name={state.specialist?.name} imageUrl={state.specialist?.avatarUrl} />
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Especialista</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-3">Especialista</p>
                   <p className="text-[13px] font-semibold text-ink">{toTitleCase(state.specialist?.name)}</p>
                 </div>
               </div>
@@ -520,7 +520,7 @@ export default function ClientForm() {
                 <div className="flex items-center gap-3">
                   <EntityAvatar size="summary" name={displayBranch.name} imageUrl={displayBranch.image_url} />
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-3">Sucursal</p>
                     <p className="text-[13px] font-semibold text-ink">{toTitleCase(displayBranch.name)}</p>
                   </div>
                 </div>
@@ -563,7 +563,7 @@ export default function ClientForm() {
       {/* ── Política de cancelación (UX-1) ─────────────────────────────── */}
       {config?.cancellation_policy && !otpPhase && (
         <div className="mb-5 px-4 py-4 rounded-2xl border border-edge bg-raised/30">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-3 mb-1.5">Política de cancelación</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-ink-3 mb-1.5">Política de cancelación</p>
           <p className="text-[13px] text-ink-2 leading-relaxed">{config.cancellation_policy}</p>
         </div>
       )}
@@ -655,7 +655,7 @@ export default function ClientForm() {
                     </svg>
                     <div className="min-w-0">
                       <p className="text-[13px] font-bold text-ink tabular-nums tracking-wider truncate">{appliedCode}</p>
-                      {promoStatus?.message && <p className="text-[11px] text-ink-3 truncate">{promoStatus.message}</p>}
+                      {promoStatus?.message && <p className="text-[12px] text-ink-3 truncate">{promoStatus.message}</p>}
                     </div>
                   </div>
                   <button type="button" onClick={clearPromo} className="text-[12px] font-semibold text-ink-3 hover:text-ink transition-colors shrink-0">

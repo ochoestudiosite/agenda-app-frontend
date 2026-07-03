@@ -75,7 +75,7 @@ export default function LandingServices({ services = [], customServices, useCust
                   <IconNav onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
                     <ChevronLeft size={16} />
                   </IconNav>
-                  <span className="text-[11px] font-mono text-ink-3 min-w-[3ch] text-center tabular-nums">
+                  <span className="text-[12px] font-mono text-ink-3 min-w-[3ch] text-center tabular-nums">
                     {page + 1}/{totalPages}
                   </span>
                   <IconNav onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
@@ -170,7 +170,7 @@ function ServiceCard({ service, i, buttonText }) {
                               shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
                 {service.promo ? (
                   <>
-                    <span className="text-[11px] text-ink-3 line-through tabular-nums">
+                    <span className="text-[12px] text-ink-3 line-through tabular-nums">
                       {formatServicePrice(service)}
                     </span>
                     <span className="text-[13px] font-bold text-ink tabular-nums">
@@ -184,7 +184,7 @@ function ServiceCard({ service, i, buttonText }) {
                 )}
               </div>
               {service.promo && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide
                                  bg-gold text-on-gold shadow-[0_4px_16px_rgba(0,0,0,0.25)]">
                   {service.promo.discountType === 'percent'
                     ? `−${Number(service.promo.discountValue)}% Promo`
@@ -192,7 +192,7 @@ function ServiceCard({ service, i, buttonText }) {
                 </span>
               )}
               {service.promo && promoEndsLabel(service.promo.endsAt, bizTz) && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide
                                  bg-card/85 backdrop-blur-md border border-edge/50 text-ink
                                  shadow-[0_4px_16px_rgba(0,0,0,0.18)]">
                   {promoEndsLabel(service.promo.endsAt, bizTz)}
@@ -218,7 +218,7 @@ function ServiceCard({ service, i, buttonText }) {
 
             {/* Duración */}
             {duration && (
-              <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white/65">
+              <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">
                 <Clock size={10} strokeWidth={2} />
                 {duration} min
               </span>
@@ -255,7 +255,7 @@ export function SectionHeader({ eyebrow, title, accent, fallback, right }) {
   return (
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div className="max-w-xl">
-        <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-gold">
+        <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gold">
           <span className="w-6 h-px bg-gold" />
           {eyebrow}
         </div>

@@ -187,7 +187,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         {/* Date + Time */}
         <div className="px-6 py-4 flex items-center gap-4 border-b border-edge">
           <div className="w-12 h-12 rounded-2xl bg-gold/8 border border-gold/20 flex flex-col items-center justify-center shrink-0">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gold leading-none">{monthAbbr}</span>
             <span className="text-[22px] font-bold text-gold leading-tight tabular-nums">{dayNum}</span>
           </div>
           <div>
@@ -210,7 +210,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                   <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 mt-0.5">
                     {svc.imageUrl
                       ? <img src={svc.imageUrl} alt={svc.serviceName} className="w-full h-full object-cover" />
-                      : <span className="text-[11px] font-bold text-gold">{initials(svc.serviceName)}</span>
+                      : <span className="text-[12px] font-bold text-gold">{initials(svc.serviceName)}</span>
                     }
                   </div>
                   <div className="flex-1 min-w-0">
@@ -382,7 +382,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                 ) : (
                   <div className="flex flex-col gap-1.5">
                     {reschedRemaining === 1 && (
-                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium px-0.5">
+                      <p className="text-[12px] text-amber-600 dark:text-amber-400 font-medium px-0.5">
                         Solo puedes reagendar 1 vez más.
                       </p>
                     )}
@@ -526,13 +526,13 @@ function RescheduleStepIndicator({ reschedStep, isMulti, onBack }) {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                   ) : (
-                    <span className={`text-[10px] font-bold tabular-nums leading-none ${current ? 'text-gold' : 'text-ink-3/40'}`}>
+                    <span className={`text-[11px] font-bold tabular-nums leading-none ${current ? 'text-gold' : 'text-ink-3/40'}`}>
                       {idx + 1}
                     </span>
                   )}
                 </div>
                 <span className={[
-                  'hidden sm:block text-[10px] font-medium whitespace-nowrap transition-colors duration-200',
+                  'hidden sm:block text-[11px] font-medium whitespace-nowrap transition-colors duration-200',
                   current ? 'text-ink font-semibold' : done ? 'text-ink-3' : 'text-ink-3/40',
                 ].join(' ')}>
                   {step.label}
@@ -543,10 +543,10 @@ function RescheduleStepIndicator({ reschedStep, isMulti, onBack }) {
         })}
       </div>
       <div className="mt-3 flex items-center justify-between sm:hidden">
-        <span className="text-[11px] font-semibold text-gold uppercase tracking-widest">
+        <span className="text-[12px] font-semibold text-gold uppercase tracking-widest">
           {steps[currentIdx]?.label ?? ''}
         </span>
-        <span className="text-[11px] text-ink-3 tabular-nums">{currentIdx + 1} de {steps.length}</span>
+        <span className="text-[12px] text-ink-3 tabular-nums">{currentIdx + 1} de {steps.length}</span>
       </div>
     </div>
   );
@@ -916,7 +916,7 @@ function ReschedulePanel({
               {!reSpecialist && !reBranch && <span>Selecciona fecha y hora</span>}
             </p>
             {config?.business_timezone && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -949,7 +949,7 @@ function ReschedulePanel({
               </div>
               <div className="grid grid-cols-7 mb-2">
                 {DAYS_ES.map(d => (
-                  <div key={d} className="text-center text-[0.6875rem] font-medium text-ink-3 py-1">{d}</div>
+                  <div key={d} className="text-center text-[12px] font-medium text-ink-3 py-1">{d}</div>
                 ))}
               </div>
               <div className="grid grid-cols-7 gap-y-1">
@@ -1086,10 +1086,10 @@ function ReschedulePanel({
 function StatusBadge({ status }) {
   const map = {
     confirmed:   { cls: 'badge badge-confirmed',   label: 'Confirmada'  },
-    completed:   { cls: 'badge badge-confirmed',   label: 'Completada'  },
+    completed:   { cls: 'badge badge-completed',   label: 'Completada'  },
     cancelled:   { cls: 'badge badge-cancelled',   label: 'Cancelada'   },
     rescheduled: { cls: 'badge badge-rescheduled', label: 'Reagendada'  },
-    no_show:     { cls: 'badge',                   label: 'No asistió'  },
+    no_show:     { cls: 'badge badge-noshow',       label: 'No asistió'  },
   };
   const { cls, label } = map[status] ?? { cls: 'badge', label: status };
   return <span className={cls}>{label}</span>;

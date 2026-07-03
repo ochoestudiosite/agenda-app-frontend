@@ -126,12 +126,20 @@ vi.mock('../utils/formatters.js', () => ({
 // Fixtures
 // ---------------------------------------------------------------------------
 
+// Fecha futura dinámica (+7 días, en hora local) — una fecha fija se vuelve
+// "pasada" con el tiempo y oculta los botones Reagendar/Cancelar (date-rot).
+const FUTURE_DATE = (() => {
+  const d = new Date(Date.now() + 7 * 86400000)
+  const p = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+})()
+
 const CONFIRMED_GROUP = {
   groupCode: 'GRP-001',
   clientName: 'Juan García',
   clientPhone: '5512345678',
   clientEmail: 'juan@test.com',
-  date: '2026-07-01',
+  date: FUTURE_DATE,
   totalDuration: 90,
   totalPrice: 750,
   status: 'confirmed',

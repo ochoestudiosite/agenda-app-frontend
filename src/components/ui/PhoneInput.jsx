@@ -72,7 +72,7 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
             value={code}
             onChange={handleCodeChange}
             disabled={disabled}
-            className="w-[7rem] h-[50px] bg-transparent text-[0.9375rem] pl-4 pr-7 appearance-none cursor-pointer focus:outline-none text-ink"
+            className="w-[7rem] h-[50px] bg-transparent text-[16px] pl-4 pr-7 appearance-none cursor-pointer focus:outline-none text-ink"
           >
             {COUNTRIES.map(c => (
               <option key={c.code} value={c.code} className="bg-card text-ink">
@@ -91,7 +91,7 @@ export default function PhoneInput({ label, error, helper, value = '', onChange,
           onChange={handleNumberChange}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 h-[50px] bg-transparent px-4 text-[0.9375rem] text-ink placeholder:text-ink-3 focus:outline-none w-full"
+          className="flex-1 h-[50px] bg-transparent px-4 text-[16px] text-ink placeholder:text-ink-3 focus:outline-none w-full"
           {...props}
         />
       </div>

@@ -78,7 +78,7 @@ export default function LandingStaff({ staff = [], services = [], customStaff, u
                 <IconNav onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
                   <ChevronLeft size={16} />
                 </IconNav>
-                <span className="text-[11px] font-mono text-ink-3 min-w-[3ch] text-center tabular-nums">
+                <span className="text-[12px] font-mono text-ink-3 min-w-[3ch] text-center tabular-nums">
                   {page + 1}/{totalPages}
                 </span>
                 <IconNav onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
@@ -183,7 +183,7 @@ function StaffCard({ member, services, i }) {
                     key={svc.id}
                     className="inline-flex items-center px-2.5 py-1 rounded-full
                                bg-white/[0.12] border border-white/20 text-white/85
-                               text-[10px] font-semibold tracking-[0.06em] backdrop-blur-sm
+                               text-[11px] font-semibold tracking-[0.06em] backdrop-blur-sm
                                max-w-[110px] truncate"
                   >
                     {svc.name}
@@ -192,7 +192,7 @@ function StaffCard({ member, services, i }) {
                 {extraCount > 0 && (
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full
                                    border border-white/20 text-white/50
-                                   text-[10px] font-medium tabular-nums shrink-0">
+                                   text-[11px] font-medium tabular-nums shrink-0">
                     +{extraCount}
                   </span>
                 )}
