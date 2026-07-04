@@ -37,13 +37,20 @@ export default function LandingNavbar({ businessName, config = {} }) {
     return () => { document.body.style.overflow = prev; };
   }, [isMobileMenuOpen]);
 
+  // defaultVisible must mirror each section's own render condition in Home.jsx —
+  // testimonials is opt-in (hidden until the admin explicitly enables it, since
+  // an empty config would otherwise show generic placeholder reviews), while
+  // the rest are opt-out (shown unless explicitly hidden).
   const allLinks = [
-    { name: 'Servicios',     href: '#servicios',     configKey: 'services_section' },
-    { name: 'Equipo',        href: '#equipo',        configKey: 'staff_section' },
-    { name: 'Testimoniales', href: '#testimoniales', configKey: 'testimonials_section' },
-    { name: 'Ubicación',     href: '#ubicacion',     configKey: 'location_section' },
+    { name: 'Servicios',     href: '#servicios',     configKey: 'services_section',     defaultVisible: true },
+    { name: 'Equipo',        href: '#equipo',        configKey: 'staff_section',        defaultVisible: true },
+    { name: 'Testimoniales', href: '#testimoniales', configKey: 'testimonials_section', defaultVisible: false },
+    { name: 'Ubicación',     href: '#ubicacion',     configKey: 'location_section',     defaultVisible: true },
   ];
-  const navLinks = allLinks.filter(l => config[l.configKey]?.visible !== false);
+  const navLinks = allLinks.filter(l => {
+    const v = config[l.configKey]?.visible;
+    return v == null ? l.defaultVisible : v === true;
+  });
 
   const handleLogoClick = () => {
     setMobileMenu(false);

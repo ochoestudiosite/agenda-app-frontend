@@ -193,6 +193,8 @@ export default function Home() {
           secondaryCta={bc.hero?.secondary_cta_text}
           features={bc.hero?.features}
           showFeatures={bc.hero?.show_features}
+          badge={bc.hero?.badge_text}
+          showBadge={bc.hero?.show_badge}
         />
 
         {(bc.services_section?.visible !== false) && (

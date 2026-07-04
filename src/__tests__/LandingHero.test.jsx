@@ -124,3 +124,32 @@ describe('LandingHero — custom props', () => {
     expect(document.body.textContent).toContain('Reservar Ahora')
   })
 })
+
+describe('LandingHero — badge (pill superior)', () => {
+  it('shows default badge text when no badge prop is given', async () => {
+    await act(async () => { await renderHero() })
+    expect(document.body.textContent).toContain('Reserva en línea · Sin esperas')
+  })
+
+  it('custom badge text overrides the default', async () => {
+    await act(async () => { await renderHero({ badge: 'Agenda 24/7' }) })
+    expect(document.body.textContent).toContain('Agenda 24/7')
+    expect(document.body.textContent).not.toContain('Reserva en línea · Sin esperas')
+  })
+
+  it('hides the badge when showBadge is false', async () => {
+    await act(async () => { await renderHero({ showBadge: false, badge: 'Agenda 24/7' }) })
+    expect(document.body.textContent).not.toContain('Agenda 24/7')
+    expect(document.body.textContent).not.toContain('Reserva en línea · Sin esperas')
+  })
+
+  it('shows the badge when showBadge is undefined (retrocompatibilidad)', async () => {
+    await act(async () => { await renderHero({ showBadge: undefined }) })
+    expect(document.body.textContent).toContain('Reserva en línea · Sin esperas')
+  })
+
+  it('empty badge string falls back to default text', async () => {
+    await act(async () => { await renderHero({ badge: '' }) })
+    expect(document.body.textContent).toContain('Reserva en línea · Sin esperas')
+  })
+})

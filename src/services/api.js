@@ -139,4 +139,5 @@ export const api = {
   getAppointment:      (code, options = {}) => request('GET', `/appointments/${code}`, null, 0, options),
   rescheduleAppointment: (code, body) => request('PUT', `/appointments/${code}`, body),
   cancelAppointment:   (code, body) => request('DELETE', `/appointments/${code}`, body),
+  subscribeNewsletter: (email) => request('POST', '/newsletter', { email }),
 };

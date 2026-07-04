@@ -1,4 +1,7 @@
-import { Send, MessageSquare, ArrowUpRight } from 'lucide-react';
+import { useState } from 'react';
+import { Send, MessageSquare, ArrowUpRight, Check } from 'lucide-react';
+import { api } from '../../services/api';
+import { useToast } from '../ui/Toast';
 
 function InstagramIcon({ size = 18 }) {
   return (
@@ -58,16 +61,41 @@ export default function LandingContact({ businessName, socials = {}, config = {}
   const newsletterText = socials.newsletter_text || 'Recibe novedades y promociones exclusivas, sin spam.';
   const copyrightText = socials.copyright_text || '';
 
+  const toast = useToast();
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await api.subscribeNewsletter(email);
+      setSubscribed(true);
+      setEmail('');
+    } catch (err) {
+      toast(err.message || 'No se pudo completar la suscripción. Intenta de nuevo.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const socialLinks = SOCIAL_CONFIG
     .filter(s => socials[s.key])
     .map(s => ({ ...s, url: s.urlFn(socials[s.key]) }));
 
+  // defaultVisible mirrors each section's own render condition in Home.jsx —
+  // testimonials is opt-in (hidden until explicitly enabled), the rest opt-out.
   const footerLinks = [
-    { name: 'Servicios', href: '#servicios', key: 'services_section' },
-    { name: 'Equipo', href: '#equipo', key: 'staff_section' },
-    { name: 'Testimoniales', href: '#testimoniales', key: 'testimonials_section' },
-    { name: 'Ubicación', href: '#ubicacion', key: 'location_section' },
-  ].filter(l => config[l.key]?.visible !== false);
+    { name: 'Servicios', href: '#servicios', key: 'services_section', defaultVisible: true },
+    { name: 'Equipo', href: '#equipo', key: 'staff_section', defaultVisible: true },
+    { name: 'Testimoniales', href: '#testimoniales', key: 'testimonials_section', defaultVisible: false },
+    { name: 'Ubicación', href: '#ubicacion', key: 'location_section', defaultVisible: true },
+  ].filter(l => {
+    const v = config[l.key]?.visible;
+    return v == null ? l.defaultVisible : v === true;
+  });
 
   return (
     <div className="relative pt-20 lg:pt-28 pb-20 bg-card/40 border-t border-edge/40 overflow-hidden">
@@ -132,25 +160,38 @@ export default function LandingContact({ businessName, socials = {}, config = {}
           {/* Newsletter column */}
           <div className="md:col-span-4 lg:col-span-4">
             <h4 className="text-[11px] font-bold text-ink uppercase tracking-[0.22em] mb-5">Novedades</h4>
-            <p className="text-[13px] text-ink-2 leading-relaxed mb-4">{newsletterText}</p>
-            <form
-              onSubmit={(e) => e.preventDefault()}
-              className="relative flex items-center"
-            >
-              <input
-                type="email"
-                placeholder="tu@email.com"
-                required
-                className="w-full h-12 bg-card border border-edge rounded-full pl-5 pr-14 text-[14px] font-medium text-ink placeholder:text-ink-3 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15 transition-all"
-              />
-              <button
-                type="submit"
-                aria-label="Suscribirme"
-                className="absolute right-1.5 top-1.5 w-9 h-9 rounded-full bg-gold text-on-gold hover:opacity-90 active:scale-[0.97] flex items-center justify-center transition-all"
-              >
-                <Send size={13} strokeWidth={2.2} />
-              </button>
-            </form>
+            {subscribed ? (
+              <p className="flex items-center gap-2 text-[13px] font-semibold text-ink h-12">
+                <Check size={16} className="text-gold shrink-0" />
+                ¡Listo! Te avisaremos de nuestras novedades.
+              </p>
+            ) : (
+              <>
+                <p className="text-[13px] text-ink-2 leading-relaxed mb-4">{newsletterText}</p>
+                <form onSubmit={handleSubscribe} className="relative flex items-center">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                    required
+                    disabled={submitting}
+                    className="w-full h-12 bg-card border border-edge rounded-full pl-5 pr-14 text-[14px] font-medium text-ink placeholder:text-ink-3 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15 transition-all disabled:opacity-60"
+                  />
+                  <button
+                    type="submit"
+                    aria-label="Suscribirme"
+                    disabled={submitting}
+                    className="absolute right-1.5 top-1.5 w-9 h-9 rounded-full bg-gold text-on-gold hover:opacity-90 active:scale-[0.97] flex items-center justify-center transition-all disabled:opacity-60"
+                  >
+                    <Send size={13} strokeWidth={2.2} />
+                  </button>
+                </form>
+                <p className="mt-3 text-[11px] text-ink-3 leading-snug">
+                  Al suscribirte aceptas recibir comunicaciones de {brandTitle}.
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>

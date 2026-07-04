@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 import { ArrowUpRight, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export default function LandingHero({ title, titleAccent, subtitle, cta, secondaryCta, features, showFeatures = true }) {
+export default function LandingHero({ title, titleAccent, subtitle, cta, secondaryCta, features, showFeatures = true, badge, showBadge = true }) {
   const defaults = [
     { icon: 'ShieldCheck', text: 'Pago Seguro' },
     { icon: 'Clock',       text: 'Ahorra Tiempo' },
@@ -28,18 +28,20 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
         <div className="max-w-5xl mx-auto text-center">
 
           {/* Eyebrow */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-edge/60 bg-card/60 backdrop-blur text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] text-ink-2 mb-8"
-          >
-            <span className="relative flex w-1.5 h-1.5">
-              <span className="absolute inset-0 rounded-full bg-gold animate-ping opacity-60" />
-              <span className="relative w-1.5 h-1.5 rounded-full bg-gold" />
-            </span>
-            Reserva en línea · Sin esperas
-          </motion.div>
+          {showBadge && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-edge/60 bg-card/60 backdrop-blur text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] text-ink-2 mb-8"
+            >
+              <span className="relative flex w-1.5 h-1.5">
+                <span className="absolute inset-0 rounded-full bg-gold animate-ping opacity-60" />
+                <span className="relative w-1.5 h-1.5 rounded-full bg-gold" />
+              </span>
+              {badge || 'Reserva en línea · Sin esperas'}
+            </motion.div>
+          )}
 
           {/* Headline */}
           <motion.h1

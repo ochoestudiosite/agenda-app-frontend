@@ -227,9 +227,13 @@ export default function BrandTokensApplier() {
     tag.textContent = [
       d.fonts?.heading ? `h1, h2, h3, h4, .font-display { font-family: var(--font-heading) !important; }` : '',
       d.fonts?.body    ? `body, p, span, a, button, input { font-family: var(--font-body); }` : '',
-      d.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl { border-radius: var(--radius) !important; }` : '',
-      d.button_style === 'pill'  ? `button { border-radius: 9999px !important; }` : '',
-      d.button_style === 'sharp' ? `button { border-radius: 6px !important; }`    : '',
+      d.border_radius != null ? `.card, .rounded-2xl, .rounded-3xl, .landing-card-shape { border-radius: var(--radius) !important; }` : '',
+      d.button_style === 'pill'    ? `button { border-radius: 9999px !important; }` : '',
+      d.button_style === 'sharp'   ? `button { border-radius: 6px !important; }`    : '',
+      // 'rounded' (soft) needs its own explicit value too — several CTA buttons
+      // hard-code Tailwind's rounded-full class, which made 'rounded' visually
+      // identical to 'pill' unless we override it here as well.
+      d.button_style === 'rounded' ? `button { border-radius: 14px !important; }`   : '',
     ].filter(Boolean).join('\n');
   }, [styleKey, designJSON]);
 

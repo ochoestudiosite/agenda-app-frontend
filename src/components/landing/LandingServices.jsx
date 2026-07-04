@@ -8,7 +8,7 @@ import { useConfig } from '../../hooks/useConfig';
 
 const VISIBLE_DESKTOP = 6;
 
-export default function LandingServices({ services = [], customServices, useCustom, title, subtitle, subtitleAccent, buttonText, linkText }) {
+export default function LandingServices({ services = [], title, subtitle, subtitleAccent, buttonText, linkText }) {
   const allServices = services.length > 0 ? services : [
         { name: 'Corte Premium',      duration: 45, price: 450, description: 'Servicio de corte completo con lavado y estilizado.' },
         { name: 'Barba de Lujo',      duration: 30, price: 300, description: 'Perfilado de barba con toalla caliente y aceites esenciales.' },
@@ -69,9 +69,13 @@ export default function LandingServices({ services = [], customServices, useCust
           accent={subtitleAccent}
           fallback={<>Diseñados para superar<br /><span className="text-ink-3">tus expectativas.</span></>}
           right={
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+              <Link to="/agendar" className="hidden sm:inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-2 hover:text-ink transition-colors group shrink-0">
+                {linkText || 'Ver todos los servicios'}
+                <ArrowUpRight size={13} strokeWidth={2.4} className="text-ink-3 group-hover:text-ink transition-colors" />
+              </Link>
               {needsPagination && (
-                <div className="hidden md:flex items-center gap-2 mr-2">
+                <div className="hidden md:flex items-center gap-2">
                   <IconNav onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
                     <ChevronLeft size={16} />
                   </IconNav>
@@ -136,7 +140,7 @@ function ServiceCard({ service, i, buttonText }) {
       transition={{ delay: Math.min(i * 0.05, 0.3), duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
       className="group"
     >
-      <Link to="/agendar" className="block rounded-[28px] overflow-hidden">
+      <Link to="/agendar" className="block rounded-[28px] landing-card-shape overflow-hidden">
         <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full bg-raised">
 
           {/* Placeholder — siempre visible mientras carga o si no hay imagen */}

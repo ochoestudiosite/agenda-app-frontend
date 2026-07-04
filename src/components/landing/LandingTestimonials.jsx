@@ -18,7 +18,7 @@ function initials(name = '') {
 function Card({ t }) {
   return (
     <figure
-      className="w-72 sm:w-80 shrink-0 flex flex-col gap-4 p-6 rounded-[20px] border border-section-contrast-text/10 bg-section-contrast-text/[0.05]"
+      className="w-72 sm:w-80 shrink-0 flex flex-col gap-4 p-6 rounded-[20px] landing-card-shape border border-section-contrast-text/10 bg-section-contrast-text/[0.05]"
     >
       {/* Stars */}
       <div className="flex gap-0.5">

@@ -11,7 +11,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import React from 'react'
 
 // ---------------------------------------------------------------------------
@@ -20,8 +21,18 @@ import React from 'react'
 
 vi.mock('lucide-react', () => {
   const icon = () => <span data-testid="icon" />
-  return { Send: icon, MessageSquare: icon, ArrowUpRight: icon }
+  return { Send: icon, MessageSquare: icon, ArrowUpRight: icon, Check: icon }
 })
+
+const mockSubscribeNewsletter = vi.fn()
+vi.mock('../services/api.js', () => ({
+  api: { subscribeNewsletter: (...args) => mockSubscribeNewsletter(...args) },
+}))
+
+const mockToast = vi.fn()
+vi.mock('../components/ui/Toast.jsx', () => ({
+  useToast: () => mockToast,
+}))
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -119,5 +130,107 @@ describe('LandingContact — tagline', () => {
   it('shows custom tagline from socials', async () => {
     await act(async () => { await renderContact({ socials: FULL_SOCIALS }) })
     expect(document.body.textContent).toContain('Calidad y estilo en cada visita.')
+  })
+})
+
+describe('LandingContact — footer "Explorar" links (config-driven visibility)', () => {
+  it('shows Servicios/Equipo/Ubicación links by default (config = {})', async () => {
+    await act(async () => { await renderContact({ socials: FULL_SOCIALS, config: {} }) })
+    const body = document.body.textContent
+    expect(body).toContain('Servicios')
+    expect(body).toContain('Equipo')
+    expect(body).toContain('Ubicación')
+  })
+
+  it('hides the Testimoniales link by default (config = {}) — section is opt-in and not rendered on the page', async () => {
+    await act(async () => { await renderContact({ socials: FULL_SOCIALS, config: {} }) })
+    expect(document.body.textContent).not.toContain('Testimoniales')
+  })
+
+  it('shows the Testimoniales link once explicitly enabled (visible: true)', async () => {
+    await act(async () => {
+      await renderContact({ socials: FULL_SOCIALS, config: { testimonials_section: { visible: true } } })
+    })
+    expect(document.body.textContent).toContain('Testimoniales')
+  })
+
+  it('hides Servicios link when explicitly disabled (visible: false)', async () => {
+    await act(async () => {
+      await renderContact({ socials: FULL_SOCIALS, config: { services_section: { visible: false } } })
+    })
+    expect(document.body.textContent).not.toContain('Servicios')
+  })
+})
+
+describe('LandingContact — newsletter signup (real backend wiring)', () => {
+  beforeEach(() => {
+    mockSubscribeNewsletter.mockReset()
+    mockToast.mockReset()
+  })
+
+  it('submitting a valid email calls api.subscribeNewsletter with that email', async () => {
+    mockSubscribeNewsletter.mockResolvedValue({ success: true })
+    const user = userEvent.setup({ delay: null })
+    await act(async () => { await renderContact({ socials: FULL_SOCIALS }) })
+
+    const input = screen.getByPlaceholderText('tu@email.com')
+    fireEvent.change(input, { target: { value: 'cliente@example.com' } })
+    await user.click(screen.getByRole('button', { name: /suscribirme/i }))
+
+    await waitFor(() => {
+      expect(mockSubscribeNewsletter).toHaveBeenCalledWith('cliente@example.com')
+    })
+  })
+
+  it('shows a confirmation message and hides the form after a successful subscribe', async () => {
+    mockSubscribeNewsletter.mockResolvedValue({ success: true })
+    const user = userEvent.setup({ delay: null })
+    await act(async () => { await renderContact({ socials: FULL_SOCIALS }) })
+
+    const input = screen.getByPlaceholderText('tu@email.com')
+    fireEvent.change(input, { target: { value: 'cliente@example.com' } })
+    await user.click(screen.getByRole('button', { name: /suscribirme/i }))
+
+    await waitFor(() => {
+      expect(document.body.textContent).toContain('¡Listo!')
+    })
+    expect(screen.queryByPlaceholderText('tu@email.com')).toBeNull()
+  })
+
+  it('shows a consent notice with the business name next to the form', async () => {
+    await act(async () => { await renderContact({ socials: FULL_SOCIALS }) })
+    expect(document.body.textContent).toContain('Al suscribirte aceptas recibir comunicaciones de Salón Elite.')
+  })
+
+  it('hides the consent notice after a successful subscription (form is replaced by the confirmation)', async () => {
+    mockSubscribeNewsletter.mockResolvedValue({ success: true })
+    const user = userEvent.setup({ delay: null })
+    await act(async () => { await renderContact({ socials: FULL_SOCIALS }) })
+
+    const input = screen.getByPlaceholderText('tu@email.com')
+    fireEvent.change(input, { target: { value: 'cliente@example.com' } })
+    await user.click(screen.getByRole('button', { name: /suscribirme/i }))
+
+    await waitFor(() => {
+      expect(document.body.textContent).not.toContain('Al suscribirte aceptas')
+    })
+  })
+
+  it('shows an error toast when the API call fails, and keeps the form visible', async () => {
+    // Value must be a syntactically valid email — otherwise the native
+    // type="email" + required constraint blocks submission before onSubmit
+    // ever fires, which would test the browser, not our error handling.
+    mockSubscribeNewsletter.mockRejectedValue(new Error('Correo inválido'))
+    const user = userEvent.setup({ delay: null })
+    await act(async () => { await renderContact({ socials: FULL_SOCIALS }) })
+
+    const input = screen.getByPlaceholderText('tu@email.com')
+    fireEvent.change(input, { target: { value: 'cliente@example.com' } })
+    await user.click(screen.getByRole('button', { name: /suscribirme/i }))
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith('Correo inválido', 'error')
+    })
+    expect(screen.getByPlaceholderText('tu@email.com')).toBeTruthy()
   })
 })

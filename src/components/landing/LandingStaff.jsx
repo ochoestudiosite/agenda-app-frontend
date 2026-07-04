@@ -7,7 +7,7 @@ import { SectionHeader } from './LandingServices';
 const VISIBLE_DESKTOP = 6;
 const MAX_PILLS = 2;
 
-export default function LandingStaff({ staff = [], services = [], customStaff, useCustom, title, subtitle, subtitleAccent }) {
+export default function LandingStaff({ staff = [], services = [], title, subtitle, subtitleAccent }) {
   const allStaff = staff.length > 0
       ? staff.map(s => ({
           name: s.name,
@@ -136,7 +136,7 @@ function StaffCard({ member, services, i }) {
       className="group"
     >
       <Link to="/agendar" className="block">
-        <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] overflow-hidden bg-raised">
+        <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] landing-card-shape overflow-hidden bg-raised">
 
           {/* Photo */}
           {/* Placeholder — siempre visible mientras carga o si no hay imagen */}

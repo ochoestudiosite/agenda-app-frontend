@@ -145,3 +145,21 @@ describe('LandingServices — pagination', () => {
     expect(hasFirst6).toBeTruthy()
   })
 })
+
+describe('LandingServices — "Ver todos los servicios" link (linkText)', () => {
+  it('shows the default link text when linkText is not provided', async () => {
+    await act(async () => { await renderServices() })
+    expect(document.body.textContent).toContain('Ver todos los servicios')
+  })
+
+  it('shows custom linkText when provided', async () => {
+    await act(async () => { await renderServices({ linkText: 'Explora el catálogo completo' }) })
+    expect(document.body.textContent).toContain('Explora el catálogo completo')
+  })
+
+  it('the link points to /agendar', async () => {
+    await act(async () => { await renderServices() })
+    const links = document.querySelectorAll('a[href="/agendar"]')
+    expect(links.length).toBeGreaterThan(0)
+  })
+})

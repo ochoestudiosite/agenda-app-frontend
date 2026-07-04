@@ -256,7 +256,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
             {/* ── Info column ── */}
             <div className="lg:col-span-5 flex flex-col">
               {/* Branch image (from catalogue) or name pill (multi-branch) */}
-              <div className="mb-6 relative aspect-[16/7] w-full rounded-[24px] overflow-hidden bg-raised">
+              <div className="mb-6 relative aspect-[16/7] w-full rounded-[24px] landing-card-shape overflow-hidden bg-raised">
                 {/* Placeholder — siempre visible mientras carga o si no hay imagen */}
                 <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
                   <span className="font-display text-6xl font-bold text-gold/20 select-none tracking-tight">
@@ -291,7 +291,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
 
             {/* ── Map column ── */}
             <div className="lg:col-span-7">
-              <div className="relative aspect-[16/9] sm:aspect-[4/3] rounded-[36px] overflow-hidden bg-raised border border-edge/40 shadow-[0_24px_60px_rgba(0,0,0,0.10)]">
+              <div className="relative aspect-[16/9] sm:aspect-[4/3] rounded-[36px] landing-card-shape overflow-hidden bg-raised border border-edge/40 shadow-[0_24px_60px_rgba(0,0,0,0.10)]">
                 {loc.map_embed_url ? (
                   <a
                     href={effectiveDirectionsUrl || '#ubicacion'}
