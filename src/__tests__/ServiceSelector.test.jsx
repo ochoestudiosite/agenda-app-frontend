@@ -44,6 +44,7 @@ vi.mock('../utils/formatters', () => ({
   formatServicePrice: (svc) => `$${svc.price ?? 0}`,
   formatCombinedPrice: (svcs) => `$${svcs.reduce((sum, s) => sum + (s.price ?? 0), 0)}`,
   promoSavings: () => 0,
+  promoEndsLabel: () => null,
   formatPrice: (p) => `$${p ?? 0}`,
 }))
 
@@ -214,5 +215,39 @@ describe('ServiceSelector — max 5 services', () => {
     })
     await renderServiceSelector()
     expect(screen.getByText(/máximo alcanzado/i)).toBeTruthy()
+  })
+})
+
+// ============================================================================
+// 7. Promo badge — regression: fixed_amount must show the discounted amount,
+// not a bare "Promo" label (was reimplemented inline instead of reusing
+// PromoBadge from ui/PromoPrice, and diverged for the fixed_amount branch).
+// ============================================================================
+
+describe('ServiceSelector — promo badge', () => {
+  it('percent promo shows "−X%"', async () => {
+    mockUseServices.mockReturnValue({
+      data: { services: [{ ...MOCK_SERVICES[0], promo: { discountType: 'percent', discountValue: 20, discountAmount: 50, finalPrice: 200 } }] },
+      isLoading: false,
+      isError: false,
+    })
+    await renderServiceSelector()
+    expect(screen.getByText('−20%')).toBeTruthy()
+  })
+
+  it('fixed_amount promo shows the discounted amount, not a bare "Promo" label', async () => {
+    mockUseServices.mockReturnValue({
+      data: { services: [{ ...MOCK_SERVICES[0], promo: { discountType: 'fixed_amount', discountValue: 100, discountAmount: 100, finalPrice: 150 } }] },
+      isLoading: false,
+      isError: false,
+    })
+    await renderServiceSelector()
+    expect(screen.getByText('−$100')).toBeTruthy()
+    expect(screen.queryByText(/^Promo$/)).toBeNull()
+  })
+
+  it('no promo: no badge rendered', async () => {
+    await renderServiceSelector()
+    expect(screen.queryByText(/^−/)).toBeNull()
   })
 })

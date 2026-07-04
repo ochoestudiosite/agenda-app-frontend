@@ -4,6 +4,7 @@ import { useBooking } from '../../context/BookingContext';
 import { formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, promoEndsLabel, toTitleCase } from '../../utils/formatters';
 import { BackButton } from './SpecialistSelector';
 import EntityAvatar from '../ui/EntityAvatar';
+import { PromoBadge } from '../ui/PromoPrice';
 
 export default function ServiceSelector() {
   const { data, isLoading, isError } = useServices();
@@ -146,11 +147,7 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
           </p>
           {service.promo && (
             <>
-              <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide bg-gold text-on-gold">
-                {service.promo.discountType === 'percent'
-                  ? `−${Number(service.promo.discountValue)}%`
-                  : 'Promo'}
-              </span>
+              <PromoBadge discountType={service.promo.discountType} discountValue={service.promo.discountValue} />
               {promoEndsLabel(service.promo.endsAt, bizTz) && (
                 <span className="shrink-0 text-[11px] font-semibold text-gold/80">
                   {promoEndsLabel(service.promo.endsAt, bizTz)}

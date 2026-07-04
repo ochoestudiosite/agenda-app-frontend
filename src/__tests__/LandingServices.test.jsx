@@ -51,6 +51,7 @@ vi.mock('../utils/formatters', () => ({
     return `$${service?.price}`
   },
   promoEndsLabel: () => null,
+  formatPrice: (p) => `$${p ?? 0}`,
 }))
 
 // ---------------------------------------------------------------------------
@@ -161,5 +162,30 @@ describe('LandingServices — "Ver todos los servicios" link (linkText)', () => 
     await act(async () => { await renderServices() })
     const links = document.querySelectorAll('a[href="/agendar"]')
     expect(links.length).toBeGreaterThan(0)
+  })
+})
+
+// ============================================================================
+// Promo badge — regression: fixed_amount must show the discounted amount, not
+// a bare "Promo" label (was reimplemented inline instead of reusing the shared
+// promoConceptLabel from ui/PromoPrice, and diverged for the fixed_amount branch).
+// ============================================================================
+
+describe('LandingServices — promo badge', () => {
+  it('percent promo shows "−X% Promo"', async () => {
+    const svc = [{ ...SERVICES[0], promo: { discountType: 'percent', discountValue: 20, discountAmount: 90, finalPrice: 360 } }]
+    await act(async () => { await renderServices({ services: svc }) })
+    expect(document.body.textContent).toContain('−20% Promo')
+  })
+
+  it('fixed_amount promo shows the discounted amount, not a bare "Promo" label', async () => {
+    const svc = [{ ...SERVICES[0], promo: { discountType: 'fixed_amount', discountValue: 100, discountAmount: 100, finalPrice: 350 } }]
+    await act(async () => { await renderServices({ services: svc }) })
+    expect(document.body.textContent).toContain('−$100 Promo')
+  })
+
+  it('no promo: no promo badge text rendered', async () => {
+    await act(async () => { await renderServices({ services: SERVICES.slice(0, 1) }) })
+    expect(document.body.textContent).not.toContain('Promo')
   })
 })

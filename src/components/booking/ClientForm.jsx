@@ -235,8 +235,13 @@ export default function ClientForm() {
         ...(phoneErr(cleanPhone) ? {} : { clientPhone: cleanPhone }),
       });
       if (!res.valid) {
+        // res.pricing solo falta en el caso 'invalid' (anti-enumeración); para
+        // un código real que no aplica (slot/new_clients_only/per_client_limit/
+        // not_eligible) el backend SÍ manda el pricing recalculado (promo
+        // automática de catálogo vigente, si hay) — conservarlo en vez de
+        // forzar el precio de catálogo inicial, potencialmente desactualizado.
         setAppliedCode(null);
-        setServerPricing(null);
+        setServerPricing(res.pricing ?? null);
         setPromoStatus({ ok: false, message: res.message || 'Código no válido o expirado.' });
       } else if (res.codeApplied === false) {
         // Code is valid but a better catalog promo is already applied — don't mark

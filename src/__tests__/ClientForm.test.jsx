@@ -39,9 +39,12 @@ vi.mock('../hooks/useConfig.js', () => ({
   useConfig: () => ({ data: mockConfigData }),
 }))
 
+const mockValidatePromo = vi.fn()
+
 vi.mock('../services/api.js', () => ({
   api: {
     createGroupAppointment: mockGroupMutateAsync,
+    validatePromo: (...args) => mockValidatePromo(...args),
   },
 }))
 
@@ -559,5 +562,69 @@ describe('ClientForm — OTP resend cooldown (F-005)', () => {
     expect(result.current).toBe(0)
 
     vi.useRealTimers()
+  })
+})
+
+// ============================================================================
+// Código promocional — handleApplyPromo
+// ============================================================================
+
+describe('ClientForm — código promocional', () => {
+  beforeEach(() => {
+    mockConfigData = { time_format: '12h', branches: [], promotions_enabled: true }
+  })
+
+  async function openPromoField() {
+    const user = userEvent.setup()
+    await user.click(screen.getByText(/¿tienes un código promocional\?/i))
+    return user
+  }
+
+  it('código válido y aplicado: muestra el código y el mensaje de ahorro', async () => {
+    mockValidatePromo.mockResolvedValue({
+      valid: true, codeApplied: true,
+      pricing: { totalList: 250, totalDiscount: 25, totalFinal: 225, items: [
+        { listPrice: 250, discountAmount: 25, finalPrice: 225, promoName: 'Verano', promoType: 'percent', promoValue: 10 },
+      ] },
+    })
+    await renderForm()
+    const user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'VERANO10')
+    await user.click(screen.getByRole('button', { name: /aplicar/i }))
+
+    await waitFor(() => expect(screen.getByText('VERANO10')).toBeTruthy())
+    expect(screen.getByText(/código aplicado/i)).toBeTruthy()
+  })
+
+  it('código real pero no aplica (per_client_limit): conserva el pricing autoritativo en vez de descartarlo', async () => {
+    // Regresión: antes, cualquier `!res.valid` forzaba serverPricing a null,
+    // aunque el backend sí mandó `pricing` (promo automática de catálogo
+    // vigente) para este caso — el resumen perdía el ahorro sin motivo.
+    mockValidatePromo.mockResolvedValue({
+      valid: false, codeApplied: false, reason: 'per_client_limit',
+      message: 'Ya usaste este código el máximo de veces permitido.',
+      pricing: { totalList: 250, totalDiscount: 20, totalFinal: 230, items: [
+        { listPrice: 250, discountAmount: 20, finalPrice: 230, promoName: 'Auto10', promoType: 'percent', promoValue: 10 },
+      ] },
+    })
+    await renderForm()
+    const user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'USADO')
+    await user.click(screen.getByRole('button', { name: /aplicar/i }))
+
+    await waitFor(() => expect(screen.getByText(/ya usaste este código/i)).toBeTruthy())
+    // El pricing autoritativo (promo automática) se preservó → se renderiza el ahorro.
+    expect(screen.getByText(/ahorras/i)).toBeTruthy()
+  })
+
+  it('código inexistente (anti-enumeración, sin pricing): no rompe y no muestra ahorro', async () => {
+    mockValidatePromo.mockResolvedValue({ valid: false, message: 'Código no válido o expirado.' })
+    await renderForm()
+    const user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'NOEXISTE')
+    await user.click(screen.getByRole('button', { name: /aplicar/i }))
+
+    await waitFor(() => expect(screen.getByText(/código no válido o expirado/i)).toBeTruthy())
+    expect(screen.queryByText(/ahorras/i)).toBeNull()
   })
 })

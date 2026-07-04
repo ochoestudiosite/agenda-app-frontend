@@ -5,6 +5,7 @@ import { Sparkles, ArrowUpRight, ChevronLeft, ChevronRight, Clock } from 'lucide
 import { Link } from 'react-router-dom';
 import { formatServicePrice, promoEndsLabel } from '../../utils/formatters';
 import { useConfig } from '../../hooks/useConfig';
+import { promoConceptLabel } from '../ui/PromoPrice';
 
 const VISIBLE_DESKTOP = 6;
 
@@ -190,9 +191,7 @@ function ServiceCard({ service, i, buttonText }) {
               {service.promo && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide
                                  bg-gold text-on-gold shadow-[0_4px_16px_rgba(0,0,0,0.25)]">
-                  {service.promo.discountType === 'percent'
-                    ? `−${Number(service.promo.discountValue)}% Promo`
-                    : 'Promo'}
+                  {promoConceptLabel({ discountType: service.promo.discountType, discountValue: service.promo.discountValue })} Promo
                 </span>
               )}
               {service.promo && promoEndsLabel(service.promo.endsAt, bizTz) && (
