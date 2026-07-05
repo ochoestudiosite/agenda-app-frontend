@@ -172,6 +172,40 @@ describe('ServiceSelector — toggle service', () => {
 })
 
 // ============================================================================
+// 4b. ARIA state — aria-pressed (selected) / aria-disabled (max reached)
+// ============================================================================
+
+describe('ServiceSelector — ARIA state', () => {
+  it('marks the selected service card with aria-pressed="true" and others "false"', async () => {
+    mockState = { ...mockState, services: [MOCK_SERVICES[0]] }
+    await renderServiceSelector()
+
+    const selectedCard = screen.getByText(/corte de cabello/i).closest('[role="button"]')
+    const otherCard = screen.getByText(/arreglo de barba/i).closest('[role="button"]')
+    expect(selectedCard).toHaveAttribute('aria-pressed', 'true')
+    expect(otherCard).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('marks unselected cards as aria-disabled once the 5-service max is reached', async () => {
+    const fiveServices = [1, 2, 3, 4, 5].map(i => ({
+      id: `svc${i}`, dbId: i, name: `Servicio ${i}`, duration: 30, price: 100 * i,
+    }))
+    mockState = { ...mockState, services: fiveServices }
+    mockUseServices.mockReturnValue({
+      data: { services: [...MOCK_SERVICES, ...fiveServices] },
+      isLoading: false,
+      isError: false,
+    })
+    await renderServiceSelector()
+
+    const untouchedCard = screen.getByText(/corte de cabello/i).closest('[role="button"]')
+    const selectedCard = screen.getByText(/^Servicio 1$/).closest('[role="button"]')
+    expect(untouchedCard).toHaveAttribute('aria-disabled', 'true')
+    expect(selectedCard).toHaveAttribute('aria-disabled', 'false')
+  })
+})
+
+// ============================================================================
 // 5. Selected state — "Continuar" button
 // ============================================================================
 

@@ -3,6 +3,7 @@ import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { toTitleCase } from '../../utils/formatters';
 import EntityAvatar from '../ui/EntityAvatar';
+import ExpandableText from '../ui/ExpandableText';
 
 export default function SpecialistSelector() {
   const { data, isLoading, isFetching, isError } = useServices();
@@ -175,10 +176,19 @@ function SpecialistSkeleton() {
 }
 
 function SpecialistCard({ specialist, onSelect, delay }) {
-  return (
-    <button
-      onClick={onSelect}
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect();
+    }
+  }
 
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={handleKeyDown}
       className="group flex sm:flex-col items-start sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge dark:border-white/[0.08] bg-card
                  text-left sm:text-center hover:border-gold/50 dark:hover:border-gold/70 hover:shadow-card
                  active:scale-[0.99] transition-all duration-240 cursor-pointer animate-fade-up
@@ -198,13 +208,13 @@ function SpecialistCard({ specialist, onSelect, delay }) {
           {toTitleCase(specialist.name)}
         </p>
         {specialist.specialty && (
-          <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{specialist.specialty}</p>
+          <ExpandableText text={specialist.specialty} className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug" />
         )}
       </div>
       <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
       </svg>
-    </button>
+    </div>
   );
 }
 

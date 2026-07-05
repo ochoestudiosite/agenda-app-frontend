@@ -10,9 +10,11 @@
  *   - Group mode: shows "Servicio X de N" and dispatches ASSIGN_SPECIALIST
  *   - Back button dispatches GO_BACK
  *   - Branch filter: specialists are filtered by branchIds when a branch is selected
+ *   - Long specialty text does not dispatch SET_SPECIALIST when its "Ver más"
+ *     toggle is clicked (ExpandableText nested inside the card)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
@@ -280,5 +282,35 @@ describe('SpecialistSelector — branch filter', () => {
     // María has serviceIds=[3] and branchIds=[] → appears for any branch
     await renderSpecialistSelector()
     expect(screen.queryByText(/María López/i)).toBeTruthy()
+  })
+})
+
+// ============================================================================
+// 8. ExpandableText integration — specialty clamp toggle must not select
+// ============================================================================
+
+describe('SpecialistSelector — ExpandableText integration', () => {
+  const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight')
+  const originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
+
+  afterEach(() => {
+    if (originalScrollHeight) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', originalScrollHeight)
+    if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalClientHeight)
+  })
+
+  it('clicking "Ver más" on a long specialty does not dispatch SET_SPECIALIST', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: 80 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 32 })
+
+    const user = userEvent.setup()
+    await renderSpecialistSelector()
+
+    const [toggle] = screen.getAllByRole('button', { name: 'Ver más' })
+    await user.click(toggle)
+
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'SET_SPECIALIST' })
+    )
+    expect(screen.getAllByRole('button', { name: 'Ver menos' }).length).toBeGreaterThan(0)
   })
 })

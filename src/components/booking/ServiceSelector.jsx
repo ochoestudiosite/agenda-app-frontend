@@ -5,6 +5,7 @@ import { formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, pro
 import { BackButton } from './SpecialistSelector';
 import EntityAvatar from '../ui/EntityAvatar';
 import { PromoBadge } from '../ui/PromoPrice';
+import ExpandableText from '../ui/ExpandableText';
 
 export default function ServiceSelector() {
   const { data, isLoading, isError } = useServices();
@@ -109,9 +110,21 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
   const bizTz    = config?.business_timezone ?? null;
   const hasImage = Boolean(service.imageUrl);
 
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggle();
+    }
+  }
+
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
+      aria-disabled={isDisabled}
       onClick={onToggle}
+      onKeyDown={handleKeyDown}
       className={`w-full text-left group flex items-center gap-4 p-4 rounded-2xl border
                   transition-all duration-240 cursor-pointer animate-fade-up
                   focus:outline-none focus:ring-2 focus:ring-gold/30
@@ -140,8 +153,8 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <p className={`font-semibold text-[0.9375rem] transition-colors duration-160 truncate
+        <div className="flex items-start gap-2 min-w-0">
+          <p className={`font-semibold text-[0.9375rem] leading-snug transition-colors duration-160
                          ${isSelected ? 'text-gold' : 'text-ink group-hover:text-gold'}`}>
             {toTitleCase(service.name)}
           </p>
@@ -157,7 +170,7 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
           )}
         </div>
         {service.description && (
-          <p className="text-xs text-ink-3 mt-0.5 leading-snug line-clamp-2">{service.description}</p>
+          <ExpandableText text={service.description} className="text-xs text-ink-3 mt-0.5 leading-snug" />
         )}
         {hasImage && (
           <span className="inline-flex items-center gap-1 mt-1.5 text-[12px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
@@ -187,6 +200,6 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }

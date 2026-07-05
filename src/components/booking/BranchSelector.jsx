@@ -1,5 +1,6 @@
 import { useBooking } from '../../context/BookingContext';
 import { toTitleCase } from '../../utils/formatters';
+import ExpandableText from '../ui/ExpandableText';
 
 export default function BranchSelector({ branches }) {
   const { dispatch } = useBooking();
@@ -16,9 +17,14 @@ export default function BranchSelector({ branches }) {
       </div>
       <div className="space-y-2.5">
         {branches.map((branch, i) => (
-          <button
+          <div
             key={branch.id}
+            role="button"
+            tabIndex={0}
             onClick={() => select(branch)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(branch); }
+            }}
             className="w-full text-left group flex items-center gap-4 p-5 rounded-2xl border border-edge bg-card
                        hover:border-gold/40 hover:shadow-card active:scale-[0.99]
                        transition-all duration-240 cursor-pointer animate-fade-up
@@ -40,7 +46,7 @@ export default function BranchSelector({ branches }) {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160 truncate">
+              <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-160 leading-snug">
                 {toTitleCase(branch.name)}
               </p>
               {branch.address && (
@@ -49,7 +55,9 @@ export default function BranchSelector({ branches }) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                   </svg>
-                  <p className="text-xs text-ink-3 leading-snug line-clamp-2">{branch.address}</p>
+                  <div className="min-w-0 flex-1">
+                    <ExpandableText text={branch.address} className="text-xs text-ink-3 leading-snug" />
+                  </div>
                 </div>
               )}
               {branch.phone && (
@@ -62,7 +70,7 @@ export default function BranchSelector({ branches }) {
               )}
             </div>
             <ChevronRight />
-          </button>
+          </div>
         ))}
       </div>
     </div>
