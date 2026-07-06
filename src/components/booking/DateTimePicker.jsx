@@ -116,9 +116,19 @@ export default function DateTimePicker() {
   const leadMins           = liveConfig.leadMins   || config?.booking_lead_mins  || 60;
   const bufferMins         = liveConfig.bufferMins || 0;
 
-  const daysClosed = bizHours.length > 0
-    ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
-    : [0];
+  // M-05 (auditoría 2026-07-05): con especialista(s) seleccionados y
+  // blocked-dates cargado, los weekdays cerrados llegan STAFF-AWARE en
+  // blockedDates ('recurring:N') — un especialista con horario propio puede
+  // trabajar días que el negocio cierra, así que el check local de
+  // business_hours se omite (era el que ocultaba esos días válidos). Mientras
+  // blocked-dates no carga, se conserva como fallback conservador.
+  const staffAwareWeekdays = !!blockedData &&
+    (groupMode ? !!groupSpecialistIds : !!state.specialist?.id);
+  const daysClosed = staffAwareWeekdays
+    ? []
+    : (bizHours.length > 0
+        ? bizHours.filter(h => !h.is_open).map(h => h.day_of_week)
+        : [0]);
 
   function getDayEntry(date) {
     if (!date) return null;
@@ -183,6 +193,7 @@ export default function DateTimePicker() {
       blockedDates,
       leadMins,
       maxAdvanceDays: maxAdvance,
+      ignoreClosedWeekdays: staffAwareWeekdays,
     });
     if (next) {
       autoSelectedRef.current = true;
@@ -206,6 +217,7 @@ export default function DateTimePicker() {
       blockedDates: [...blockedDates, ...skippedDatesRef.current],
       leadMins: 0,
       maxAdvanceDays: maxAdvance,
+      ignoreClosedWeekdays: staffAwareWeekdays,
     });
     if (next) {
       setSelectedDate(next);
@@ -233,6 +245,7 @@ export default function DateTimePicker() {
       blockedDates: [...blockedDates, ...skippedDatesRef.current],
       leadMins: 0,
       maxAdvanceDays: maxAdvance,
+      ignoreClosedWeekdays: staffAwareWeekdays,
     });
     if (next) {
       setSelectedDate(next);

@@ -63,10 +63,14 @@ export function isPastDateTime(dateStr, timeStr, tz) {
 // Salta: días pasados, días cerrados del negocio, fechas bloqueadas.
 // "Potencialmente disponible" = no estructuralmente bloqueado.
 // La verificación de slots ocupados ocurre al seleccionar la fecha.
-export function findNextAvailableDate({ tz, bizHours = [], blockedDates = [], leadMins = 60, maxAdvanceDays = 30 }) {
+export function findNextAvailableDate({ tz, bizHours = [], blockedDates = [], leadMins = 60, maxAdvanceDays = 30, ignoreClosedWeekdays = false }) {
   const { hour, minute, weekday } = nowPartsInTz(tz);
   const nowMins = hour * 60 + minute;
-  const closedDays = new Set(bizHours.filter(h => !h.is_open).map(h => h.day_of_week));
+  // M-05 (auditoría 2026-07-05): con especialista seleccionado, los weekdays
+  // cerrados llegan STAFF-AWARE en blockedDates ('recurring:N' desde
+  // /availability/blocked-dates) — un especialista con horario propio puede
+  // trabajar días que el negocio cierra, así que el check local se omite.
+  const closedDays = new Set(ignoreClosedWeekdays ? [] : bizHours.filter(h => !h.is_open).map(h => h.day_of_week));
 
   const todayEntry = bizHours.find(h => h.day_of_week === weekday);
   const closeMins = todayEntry ? (() => {
