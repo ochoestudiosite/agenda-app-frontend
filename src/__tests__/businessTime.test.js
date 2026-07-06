@@ -192,6 +192,40 @@ describe('findNextAvailableDate', () => {
     expect(result).toBeNull()
   })
 
+  // ─── M-05 (auditoría 2026-07-05): ignoreClosedWeekdays ─────────────────────
+  // Con especialista seleccionado, los weekdays cerrados llegan STAFF-AWARE en
+  // blockedDates ('recurring:N') — el check local de business_hours se omite
+  // para no ocultar días que el horario propio del especialista sí habilita.
+
+  it('M-05: ignoreClosedWeekdays=true no salta weekdays cerrados de business_hours', () => {
+    // Todo cerrado localmente, pero el backend staff-aware no bloqueó nada →
+    // el freelancer puede recibir citas mañana (hoy queda fuera por tooLate).
+    const result = findNextAvailableDate({
+      tz: 'America/Mexico_City', bizHours: ALL_CLOSED, blockedDates: [],
+      leadMins: 60, ignoreClosedWeekdays: true,
+    })
+    expect(result).not.toBeNull()
+    expect(result.getDate()).toBe(16)
+  })
+
+  it('M-05: ignoreClosedWeekdays=true SÍ respeta los recurring:N staff-aware del backend', () => {
+    // El backend marcó viernes (5) y sábado (6) como cerrados para ESTE staff
+    const result = findNextAvailableDate({
+      tz: 'America/Mexico_City', bizHours: ALL_CLOSED,
+      blockedDates: ['recurring:5', 'recurring:6'],
+      leadMins: 600, // tooLate → arranca en viernes 16 → salta a domingo 18
+      ignoreClosedWeekdays: true,
+    })
+    expect(result).not.toBeNull()
+    expect(result.getDay()).toBe(0)
+    expect(result.getDate()).toBe(18)
+  })
+
+  it('M-05: default (sin flag) conserva el comportamiento anterior', () => {
+    const result = findNextAvailableDate({ tz: 'America/Mexico_City', bizHours: ALL_CLOSED, blockedDates: [] })
+    expect(result).toBeNull()
+  })
+
   it('returns tomorrow when bizHours is empty (tooLate=true, no closed constraints)', () => {
     // empty bizHours → todayEntry=undefined → tooLate=true → starts from Jan 16
     // closedDays=empty → Jan 16 is valid immediately
