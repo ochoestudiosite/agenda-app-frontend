@@ -20,7 +20,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import React from 'react'
 
 async function renderPhone(props = {}) {
   const { default: PhoneInput } = await import('../components/ui/PhoneInput.jsx')

@@ -102,7 +102,6 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const busySlots       = availData?.busySlots || [];
   const bufferMins     = availData?.config?.bufferMins   || 0;
   const leadMins       = availData?.config?.leadMins     || 0;
-  const closeTime      = availData?.config?.closeTime    || '19:00';
   const staffBlocked   = availData?.staffBlocked   ?? null;
   const businessClosed = availData?.businessClosed ?? null;
 
@@ -492,7 +491,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
 // ── Reschedule step indicator — mirrors StepIndicator from /agendar ───────────
 
-function RescheduleStepIndicator({ reschedStep, isMulti, onBack }) {
+function RescheduleStepIndicator({ reschedStep, isMulti }) {
   const steps = isMulti
     ? [{ id: 'branch', label: 'Sucursal' }, { id: 'specialist', label: 'Especialista' }, { id: 'datetime', label: 'Horario' }]
     : [{ id: 'specialist', label: 'Especialista' }, { id: 'datetime', label: 'Horario' }];

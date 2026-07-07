@@ -89,7 +89,7 @@ describe('api.request — AbortSignal (F-007)', () => {
   it('aborts the fetch when the external signal fires after the fetch starts', async () => {
     const external = new AbortController()
 
-    fetchSpy.mockImplementation((_url, opts) => {
+    fetchSpy.mockImplementation((_url, _opts) => {
       // Simulate aborting the external signal while the fetch is in-flight
       external.abort()
       // The internal controller should now be aborted too
@@ -105,8 +105,12 @@ describe('api.request — AbortSignal (F-007)', () => {
   })
 
   it('throws TIMEOUT when no external signal and fetch hangs for 15s', async () => {
-    // fetch never resolves
-    fetchSpy.mockImplementation(() => new Promise(() => {}))
+    // fetch hangs until the internal AbortController fires, just like real fetch does
+    fetchSpy.mockImplementation((_url, opts) => new Promise((_resolve, reject) => {
+      opts?.signal?.addEventListener('abort', () => {
+        reject(new DOMException('Aborted', 'AbortError'))
+      }, { once: true })
+    }))
 
     const { api } = await import('../services/api.js')
     const promise = api.getConfig()
@@ -122,7 +126,7 @@ describe('api.request — AbortSignal (F-007)', () => {
     const external = new AbortController()
     external.abort()
 
-    fetchSpy.mockImplementation((_url, opts) => {
+    fetchSpy.mockImplementation((_url, _opts) => {
       const err = new DOMException('Aborted', 'AbortError')
       return Promise.reject(err)
     })

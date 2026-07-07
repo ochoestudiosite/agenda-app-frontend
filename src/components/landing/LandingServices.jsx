@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import * as LucideIcons from 'lucide-react';
 import { Sparkles, ArrowUpRight, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatServicePrice, promoEndsLabel } from '../../utils/formatters';
@@ -127,7 +126,6 @@ export default function LandingServices({ services = [], title, subtitle, subtit
 function ServiceCard({ service, i, buttonText }) {
   const { data: config } = useConfig();
   const bizTz     = config?.business_timezone ?? null;
-  const IconComp  = service.icon ? (LucideIcons[service.icon] || Sparkles) : Sparkles;
   const duration  = service.duration || service.duration_mins;
   const priceType = service.priceType || service.price_type || 'fixed';
   const showPrice = priceType !== 'ask' && service.price != null;

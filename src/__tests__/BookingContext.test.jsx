@@ -15,7 +15,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, act } from '@testing-library/react'
-import React from 'react'
 import { BookingProvider, useBooking, isGroupMode } from '../context/BookingContext.jsx'
 
 // ---------------------------------------------------------------------------

@@ -38,7 +38,7 @@ export default function Manage() {
   useEffect(() => {
     if (data && !prevData.current) toast('Cita encontrada', 'success');
     prevData.current = data;
-  }, [data]);
+  }, [data, toast]);
 
   function handleSearch(code) {
     setLocalAppt(null);

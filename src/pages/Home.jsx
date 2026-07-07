@@ -123,7 +123,6 @@ export default function Home() {
   // the App level so /agendar and /gestionar inherit the same brand. This
   // page-level effect is only for ad-hoc preview overrides via postMessage —
   // see setPreviewConfig below.
-  const design = bc.design || {};
 
   // Si ya tenemos la config y la landing está desactivada por el plan (SaaS tiering),
   // redirigimos inmediatamente de forma silenciosa y transparente a la vista de reservas.

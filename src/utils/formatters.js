@@ -112,7 +112,7 @@ function toMins(t) {
 // bufferMins: rest/cleaning time added to the slot step.
 //   step = intervalMins + bufferMins, so slots are spaced to account for the buffer.
 //   e.g. interval=30, buffer=10 → step=40 → slots at 9:00, 9:40, 10:20, 11:00…
-export function generateSlots(openTime, closeTime, serviceDuration = 30, intervalMins = 30, bufferMins = 0) {
+export function generateSlots(openTime, closeTime, _serviceDuration = 30, intervalMins = 30, bufferMins = 0) {
   const start = toMins(openTime);
   const end   = toMins(closeTime);
   const step  = intervalMins + bufferMins;

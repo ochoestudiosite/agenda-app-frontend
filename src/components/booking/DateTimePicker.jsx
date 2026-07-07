@@ -72,7 +72,7 @@ export default function DateTimePicker() {
     () => groupMode
       ? state.serviceAssignments.map(a => ({ serviceId: a.service.id, specialistId: a.specialist.id }))
       : null,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [groupMode, state.serviceAssignments]
   );
   const serviceIdsParam = !groupMode && selectedServices.length > 0

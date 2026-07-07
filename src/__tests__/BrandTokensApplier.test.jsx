@@ -16,7 +16,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, act } from '@testing-library/react'
-import React from 'react'
 
 vi.mock('../hooks/useConfig', () => ({
   useConfig: vi.fn(),

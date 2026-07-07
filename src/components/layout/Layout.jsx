@@ -24,7 +24,6 @@ export default function Layout({ children }) {
     try { landingConfig = JSON.parse(landingConfig); } catch { landingConfig = {}; }
   }
   const footerBizName = landingConfig?.navbar?.business_name || bizName;
-  const copyrightText = landingConfig?.contact_section?.copyright_text || '';
 
   const isHome = pathname === '/';
 
@@ -82,7 +81,6 @@ export default function Layout({ children }) {
           <LandingBottomBar
             businessName={footerBizName}
             socials={landingConfig?.contact_section}
-            config={landingConfig}
             linkBase="/" />
         </footer>
       </div>

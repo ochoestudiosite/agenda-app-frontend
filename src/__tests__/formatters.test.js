@@ -32,7 +32,6 @@ import { describe, it, expect } from 'vitest'
 import {
   formatDate,
   formatTime,
-  formatPrice,
   formatServicePrice,
   formatCombinedPrice,
   capitalize,

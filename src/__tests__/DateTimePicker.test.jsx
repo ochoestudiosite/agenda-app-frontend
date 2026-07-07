@@ -9,8 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
-import React from 'react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 
 // ── Freeze time: Monday 07:00 — all 9:00–18:00 slots are future ──────────────
 beforeAll(() => {

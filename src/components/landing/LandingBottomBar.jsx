@@ -1,4 +1,4 @@
-export default function LandingContact({ businessName, socials = {}, config = {} }) {
+export default function LandingContact({ businessName, socials = {} }) {
   const brandTitle = socials.brand_title || businessName || 'Cita24';
   const copyrightText = socials.copyright_text || '';
 
