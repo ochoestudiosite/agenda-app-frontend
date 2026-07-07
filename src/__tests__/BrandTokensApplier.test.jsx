@@ -29,24 +29,36 @@ function styleTagContent() {
   return document.getElementById('tenant-style-overrides')?.textContent || ''
 }
 
-async function renderApplier(landingDesign) {
+async function renderApplier(landingDesign, { primary_color = null } = {}) {
   const { useConfig } = await import('../hooks/useConfig')
   useConfig.mockReturnValue({
-    data: { landing_config: { design: landingDesign }, primary_color: null },
+    data: { landing_config: { design: landingDesign }, primary_color },
   })
   const { default: BrandTokensApplier } = await import('../components/BrandTokensApplier.jsx')
   return render(<BrandTokensApplier />)
 }
 
+// Simulates the admin Landing Editor's live-preview postMessage.
+function postPreview(design, origin = 'http://localhost:5174') {
+  window.dispatchEvent(new MessageEvent('message', {
+    origin,
+    data: { type: 'LANDING_PREVIEW', config: { design } },
+  }))
+}
+
+const GOLD_VARS = ['--gold', '--gold-light', '--gold-muted', '--on-gold']
+
 beforeEach(() => {
   vi.clearAllMocks()
   document.getElementById('tenant-style-overrides')?.remove()
   document.documentElement.style.removeProperty('--radius')
+  GOLD_VARS.forEach(v => document.documentElement.style.removeProperty(v))
 })
 
 afterEach(() => {
   document.getElementById('tenant-style-overrides')?.remove()
   document.documentElement.style.removeProperty('--radius')
+  GOLD_VARS.forEach(v => document.documentElement.style.removeProperty(v))
 })
 
 describe('BrandTokensApplier — border_radius (Esquinas)', () => {
@@ -112,5 +124,53 @@ describe('BrandTokensApplier — button_style (Botones)', () => {
     await act(async () => { await renderApplier({}) })
     const css = styleTagContent()
     expect(css).not.toMatch(/button\s*\{\s*border-radius/)
+  })
+})
+
+// ────────────────────────────────────────────────────────────────────────────
+// Regression: the admin's "Restaurar predeterminados" publishes design.primary
+// as an explicit null (never a fabricated color) to clear a tenant's brand
+// color back to the neutral CSS default. --gold used to (a) never get cleared
+// once set — it stuck at the old inline value forever — and (b) in the Landing
+// Editor's live preview specifically, silently fall back to the *already
+// published* primary_color column, making a reset look like it did nothing
+// until the admin actually hit Publicar.
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('BrandTokensApplier — brand colour (--gold)', () => {
+  it('sets --gold from a valid primary_color column', async () => {
+    await act(async () => { await renderApplier({}, { primary_color: '#1E90FF' }) })
+    expect(document.documentElement.style.getPropertyValue('--gold')).toBe('30 144 255')
+  })
+
+  it('clears a previously-set --gold when there is no primary color anywhere (neutral CSS default applies)', async () => {
+    document.documentElement.style.setProperty('--gold', '9 9 9') // simulate a stale leftover from an earlier render
+    await act(async () => { await renderApplier({}, { primary_color: null }) })
+    expect(document.documentElement.style.getPropertyValue('--gold')).toBe('')
+  })
+
+  it('falls back to the primary_color column when landing has no design.primary and there is no live preview (keeps non-landing-enabled tenants branded on /agendar, /gestionar)', async () => {
+    await act(async () => { await renderApplier({ border_radius: 8 }, { primary_color: '#00AA00' }) })
+    expect(document.documentElement.style.getPropertyValue('--gold')).toBe('0 170 0')
+  })
+
+  it('live preview with primary: null shows neutral gray immediately, even while the published column still holds a real color', async () => {
+    await act(async () => { await renderApplier({}, { primary_color: '#1E90FF' }) })
+    expect(document.documentElement.style.getPropertyValue('--gold')).toBe('30 144 255')
+
+    await act(async () => { postPreview({ primary: null }) })
+    expect(document.documentElement.style.getPropertyValue('--gold')).toBe('')
+  })
+
+  it('live preview with a real hex color overrides the published column', async () => {
+    await act(async () => { await renderApplier({}, { primary_color: '#1E90FF' }) })
+    await act(async () => { postPreview({ primary: '#FF0000' }) })
+    expect(document.documentElement.style.getPropertyValue('--gold')).toBe('255 0 0')
+  })
+
+  it('ignores a postMessage from a disallowed origin (does not leak the draft to arbitrary embedders)', async () => {
+    await act(async () => { await renderApplier({}, { primary_color: '#1E90FF' }) })
+    await act(async () => { postPreview({ primary: '#FF0000' }, 'https://evil-example.com') })
+    expect(document.documentElement.style.getPropertyValue('--gold')).toBe('30 144 255')
   })
 })

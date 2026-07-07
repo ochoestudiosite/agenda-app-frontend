@@ -95,6 +95,22 @@ export default function BrandTokensApplier() {
   const designJSON  = JSON.stringify(design);
   const primaryFromColumn = config?.primary_color;
 
+  // design.primary is the merged landing identity (which mirrors the
+  // business_settings.primary_color column). Fall back to the column
+  // directly when there's no landing data at all — keeps booking/manage
+  // pages branded even when landing is not enabled.
+  //
+  // That column fallback must NOT apply while previewDesign is set (the
+  // Landing Editor's live preview): previewDesign is always a complete,
+  // up-to-date copy of the admin's draft (never "missing" primary — it's
+  // either a real hex or explicitly null after "Restaurar predeterminados"),
+  // so falling back to primaryFromColumn there would show the *previously
+  // published* color and make a reset look like it did nothing until the
+  // admin actually publishes.
+  const primary = previewDesign
+    ? (previewDesign.primary || previewDesign.colors?.primary || null)
+    : (savedDesign.primary   || savedDesign.colors?.primary   || primaryFromColumn);
+
   // Stable string for the style-tag effect dependency to avoid stale closures.
   const styleKey = JSON.stringify({
     headingFont, bodyFont,
@@ -107,11 +123,6 @@ export default function BrandTokensApplier() {
     const d = JSON.parse(designJSON);
 
     // ── Brand colour ─────────────────────────────────────────────────────
-    // design.primary is the merged landing identity (which mirrors the
-    // business_settings.primary_color column). Fall back to the column
-    // directly when there's no landing data — keeps booking/manage pages
-    // branded even when landing is not enabled.
-    const primary = d.primary || d.colors?.primary || primaryFromColumn;
     if (primary && /^#[0-9A-Fa-f]{6}$/.test(primary)) {
       const r = parseInt(primary.slice(1, 3), 16);
       const g = parseInt(primary.slice(3, 5), 16);
@@ -130,6 +141,15 @@ export default function BrandTokensApplier() {
       // L > 0.179 → white text would give < 4.5:1 → use near-black ink instead.
       const brandLum = relativeLuminance(dr, dg, db);
       root.style.setProperty('--on-gold', brandLum > 0.179 ? '15 15 15' : '255 255 255');
+    } else {
+      // No brand color (never configured, or explicitly cleared via
+      // "Restaurar predeterminados") — remove the inline override so the
+      // neutral CSS default (:root/.dark --gold, systemGray) applies again
+      // instead of staying stuck at whatever color was set previously.
+      root.style.removeProperty('--gold');
+      root.style.removeProperty('--gold-light');
+      root.style.removeProperty('--gold-muted');
+      root.style.removeProperty('--on-gold');
     }
 
     // ── Surface / text tokens ────────────────────────────────────────────
@@ -193,7 +213,7 @@ export default function BrandTokensApplier() {
     else                          root.style.removeProperty('--radius');
 
     // No cleanup — the brand stays applied for the lifetime of the SPA.
-  }, [designJSON, primaryFromColumn, isDark]);
+  }, [designJSON, primary, isDark]);
 
   // ── Google Fonts (dynamic <link> in <head>) ──────────────────────────────
   useEffect(() => {
