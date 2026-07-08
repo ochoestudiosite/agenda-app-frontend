@@ -46,13 +46,6 @@ vi.mock('../hooks/useServices', () => ({
       services: [
         { id: 'corte', dbId: 1, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed', imageUrl: null },
       ],
-    },
-  }),
-}))
-
-vi.mock('../hooks/useSpecialists', () => ({
-  useSpecialists: () => ({
-    data: {
       specialists: [
         { id: 5, name: 'Ana García', initials: 'AG', avatarUrl: null },
       ],

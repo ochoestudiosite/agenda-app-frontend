@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
 import { useServices } from '../../hooks/useServices';
-import { useSpecialists } from '../../hooks/useSpecialists';
 import { formatDate, formatTime, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 
@@ -36,8 +35,7 @@ export default function BookingConfirmation() {
   const isGroup             = !!confirmation?.groupCode;
   const displayCode         = isGroup ? confirmation?.groupCode : confirmation?.code;
 
-  const { data: specialistsData } = useSpecialists();
-  const allSpecialists = specialistsData?.specialists ?? [];
+  const allSpecialists = svcData?.specialists ?? [];
 
   // Single appointment lookups — prefer state objects set during flow
   const specialist = state.specialist

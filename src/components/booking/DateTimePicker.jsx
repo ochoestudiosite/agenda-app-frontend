@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
-import { useAvailability, useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
+import { useAvailability, useGroupAvailability, useBlockedDates, usePrefetchAvailability } from '../../hooks/useAvailability';
 import { useConfig } from '../../hooks/useConfig';
 import { formatTime, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { findNextAvailableDate, todayDateInTz, nowMinutesInTz } from '../../utils/businessTime';
@@ -91,6 +91,7 @@ export default function DateTimePicker() {
   const monthStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth()+1).padStart(2,'0')}`;
   const { data: blockedData } = useBlockedDates(monthStr, groupMode ? null : state.specialist?.id, branchId, groupSpecialistIds);
   const blockedDates = blockedData?.blockedDates || [];
+  const { prefetchAvailability, prefetchGroupAvailability } = usePrefetchAvailability();
 
   const activeData       = groupMode ? groupAvailData : availData;
   const activeFetching   = groupMode ? gFetching      : isFetching;
@@ -256,6 +257,38 @@ export default function DateTimePicker() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exhaustedFlag]);
+
+  // F-04 (auditoría perf 2026-07-07): prefetch especulativo del candidato que
+  // findNextAvailableDate elegiría SI el día actualmente seleccionado terminara
+  // agotado (staffBlocked / businessClosed / sin slots). Se dispara en paralelo
+  // con la carga de activeData del día actual — no espera a que exhaustedFlag
+  // se confirme. Replica exactamente el mismo cálculo que usan los dos efectos
+  // de auto-avance de arriba (blockedDates + skippedDatesRef acumulado + el día
+  // actual), así que si el auto-avance sí decide saltar, useAvailability /
+  // useGroupAvailability para esa fecha ya encuentran la respuesta en caché.
+  // Solo hace warm-cache: nunca llama setSelectedDate/setNoMoreDates ni toca
+  // skippedDatesRef/autoAdvanceCountRef — cero impacto en la lógica de decisión.
+  useEffect(() => {
+    if (!selectedDate || bizHours.length === 0 || !blockedData) return;
+    const speculativeBlocked = [...blockedDates, ...skippedDatesRef.current, toDateStr(selectedDate)];
+    const candidate = findNextAvailableDate({
+      tz,
+      bizHours,
+      blockedDates: speculativeBlocked,
+      leadMins: 0,
+      maxAdvanceDays: maxAdvance,
+      ignoreClosedWeekdays: staffAwareWeekdays,
+    });
+    if (!candidate) return;
+    const candidateStr = toDateStr(candidate);
+    if (candidateStr === dateStr) return; // ya es la fecha activa — nada que adelantar
+    if (groupMode) {
+      prefetchGroupAvailability(candidateStr, groupAssignments, branchId);
+    } else {
+      prefetchAvailability(candidateStr, singleSpecialistId, branchId, null, null, serviceIdsParam);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateStr, bizHours.length, blockedDates.length, !!blockedData, groupMode, branchId, serviceIdsParam]);
 
   function handleSelectDate(date) {
     autoSelectedRef.current = true;

@@ -8,8 +8,7 @@ export function useServices() {
       const [s, sp] = await Promise.all([api.getServices({ signal }), api.getSpecialists({ signal })]);
       return { services: s.services, specialists: sp.specialists };
     },
-    staleTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 60_000,
     refetchOnWindowFocus: true,
   });
 }

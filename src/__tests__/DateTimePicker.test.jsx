@@ -81,6 +81,12 @@ vi.mock('../hooks/useAvailability.js', () => ({
   useAvailability:      mockAvailFn,
   useGroupAvailability: vi.fn(() => ({ data: null, isFetching: false, isError: false })),
   useBlockedDates:      mockBlockedFn,
+  // F-04: speculative prefetch helper — no-op in tests, just needs to exist so
+  // DateTimePicker's destructuring doesn't throw on an undefined mock export.
+  usePrefetchAvailability: vi.fn(() => ({
+    prefetchAvailability:      vi.fn(),
+    prefetchGroupAvailability: vi.fn(),
+  })),
 }))
 
 vi.mock('../hooks/useConfig.js', () => ({
