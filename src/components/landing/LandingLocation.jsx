@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { MapPin, Phone, Clock, Mail, Navigation } from 'lucide-react';
 import { nowPartsInTz } from '../../utils/businessTime';
 
@@ -167,12 +166,28 @@ function isOpenNow(hours, tz) {
 
 export default function LandingLocation({ config = {}, locationConfig = {}, title, subtitle, subtitleAccent }) {
   const locations = resolveLocations(config, locationConfig);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx]       = useState(0);
+  // displayedIdx/contentVisible replicate the previous framer-motion
+  // AnimatePresence(mode="wait") crossfade without the library: the content
+  // block fades out over 320ms, THEN swaps to the newly active branch and
+  // fades back in — same total transition time as the original exit+enter.
+  const [displayedIdx, setDisplayedIdx]     = useState(0);
+  const [contentVisible, setContentVisible] = useState(false);
+
+  useEffect(() => {
+    if (activeIdx === displayedIdx) {
+      const raf = requestAnimationFrame(() => setContentVisible(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    setContentVisible(false);
+    const timer = setTimeout(() => setDisplayedIdx(activeIdx), 320);
+    return () => clearTimeout(timer);
+  }, [activeIdx, displayedIdx]);
 
   if (!locations.length) return null;
 
   const isMulti = locations.length > 1;
-  const loc     = locations[Math.min(activeIdx, locations.length - 1)];
+  const loc     = locations[Math.min(displayedIdx, locations.length - 1)];
   const hours   = getBranchHours(config, loc.branch_id);
   const { display: hoursDisplay, closedDays } = buildHoursDisplay(hours, '');
   const openNow = isOpenNow(hours, config?.business_timezone ?? null);
@@ -198,12 +213,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
       <div className="section-container">
 
         {/* ── Section header + branch tabs ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        >
+        <div className="animate-fade-up">
           <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gold">
             <span className="w-6 h-px bg-gold" />
             {title || 'Encuéntranos'}
@@ -241,18 +251,15 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
               </div>
             )}
           </div>
-        </motion.div>
+        </div>
 
-        {/* ── Animated content per active branch ── */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeIdx}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-10 lg:mt-12 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12"
-          >
+        {/* ── Content per active branch — crossfades on tab switch (see effect above) ── */}
+        <div
+          key={displayedIdx}
+          className={`mt-10 lg:mt-12 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12
+                     transition-all duration-[320ms] ease-[cubic-bezier(0.16,1,0.3,1)]
+                     ${contentVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+        >
             {/* ── Info column ── */}
             <div className="lg:col-span-5 flex flex-col">
               {/* Branch image (from catalogue) or name pill (multi-branch) */}
@@ -352,8 +359,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
                 </div>
               </div>
             </div>
-          </motion.div>
-        </AnimatePresence>
+          </div>
 
       </div>
     </section>

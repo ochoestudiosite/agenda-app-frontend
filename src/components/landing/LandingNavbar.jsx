@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import * as LucideIcons from 'lucide-react';
-import { Menu, X, Calendar, ArrowUpRight } from 'lucide-react';
+import {
+  Menu, X, Calendar, ArrowUpRight,
+  Scissors, Coffee, Heart, Star, Smile, Crown, Anchor, Gem, Zap, Gift,
+  ShieldCheck, Clock, Mail, MapPin, Phone, Sparkles, Briefcase,
+} from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
+
+// Únicos íconos configurables desde admin-app/src/pages/LandingEditor.jsx (ICON_OPTIONS).
+const ICON_MAP = {
+  Calendar, Scissors, Coffee, Heart, Star, Smile, Crown, Anchor, Gem, Zap, Gift,
+  ShieldCheck, Clock, Mail, MapPin, Phone, Sparkles, Briefcase,
+};
 
 // Two distinct treatments that share the same design DNA as cita24-landing/Navbar:
 //   - Desktop (md+): full-width fixed bar that gains glass blur on scroll
@@ -14,7 +22,7 @@ export default function LandingNavbar({ businessName, config = {} }) {
   const showCta     = config.navbar?.show_cta !== false;
   const ctaText     = config.navbar?.cta_text || 'Reservar';
   const displayName = config.navbar?.business_name || businessName || 'Cita24';
-  const LogoIcon    = LucideIcons[config.navbar?.logo_icon] || Calendar;
+  const LogoIcon    = ICON_MAP[config.navbar?.logo_icon] || Calendar;
 
   // Show uploaded business logo unless admin explicitly picked 'icon' type.
   const logoUrl  = config.navbar?.logo_url || null;
@@ -22,6 +30,13 @@ export default function LandingNavbar({ businessName, config = {} }) {
 
   const [isScrolled, setIsScrolled]       = useState(false);
   const [isMobileMenuOpen, setMobileMenu] = useState(false);
+
+  // drawerMounted/drawerVisible replace the previous framer-motion
+  // AnimatePresence: the drawer stays mounted for the duration of its own
+  // exit transition (200ms, matching the panel below) instead of being
+  // removed from the DOM the instant the user taps the hamburger again.
+  const [drawerMounted, setDrawerMounted] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 16);
@@ -35,6 +50,21 @@ export default function LandingNavbar({ businessName, config = {} }) {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    let raf, timer;
+    if (isMobileMenuOpen) {
+      setDrawerMounted(true);
+      raf = requestAnimationFrame(() => setDrawerVisible(true));
+    } else {
+      setDrawerVisible(false);
+      timer = setTimeout(() => setDrawerMounted(false), 200);
+    }
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
+    };
   }, [isMobileMenuOpen]);
 
   // defaultVisible must mirror each section's own render condition in Home.jsx —
@@ -142,23 +172,17 @@ export default function LandingNavbar({ businessName, config = {} }) {
       </nav>
 
       {/* ── Mobile drawer ── */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
+      {drawerMounted && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="md:hidden fixed inset-0 top-[60px] z-40 bg-ink/30 backdrop-blur-sm"
+            <div
+              className={`md:hidden fixed inset-0 top-[60px] z-40 bg-ink/30 backdrop-blur-sm
+                          transition-opacity duration-[180ms] ${drawerVisible ? 'opacity-100' : 'opacity-0'}`}
               onClick={() => setMobileMenu(false)}
             />
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="md:hidden fixed top-[60px] inset-x-0 z-50 px-4 pt-3 pb-4"
+            <div
+              className={`md:hidden fixed top-[60px] inset-x-0 z-50 px-4 pt-3 pb-4
+                          transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]
+                          ${drawerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
             >
               <div
                 className="rounded-3xl p-5 flex flex-col gap-1 border border-edge/40"
@@ -193,10 +217,9 @@ export default function LandingNavbar({ businessName, config = {} }) {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
           </>
-        )}
-      </AnimatePresence>
+      )}
     </>
   );
 }

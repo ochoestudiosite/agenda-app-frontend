@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 const buildVersion = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8)
   || Date.now().toString(36);
@@ -18,6 +19,9 @@ export default defineConfig({
       sourcemaps: { filesToDeleteAfterUpload: ['dist/**/*.map'] },
       telemetry: false,
     }),
+    ...(process.env.ANALYZE === 'true'
+      ? [visualizer({ open: true, gzipSize: true, filename: 'dist/stats.html' })]
+      : []),
   ],
   build: {
     target: 'es2020',
@@ -28,6 +32,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
+          if (id.includes('@sentry'))                return 'vendor-sentry';
           if (id.includes('react-router'))          return 'vendor-react';
           if (id.includes('react-dom'))             return 'vendor-react';
           if (/\/react\//.test(id))                 return 'vendor-react';

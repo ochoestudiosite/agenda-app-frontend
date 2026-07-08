@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SectionHeader } from './LandingServices';
@@ -128,12 +127,9 @@ function StaffCard({ member, services, i }) {
   const extraCount = Math.max(0, allMemberServices.length - MAX_PILLS);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ delay: Math.min(i * 0.05, 0.3), duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="group"
+    <div
+      className="group animate-fade-up"
+      style={{ animationDelay: `${Math.min(i * 50, 300)}ms`, animationFillMode: 'both' }}
     >
       <Link to="/agendar" className="block">
         <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] landing-card-shape overflow-hidden bg-raised">
@@ -213,7 +209,7 @@ function StaffCard({ member, services, i }) {
           </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 

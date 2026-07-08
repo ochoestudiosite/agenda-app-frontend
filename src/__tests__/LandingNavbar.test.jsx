@@ -28,11 +28,12 @@ vi.mock('framer-motion', () => ({
 
 vi.mock('lucide-react', () => {
   const noop = () => null
-  // LandingNavbar does `LucideIcons[config.navbar?.logo_icon]` (namespace import) —
-  // when logo_icon is unset that's a lookup for the literal "undefined" key, which
-  // a real JS object silently returns undefined for for (falling back to Calendar),
-  // but Vitest's mocked ESM namespace throws unless the key is explicitly present.
-  return { Menu: noop, X: noop, Calendar: noop, ArrowUpRight: noop, Sun: noop, Moon: noop, undefined: noop }
+  return {
+    Menu: noop, X: noop, Calendar: noop, ArrowUpRight: noop, Sun: noop, Moon: noop,
+    Scissors: noop, Coffee: noop, Heart: noop, Star: noop, Smile: noop,
+    Crown: noop, Anchor: noop, Gem: noop, Zap: noop, Gift: noop,
+    ShieldCheck: noop, Clock: noop, Mail: noop, MapPin: noop, Phone: noop, Sparkles: noop, Briefcase: noop,
+  }
 })
 
 vi.mock('../context/ThemeContext', () => ({

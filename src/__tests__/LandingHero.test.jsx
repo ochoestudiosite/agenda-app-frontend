@@ -30,7 +30,12 @@ vi.mock('framer-motion', () => ({
 
 vi.mock('lucide-react', () => {
   const noop = () => null
-  return { ArrowUpRight: noop, HelpCircle: noop, ShieldCheck: noop, Clock: noop, Star: noop, Heart: noop }
+  return {
+    ArrowUpRight: noop, HelpCircle: noop,
+    Calendar: noop, Scissors: noop, Coffee: noop, Heart: noop, Star: noop, Smile: noop,
+    Crown: noop, Anchor: noop, Gem: noop, Zap: noop, Gift: noop,
+    ShieldCheck: noop, Clock: noop, Mail: noop, MapPin: noop, Phone: noop, Sparkles: noop, Briefcase: noop,
+  }
 })
 
 vi.mock('react-router-dom', async () => {
