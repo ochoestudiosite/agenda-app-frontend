@@ -1,14 +1,6 @@
 import { Component } from 'react';
 import { reportError } from '../utils/errorReporter';
-
-function isChunkLoadError(msg) {
-  return typeof msg === 'string' && (
-    msg.includes('Failed to fetch dynamically imported module') ||
-    msg.includes('Importing a module script failed') ||
-    msg.includes('is not a valid JavaScript MIME type') ||
-    msg.includes('error loading dynamically imported module')
-  );
-}
+import { isChunkLoadError, attemptChunkReload } from '../utils/chunkGuard';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -47,16 +39,8 @@ export default class ErrorBoundary extends Component {
     if (!this.state.hasError) return this.props.children;
 
     // Booking flow is stateless — auto-reload is safe and seamless for clients.
-    if (this.state.isChunkError) {
-      const RELOAD_KEY  = 'cita24_booking_chunk_reload_v';
-      const myVersion   = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
-      const lastVersion = sessionStorage.getItem(RELOAD_KEY);
-      if (lastVersion !== myVersion) {
-        sessionStorage.setItem(RELOAD_KEY, myVersion);
-        window.location.reload();
-        return null;
-      }
-    }
+    // Guard anti-bucle en chunkGuard.
+    if (this.state.isChunkError && attemptChunkReload()) return null;
 
     return (
       <div style={{

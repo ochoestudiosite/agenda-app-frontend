@@ -1,6 +1,10 @@
 // Client-side error reporter — sends uncaught JS errors to the platform monitoring system.
 // Only active in production builds. Self-rate-limits and deduplicates to avoid noise.
 
+// Chunk errors (deploy nuevo invalidó los hashes): detección y auto-reload
+// centralizados en chunkGuard — misma fuente de verdad que el ErrorBoundary.
+import { isChunkLoadError, attemptChunkReload } from './chunkGuard';
+
 const API_URL  = import.meta.env.VITE_API_URL || '';
 const APP_NAME = 'frontend';
 const IS_PROD  = import.meta.env.PROD;
@@ -56,14 +60,6 @@ export function reportError({ type = 'js_error', message, stack, component } = {
   }
 }
 
-function isChunkLoadError(msg) {
-  return typeof msg === 'string' && (
-    msg.includes('Failed to fetch dynamically imported module') ||
-    msg.includes('Importing a module script failed') ||
-    msg.includes('error loading dynamically imported module')
-  );
-}
-
 let _reloadBannerShown = false;
 function showReloadBanner() {
   if (_reloadBannerShown) return;
@@ -93,14 +89,16 @@ export function initErrorReporter() {
 
   window.addEventListener('error', (event) => {
     const msg = event.message || 'Unknown error';
-    if (isChunkLoadError(msg)) { showReloadBanner(); reportError({ type: 'js_error', message: msg }); return; }
+    // Artefacto de deploy: reload transparente; banner solo si el anti-bucle
+    // lo bloqueó. No se reporta (misma decisión que en ErrorBoundary).
+    if (isChunkLoadError(msg)) { if (!attemptChunkReload()) showReloadBanner(); return; }
     reportError({ type: 'js_error', message: msg, stack: event.error?.stack });
   });
 
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason;
     const msg = reason instanceof Error ? reason.message : String(reason ?? 'Unhandled rejection');
-    if (isChunkLoadError(msg)) { showReloadBanner(); reportError({ type: 'unhandled_rejection', message: msg }); return; }
+    if (isChunkLoadError(msg)) { if (!attemptChunkReload()) showReloadBanner(); return; }
     reportError({ type: 'unhandled_rejection', message: msg, stack: reason instanceof Error ? reason.stack : undefined });
   });
 }

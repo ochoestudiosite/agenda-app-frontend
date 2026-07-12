@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary';
 import { initErrorReporter } from './utils/errorReporter';
+import { installChunkReloadRecovery } from './utils/chunkGuard';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
@@ -21,6 +22,8 @@ if ('requestIdleCallback' in window) requestIdleCallback(deferInit);
 else setTimeout(deferInit, 1);
 
 initErrorReporter();
+// vite:preloadError → reload transparente antes de que el error llegue a React
+installChunkReloadRecovery();
 
 const queryClient = new QueryClient({
   defaultOptions: {
