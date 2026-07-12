@@ -12,11 +12,11 @@ export default function LandingContact({ businessName, socials = {} }) {
             {copyrightText || `© ${new Date().getFullYear()} ${brandTitle}. Todos los derechos reservados.`}
           </p>
           <div className="flex items-center gap-5">
-            <a href="#" className="text-[12px] font-medium text-ink-3 hover:text-ink transition-colors">
+            <a href="https://cita24.com/privacidad" target="_blank" rel="noopener noreferrer" className="text-[12px] font-medium text-ink-3 hover:text-ink transition-colors">
               Privacidad
             </a>
 
-            <a href="#" className="text-[12px] font-medium text-ink-3 hover:text-ink transition-colors">
+            <a href="https://cita24.com/terminos" target="_blank" rel="noopener noreferrer" className="text-[12px] font-medium text-ink-3 hover:text-ink transition-colors">
               Términos
             </a>
 

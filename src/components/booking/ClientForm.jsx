@@ -84,6 +84,7 @@ export default function ClientForm() {
   const { data: config }    = useConfig();
   const qc                  = useQueryClient();
   const timeFmt             = config?.time_format ?? '12h';
+  const businessName        = config?.business_name || 'este negocio';
   const configBranches      = config?.branches ?? [];
   const toast               = useToast();
   const groupMode           = isGroupMode(state);
@@ -690,6 +691,13 @@ export default function ClientForm() {
               )}
             </div>
           )}
+
+          <p className="text-[11px] text-ink-3 leading-relaxed">
+            Tus datos se usan para gestionar tu cita con {businessName} (confirmaciones, recordatorios y, si aplica, verificación por código). Más información en el{' '}
+            <a href="https://cita24.com/privacidad" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink-2">
+              Aviso de Privacidad
+            </a>.
+          </p>
 
           <Button type="submit" size="lg" className="w-full mt-2" loading={isPending || submitting}>
             Confirmar reservación

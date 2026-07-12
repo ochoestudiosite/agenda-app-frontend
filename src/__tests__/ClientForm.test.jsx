@@ -151,6 +151,31 @@ describe('ClientForm — render', () => {
 })
 
 // ============================================================================
+// 1b. Aviso de privacidad al momento de capturar los datos (punto de captura LFPDPPP)
+// ============================================================================
+
+describe('ClientForm — aviso de privacidad', () => {
+  it('muestra el aviso con el nombre del negocio cuando business_name está presente', async () => {
+    mockConfigData = { time_format: '12h', branches: [], business_name: 'Salón Elite' }
+    await renderForm()
+    expect(screen.getByText(/gestionar tu cita con Salón Elite/i)).toBeTruthy()
+  })
+
+  it('cae a "este negocio" cuando no hay business_name', async () => {
+    await renderForm()
+    expect(screen.getByText(/gestionar tu cita con este negocio/i)).toBeTruthy()
+  })
+
+  it('el enlace del aviso apunta al Aviso de Privacidad de Cita24 y abre en pestaña nueva', async () => {
+    await renderForm()
+    const link = screen.getByRole('link', { name: /aviso de privacidad/i })
+    expect(link).toHaveAttribute('href', 'https://cita24.com/privacidad')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+})
+
+// ============================================================================
 // 2. Name validation
 // ============================================================================
 
