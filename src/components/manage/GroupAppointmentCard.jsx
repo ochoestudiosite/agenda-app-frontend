@@ -75,8 +75,13 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const cancelMutation     = useCancelGroupAppointment();
   const rescheduleMutation = useRescheduleGroupAppointment();
 
+  // Manage (cancelar/reagendar) usa su propio flag efectivo: con el cupo de SMS
+  // agotado el backend lo apaga bajo AMBAS políticas (§12 R9) — cancelar nunca
+  // se bloquea. Fallback al flag general para configs cacheadas viejas.
+  const manageOtpRequired = config?.manage_verification_required ?? config?.phone_verification_required;
+
   const rescheduleFlow = useRescheduleFlow({
-    phoneVerificationRequired: config?.phone_verification_required,
+    phoneVerificationRequired: manageOtpRequired,
     rescheduleMutation,
     requestOtpFn: () => api.requestManageOTP({ code: group.groupCode }),
     onSuccess: (updated) => { setMode('view'); onUpdated?.(updated); },
@@ -86,7 +91,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   });
 
   const cancelFlow = useCancelFlow({
-    phoneVerificationRequired: config?.phone_verification_required,
+    phoneVerificationRequired: manageOtpRequired,
     cancelMutation,
     requestOtpFn: () => api.requestManageOTP({ code: group.groupCode }),
     onSuccess: (updated) => { setMode('view'); onUpdated?.(updated); },

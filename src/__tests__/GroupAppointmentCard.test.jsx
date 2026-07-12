@@ -38,6 +38,8 @@ vi.mock('../hooks/useAppointment.js', () => ({
 
 // Controlled per-test: true = Pro+OTP (default), false = Starter (no OTP)
 let mockPhoneVerificationRequired = true
+// §12 R9: flag efectivo de manage — undefined = config vieja (fallback al general)
+let mockManageVerificationRequired
 
 vi.mock('../hooks/useConfig.js', () => ({
   useConfig: () => ({
@@ -47,6 +49,7 @@ vi.mock('../hooks/useConfig.js', () => ({
       hours: {},
       max_advance_days: 30,
       phone_verification_required: mockPhoneVerificationRequired,
+      manage_verification_required: mockManageVerificationRequired,
     },
   }),
 }))
@@ -204,6 +207,7 @@ async function renderCard(group = CONFIRMED_GROUP) {
 beforeEach(() => {
   vi.clearAllMocks()
   mockPhoneVerificationRequired = true // default: Pro+OTP enabled
+  mockManageVerificationRequired = undefined // default: config vieja → fallback
 })
 
 // ============================================================================
@@ -456,6 +460,30 @@ describe('GroupAppointmentCard — cancel flow (Starter, no OTP)', () => {
     await waitFor(() => {
       expect(mockToast).toHaveBeenCalledWith('Error al cancelar', 'error')
     })
+  })
+
+  // §12 R9: cupo de SMS agotado con política 'block' — el booking sigue pidiendo
+  // OTP (phone_verification_required=true) pero manage es fail-open: el backend
+  // manda manage_verification_required=false y cancelar procede SIN código.
+  it('cupo agotado (manage_verification_required=false) cancela sin OTP aunque el flag general sea true', async () => {
+    mockPhoneVerificationRequired = true
+    mockManageVerificationRequired = false
+    const user = userEvent.setup()
+    mockCancelMutateAsync.mockResolvedValue({ status: 'cancelled' })
+
+    await renderCard()
+
+    await user.click(screen.getByRole('button', { name: /Cancelar visita/i }))
+    await waitFor(() => screen.getByRole('button', { name: /Sí, cancelar/i }))
+    await user.click(screen.getByRole('button', { name: /Sí, cancelar/i }))
+
+    await waitFor(() => {
+      expect(mockCancelMutateAsync).toHaveBeenCalledWith(
+        expect.not.objectContaining({ pendingId: expect.anything() })
+      )
+    })
+    expect(mockRequestManageOTP).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('otp-verify')).toBeNull()
   })
 })
 
