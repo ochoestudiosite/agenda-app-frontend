@@ -63,12 +63,20 @@ export function attemptChunkReload() {
 }
 
 // Vite dispara 'vite:preloadError' cuando falla una dependencia (JS o CSS) de
-// un import() dinámico. preventDefault() suprime el re-throw, así el error
-// nunca llega a React y la recuperación es 100% transparente para el usuario.
-// Devuelve una función de cleanup (usada en tests).
+// un import() dinámico. NO se llama a preventDefault(): si se suprime el
+// re-throw, la promesa interna de __vitePreload se resuelve con `undefined`
+// en vez de rechazar, y React.lazy() (que await-ea esa misma promesa) intenta
+// leer `.default` de ese undefined antes de que el reload real complete —
+// TypeError "Cannot read properties of undefined (reading 'default')", que
+// isChunkLoadError no reconoce, así que el ErrorBoundary lo reporta a Sentry
+// y muestra el fallback (bug real visto en producción). Dejando que Vite
+// relance el error original, React.lazy() rechaza con el mensaje nativo (que
+// SÍ matchea isChunkLoadError) y el ErrorBoundary ya lo maneja transparente:
+// ve _reloading=true (seteado por attemptChunkReload más abajo) y no hace
+// nada más. Devuelve una función de cleanup (usada en tests).
 export function installChunkReloadRecovery() {
-  const onPreloadError = (event) => {
-    if (attemptChunkReload()) event.preventDefault();
+  const onPreloadError = () => {
+    attemptChunkReload();
     // Si el anti-bucle lo bloqueó, Vite relanza el error y el ErrorBoundary
     // muestra el fallback con botón de recarga manual.
   };

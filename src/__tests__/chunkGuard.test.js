@@ -130,12 +130,14 @@ describe('attemptChunkReload', () => {
 });
 
 describe('installChunkReloadRecovery (vite:preloadError)', () => {
-  it('previene el re-throw de Vite y recarga transparentemente', async () => {
+  it('dispara el reload pero NO previene el default (Vite debe relanzar el error original ' +
+     'para que React.lazy() rechace con un mensaje reconocible por isChunkLoadError, no resuelva ' +
+     'con undefined)', async () => {
     const { installChunkReloadRecovery } = await freshGuard();
     const cleanup = installChunkReloadRecovery();
     const event = new Event('vite:preloadError', { cancelable: true });
     window.dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
     expect(reloadMock).toHaveBeenCalledTimes(1);
     cleanup();
   });
