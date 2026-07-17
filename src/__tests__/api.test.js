@@ -220,3 +220,59 @@ describe('api.request — X-Tenant-Domain header (custom domain resolution)', ()
     expect(opts.headers['X-Tenant-Domain']).toBeUndefined()
   })
 })
+
+describe('api.getServices — branch scoping query param', () => {
+  let fetchSpy
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ services: [] }) })
+    vi.stubGlobal('fetch', fetchSpy)
+    vi.stubGlobal('import', {
+      meta: {
+        env: { VITE_API_URL: 'http://localhost:3001', VITE_PUBLIC_DOMAIN: 'cita24.com', MODE: 'test' },
+      },
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('calls /services with no query param when no branchId is given', async () => {
+    const { api } = await import('../services/api.js')
+    await api.getServices()
+
+    const [url] = fetchSpy.mock.calls[0]
+    expect(url).toBe('http://localhost:3001/api/services')
+  })
+
+  it('appends ?branch=<id> when branchId is a valid positive integer', async () => {
+    const { api } = await import('../services/api.js')
+    await api.getServices(20)
+
+    const [url] = fetchSpy.mock.calls[0]
+    expect(url).toBe('http://localhost:3001/api/services?branch=20')
+  })
+
+  it('omits the param when branchId is not an integer (string, float, 0, negative, NaN)', async () => {
+    const { api } = await import('../services/api.js')
+
+    for (const bad of ['20', 20.5, 0, -1, NaN, undefined, null]) {
+      fetchSpy.mockClear()
+      await api.getServices(bad)
+      const [url] = fetchSpy.mock.calls[0]
+      expect(url).toBe('http://localhost:3001/api/services')
+    }
+  })
+
+  it('still forwards options (e.g. signal) when a branchId is passed', async () => {
+    const { api } = await import('../services/api.js')
+    const controller = new AbortController()
+    await api.getServices(20, { signal: controller.signal })
+
+    const [, opts] = fetchSpy.mock.calls[0]
+    expect(opts.signal).toBeInstanceOf(AbortSignal)
+  })
+})

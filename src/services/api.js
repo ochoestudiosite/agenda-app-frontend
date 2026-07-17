@@ -101,7 +101,10 @@ async function request(method, path, body, retryCount = 0, options = {}) {
 
 export const api = {
   getConfig:      (options = {}) => request('GET', '/config', null, 0, options),
-  getServices:    (options = {}) => request('GET', '/services', null, 0, options),
+  getServices:    (branchId, options = {}) => {
+    const path = Number.isInteger(branchId) && branchId > 0 ? `/services?branch=${branchId}` : '/services';
+    return request('GET', path, null, 0, options);
+  },
   getSpecialists: (options = {}) => request('GET', '/services/specialists', null, 0, options),
   getGroupAvailability: (date, assignments, branchId, excludeCodes, options = {}) => {
     // assignments = [{serviceId, specialistId}]

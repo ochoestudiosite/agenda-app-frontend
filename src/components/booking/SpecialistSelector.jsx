@@ -6,8 +6,8 @@ import EntityAvatar from '../ui/EntityAvatar';
 import ExpandableText from '../ui/ExpandableText';
 
 export default function SpecialistSelector() {
-  const { data, isLoading, isFetching, isError } = useServices();
   const { state, dispatch } = useBooking();
+  const { data, isLoading, isFetching, isError } = useServices(state.branch?.id);
   const groupMode = isGroupMode(state);
 
   if (isLoading || (isFetching && !data)) return <SpecialistSkeleton />;

@@ -31,7 +31,7 @@ vi.mock('../context/BookingContext', () => ({
 
 const mockUseServices = vi.fn()
 vi.mock('../hooks/useServices', () => ({
-  useServices: () => mockUseServices(),
+  useServices: (...args) => mockUseServices(...args),
 }))
 
 vi.mock('../hooks/useConfig', () => ({
@@ -256,6 +256,24 @@ describe('ServiceSelector — max 5 services', () => {
 // not a bare "Promo" label (was reimplemented inline instead of reusing
 // PromoBadge from ui/PromoPrice, and diverged for the fixed_amount branch).
 // ============================================================================
+
+// ============================================================================
+// 8. Sucursal scoping — useServices is called with the context's branch id
+// ============================================================================
+
+describe('ServiceSelector — sucursal scoping', () => {
+  it('calls useServices() with no branchId when no sucursal is selected', async () => {
+    mockState = { ...mockState, branch: null }
+    await renderServiceSelector()
+    expect(mockUseServices).toHaveBeenCalledWith(undefined)
+  })
+
+  it('calls useServices(branch.id) when a sucursal is selected', async () => {
+    mockState = { ...mockState, branch: { id: 20, name: 'Sucursal Norte' } }
+    await renderServiceSelector()
+    expect(mockUseServices).toHaveBeenCalledWith(20)
+  })
+})
 
 describe('ServiceSelector — promo badge', () => {
   it('percent promo shows "−X%"', async () => {

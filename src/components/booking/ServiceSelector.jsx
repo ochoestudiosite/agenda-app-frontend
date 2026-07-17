@@ -8,8 +8,8 @@ import { PromoBadge } from '../ui/PromoPrice';
 import ExpandableText from '../ui/ExpandableText';
 
 export default function ServiceSelector() {
-  const { data, isLoading, isError } = useServices();
   const { state, dispatch } = useBooking();
+  const { data, isLoading, isError } = useServices(state.branch?.id);
   const selected = state.services ?? [];
   const atMax = selected.length >= 5;
   const totalDuration = selected.reduce((sum, s) => sum + (s.duration || 0), 0);

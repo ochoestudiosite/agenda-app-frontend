@@ -31,7 +31,7 @@ export default function Booking() {
 function BookingFlow() {
   const { state, dispatch } = useBooking();
   const { data: config, isLoading: configLoading } = useConfig();
-  const { data: catalog } = useServices();
+  const { data: catalog } = useServices(state.branch?.id);
   const qc = useQueryClient();
 
   // Mantiene servicios/especialistas seleccionados sincronizados con el catálogo

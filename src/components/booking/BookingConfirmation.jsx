@@ -28,7 +28,7 @@ function displayPrice(priceType, price) {
 export default function BookingConfirmation() {
   const { state, dispatch } = useBooking();
   const { data: config }    = useConfig();
-  const { data: svcData }   = useServices();
+  const { data: svcData }   = useServices(state.branch?.id);
   const timeFmt             = config?.time_format ?? '12h';
   const branches            = config?.branches    ?? [];
   const { confirmation }    = state;

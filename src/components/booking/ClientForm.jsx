@@ -198,9 +198,16 @@ export default function ClientForm() {
     return JSON.stringify([firstName.trim(), lastName.trim(), phone.trim(), email.trim()]);
   }
 
+  // Resolves the same branchId used server-side to scope pricing/promos:
+  // explicit selection when the tenant has multiple sucursales, or the sole
+  // branch when there's only one (matches request-otp / createAppointment).
+  function getBranchId() {
+    return state.branch?.id ?? (configBranches.length === 1 ? configBranches[0].id : null);
+  }
+
   // Builds the full booking payload for both single and group modes.
   function buildBookingPayload() {
-    const branchId = state.branch?.id ?? (configBranches.length === 1 ? configBranches[0].id : null);
+    const branchId = getBranchId();
     const base = {
       date:            state.date,
       time:            state.time,
@@ -231,9 +238,11 @@ export default function ClientForm() {
       // Pasar el teléfono (ya ingresado) hace el preview preciso: evalúa
       // "solo clientes nuevos" y el límite por cliente sobre su propio número.
       const cleanPhone = phone.trim();
+      const branchId = getBranchId();
       const res = await api.validatePromo({
         code, serviceIds: slugs, date: state.date, time: state.time,
         ...(phoneErr(cleanPhone) ? {} : { clientPhone: cleanPhone }),
+        ...(branchId ? { branchId } : {}),
       });
       if (!res.valid) {
         // res.pricing solo falta en el caso 'invalid' (anti-enumeración); para

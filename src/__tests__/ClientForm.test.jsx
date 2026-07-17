@@ -652,4 +652,52 @@ describe('ClientForm — código promocional', () => {
     await waitFor(() => expect(screen.getByText(/código no válido o expirado/i)).toBeTruthy())
     expect(screen.queryByText(/ahorras/i)).toBeNull()
   })
+
+  it('incluye branchId en el body cuando hay sucursal seleccionada en el contexto', async () => {
+    mockValidatePromo.mockResolvedValue({
+      valid: true, codeApplied: true,
+      pricing: { totalList: 250, totalDiscount: 25, totalFinal: 225, items: [
+        { listPrice: 250, discountAmount: 25, finalPrice: 225, promoName: 'Verano', promoType: 'percent', promoValue: 10 },
+      ] },
+    })
+    await renderForm({ branch: { id: 20, name: 'Sucursal Norte' } })
+    const user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'VERANO10')
+    await user.click(screen.getByRole('button', { name: /aplicar/i }))
+
+    await waitFor(() => expect(mockValidatePromo).toHaveBeenCalled())
+    expect(mockValidatePromo).toHaveBeenCalledWith(
+      expect.objectContaining({ branchId: 20 })
+    )
+  })
+
+  it('no incluye branchId cuando no hay sucursal seleccionada ni sucursal única', async () => {
+    mockValidatePromo.mockResolvedValue({ valid: false, message: 'Código no válido o expirado.' })
+    await renderForm({ branch: null })
+    const user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'NOEXISTE')
+    await user.click(screen.getByRole('button', { name: /aplicar/i }))
+
+    await waitFor(() => expect(mockValidatePromo).toHaveBeenCalled())
+    const [body] = mockValidatePromo.mock.calls[0]
+    expect(body).not.toHaveProperty('branchId')
+  })
+
+  it('reason "branch": muestra el mensaje del backend indicando que el código no aplica en esa sucursal', async () => {
+    mockValidatePromo.mockResolvedValue({
+      valid: false, codeApplied: false, reason: 'branch',
+      message: 'Este código no está disponible en la sucursal seleccionada.',
+      pricing: { totalList: 250, totalDiscount: 0, totalFinal: 250, items: [
+        { listPrice: 250, discountAmount: 0, finalPrice: 250 },
+      ] },
+    })
+    await renderForm({ branch: { id: 20, name: 'Sucursal Norte' } })
+    const user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'SOLOCENTRO')
+    await user.click(screen.getByRole('button', { name: /aplicar/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/no está disponible en la sucursal seleccionada/i)).toBeTruthy()
+    })
+  })
 })
