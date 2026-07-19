@@ -29,7 +29,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -466,7 +466,7 @@ describe('BookingSummary — partial state combinations', () => {
 })
 
 // ============================================================================
-// 9. "Indicaciones previas" box — requirements / prerequisite
+// 9. "Indicaciones previas" popover — requirements / prerequisite
 // ============================================================================
 
 describe('BookingSummary — indicaciones previas', () => {
@@ -482,35 +482,72 @@ describe('BookingSummary — indicaciones previas', () => {
     prerequisite: { id: 'valoracion', dbId: 10, name: 'valoración previa', bookable: true },
   }
 
-  it('no box when no selected service has requirements/prerequisite', async () => {
+  function openPopover() {
+    fireEvent.click(screen.getByRole('button', { name: /Indicaciones previas/ }))
+  }
+
+  it('no pill when no selected service has requirements/prerequisite', async () => {
     await renderSummary(makeState({ services: [PLAIN_SERVICE] }))
-    expect(screen.queryByText('Indicaciones previas')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Indicaciones previas/ })).toBeNull()
   })
 
-  it('no box when there are no services at all', async () => {
+  it('no pill when there are no services at all', async () => {
     await renderSummary(makeState())
-    expect(screen.queryByText('Indicaciones previas')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Indicaciones previas/ })).toBeNull()
   })
 
-  it('shows the box when a selected service has requirements text', async () => {
+  it('shows a collapsed pill (not the content) by default when a service is flagged', async () => {
     await renderSummary(makeState({ services: [PLAIN_SERVICE, TEXT_ONLY_SERVICE] }))
-    expect(screen.getByText('Indicaciones previas')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Indicaciones previas/ })).toBeTruthy()
+    expect(screen.queryByText('Depilación láser')).toBeNull()
+    expect(screen.queryByRole('dialog', { name: /Indicaciones previas/ })).toBeNull()
+  })
+
+  it('clicking the pill opens the popover with requirements text', async () => {
+    await renderSummary(makeState({ services: [PLAIN_SERVICE, TEXT_ONLY_SERVICE] }))
+    openPopover()
+    expect(screen.getByRole('dialog', { name: /Indicaciones previas/ })).toBeTruthy()
     expect(screen.getByText('Depilación láser')).toBeTruthy()
     const reqText = screen.getByText(/No exponerse al sol 48 h antes\./)
     expect(reqText.className).toContain('whitespace-pre-line')
   })
 
-  it('shows the box when a selected service has a prerequisite', async () => {
+  it('clicking the pill opens the popover with prerequisite text', async () => {
     await renderSummary(makeState({ services: [PREREQ_SERVICE] }))
-    expect(screen.getByText('Indicaciones previas')).toBeTruthy()
+    openPopover()
     expect(screen.getByText(/Requiere haber tomado: Valoración previa/)).toBeTruthy()
   })
 
-  it('does not include plain (non-flagged) services in the box listing', async () => {
+  it('does not include plain (non-flagged) services in the popover listing', async () => {
     await renderSummary(makeState({ services: [PLAIN_SERVICE, TEXT_ONLY_SERVICE] }))
+    openPopover()
     // "corte" appears in the SummaryStrip service item, but not as its own
-    // entry inside the indicaciones box (only Depilación Láser is flagged).
-    const box = screen.getByText('Indicaciones previas').closest('div')
+    // entry inside the popover (only Depilación Láser is flagged).
+    const box = screen.getByRole('dialog', { name: /Indicaciones previas/ })
     expect(box.textContent).not.toMatch(/Corte/)
+  })
+
+  it('clicking the pill again closes the popover', async () => {
+    await renderSummary(makeState({ services: [TEXT_ONLY_SERVICE] }))
+    openPopover()
+    expect(screen.getByRole('dialog', { name: /Indicaciones previas/ })).toBeTruthy()
+    openPopover()
+    expect(screen.queryByRole('dialog', { name: /Indicaciones previas/ })).toBeNull()
+  })
+
+  it('pressing Escape closes the popover', async () => {
+    await renderSummary(makeState({ services: [TEXT_ONLY_SERVICE] }))
+    openPopover()
+    expect(screen.getByRole('dialog', { name: /Indicaciones previas/ })).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: /Indicaciones previas/ })).toBeNull()
+  })
+
+  it('clicking outside the popover closes it', async () => {
+    await renderSummary(makeState({ services: [TEXT_ONLY_SERVICE] }))
+    openPopover()
+    expect(screen.getByRole('dialog', { name: /Indicaciones previas/ })).toBeTruthy()
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('dialog', { name: /Indicaciones previas/ })).toBeNull()
   })
 })

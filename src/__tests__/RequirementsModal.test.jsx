@@ -57,10 +57,26 @@ describe('RequirementsModal — render', () => {
     expect(screen.getByText('Antes de reservar')).toBeTruthy()
   })
 
-  it('renders requirements text with whitespace-pre-line', () => {
+  it('renders each requirements line as its own checklist item', () => {
     render(<RequirementsModal service={SERVICE_TEXT_ONLY} onContinue={noop} onBookPrerequisite={noop} onClose={noop} />)
-    const p = screen.getByText(/No exponerse al sol 48 h antes\./)
-    expect(p.className).toContain('whitespace-pre-line')
+    expect(screen.getByText('No exponerse al sol 48 h antes.')).toBeTruthy()
+    expect(screen.getByText('Llegar sin cremas en la piel.')).toBeTruthy()
+    expect(screen.getByText('Indicaciones')).toBeTruthy()
+  })
+
+  it('ignores blank lines in requirements text', () => {
+    render(
+      <RequirementsModal
+        service={{ ...SERVICE_TEXT_ONLY, requirements: 'Línea uno.\n\n  \nLínea dos.' }}
+        onContinue={noop} onBookPrerequisite={noop} onClose={noop}
+      />
+    )
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+  })
+
+  it('no requirements block when service.requirements is empty', () => {
+    render(<RequirementsModal service={SERVICE_WITH_PREREQ} onContinue={noop} onBookPrerequisite={noop} onClose={noop} />)
+    expect(screen.queryByText('Indicaciones')).toBeNull()
   })
 })
 
