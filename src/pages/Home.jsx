@@ -17,6 +17,31 @@ import { isAllowedAdminOrigin } from '../utils/originUtils';
 
 // Best-effort parent origin inference for the LANDING_READY signal.
 // Falls back to '*' when document.referrer is unavailable (cross-origin block).
+// og:image/twitter:image have no static placeholder in index.html (there is
+// no universal default asset to show for a tenant without a hero photo or
+// logo) — created on demand only when a real image URL is available, removed
+// otherwise. NOTE: like the title/description tags updated alongside this,
+// these only apply after client-side JS runs — crawlers that don't execute
+// JS (WhatsApp's own link-unfurler notably doesn't) will not see them; a
+// real fix requires server-side/edge prerendering for bot user-agents,
+// which is a separate, larger piece of work.
+function setSocialImage(url) {
+  const upsert = (attrName, attrValue) => {
+    let el = document.querySelector(`meta[${attrName}="${attrValue}"]`);
+    if (!url) { el?.remove(); return; }
+    if (!el) {
+      el = document.createElement('meta');
+      el.setAttribute(attrName, attrValue);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', url);
+  };
+  upsert('property', 'og:image');
+  upsert('name', 'twitter:image');
+  // summary_large_image only makes sense with an actual image.
+  document.querySelector('meta[name="twitter:card"]')?.setAttribute('content', url ? 'summary_large_image' : 'summary');
+}
+
 function inferParentOrigin() {
   try {
     if (document.referrer) {
@@ -105,8 +130,18 @@ export default function Home() {
     setMeta('meta[property="og:description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
     setMeta('meta[name="twitter:title"]', `${name} - Cita24.com`);
     setMeta('meta[name="twitter:description"]', `Agenda tu cita en ${name}. Reservas online rápidas y fáciles.`);
-    return () => { document.title = 'Agenda tu Cita - Cita24.com'; };
-  }, [config?.business_name]);
+
+    let rawLanding = config.landing || config.landing_config || {};
+    if (typeof rawLanding === 'string') {
+      try { rawLanding = JSON.parse(rawLanding); } catch { rawLanding = {}; }
+    }
+    setSocialImage(rawLanding?.hero?.background_image_url || config.logo_url || null);
+
+    return () => {
+      document.title = 'Agenda tu Cita - Cita24.com';
+      setSocialImage(null);
+    };
+  }, [config?.business_name, config?.logo_url, config?.landing, config?.landing_config]);
 
   // Robust parsing of landing_config
   let savedConfig = config?.landing || config?.landing_config || {};
@@ -198,6 +233,7 @@ export default function Home() {
           backgroundImage={bc.hero?.background_image_url}
           overlayOpacity={bc.hero?.overlay_opacity}
           overlayBrightness={bc.hero?.overlay_brightness}
+          focalPoint={bc.hero?.focal_point}
         />
 
         {(bc.services_section?.visible !== false) && (

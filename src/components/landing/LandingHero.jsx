@@ -12,9 +12,17 @@ const ICON_MAP = {
   ShieldCheck, Clock, Mail, MapPin, Phone, Sparkles, Briefcase,
 };
 
+// Mismos 9 valores que valida el backend (landing_config.hero.focal_point) y
+// que ofrece la grilla 3x3 de admin-app/src/pages/LandingEditor.jsx.
+const OBJECT_POSITION = {
+  'top-left': 'left top',       'top': 'center top',       'top-right': 'right top',
+  'left':     'left center',    'center': 'center center', 'right':     'right center',
+  'bottom-left': 'left bottom', 'bottom': 'center bottom', 'bottom-right': 'right bottom',
+};
+
 export default function LandingHero({
   title, titleAccent, subtitle, cta, secondaryCta, features, showFeatures = true, badge, showBadge = true,
-  backgroundImage, overlayOpacity = 0.55, overlayBrightness = 1,
+  backgroundImage, overlayOpacity = 0.55, overlayBrightness = 1, focalPoint,
 }) {
   const defaults = [
     { icon: 'ShieldCheck', text: 'Pago Seguro' },
@@ -40,7 +48,15 @@ export default function LandingHero({
 
   return (
     <section id="inicio" className="relative min-h-[100dvh] flex flex-col overflow-hidden">
-      {hasPhoto ? <HeroBackgroundPhoto src={backgroundImage} opacity={overlayOpacity} brightness={overlayBrightness} onError={() => setPhotoError(true)} /> : <BackgroundDecoration />}
+      {hasPhoto ? (
+        <HeroBackgroundPhoto
+          src={backgroundImage}
+          opacity={overlayOpacity}
+          brightness={overlayBrightness}
+          objectPosition={OBJECT_POSITION[focalPoint] || 'center center'}
+          onError={() => setPhotoError(true)}
+        />
+      ) : <BackgroundDecoration />}
 
       {/* Contenido principal — centrado en el espacio disponible */}
       <div className="flex-1 flex flex-col justify-center section-container relative w-full pt-20">
@@ -143,14 +159,14 @@ export default function LandingHero({
   );
 }
 
-function HeroBackgroundPhoto({ src, opacity, brightness, onError }) {
+function HeroBackgroundPhoto({ src, opacity, brightness, objectPosition, onError }) {
   return (
     <div aria-hidden className="absolute inset-0 overflow-hidden">
       <img
         src={src}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ filter: `brightness(${brightness})` }}
+        style={{ filter: `brightness(${brightness})`, objectPosition }}
         onError={onError}
       />
       <div className="absolute inset-0 bg-black" style={{ opacity }} />

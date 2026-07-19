@@ -43,7 +43,7 @@ vi.mock('../../context/ThemeContext', () => ({
 }))
 
 vi.mock('../../components/landing/LandingNavbar',       () => ({ default: ({ businessName, overPhoto }) => <div data-testid="navbar" data-over-photo={String(!!overPhoto)}>{businessName}</div> }))
-vi.mock('../../components/landing/LandingHero',         () => ({ default: ({ backgroundImage }) => <div data-testid="hero" data-bg={backgroundImage || ''} /> }))
+vi.mock('../../components/landing/LandingHero',         () => ({ default: ({ backgroundImage, focalPoint }) => <div data-testid="hero" data-bg={backgroundImage || ''} data-focal={focalPoint || ''} /> }))
 vi.mock('../../components/landing/LandingServices',     () => ({ default: ({ services }) => <div data-testid="landing-services">{services?.map(s => <span key={s.id}>{s.name}</span>)}</div> }))
 vi.mock('../../components/landing/LandingStaff',        () => ({ default: ({ staff }) => <div data-testid="landing-staff">{staff?.map(s => <span key={s.id}>{s.name}</span>)}</div> }))
 vi.mock('../../components/landing/LandingTestimonials', () => ({ default: () => <div data-testid="testimonials" /> }))
@@ -212,6 +212,16 @@ describe('Home — usa hooks centralizados (F-002/F-003/F-004)', () => {
     expect(screen.getByTestId('navbar').getAttribute('data-over-photo')).toBe('true')
   })
 
+  it('pasa hero.focal_point a LandingHero', async () => {
+    const cfg = { ...CONFIG, landing: { hero: { background_image_url: 'https://cdn.example.com/hero.jpg', focal_point: 'bottom-left' } } }
+    useConfig.mockReturnValue({ data: cfg, isLoading: false, isError: false, error: null })
+    useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
+
+    await act(async () => { await renderHome() })
+
+    expect(screen.getByTestId('hero').getAttribute('data-focal')).toBe('bottom-left')
+  })
+
   it('sin imagen de fondo, overPhoto es false', async () => {
     useConfig.mockReturnValue({ data: CONFIG, isLoading: false, isError: false, error: null })
     useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
@@ -220,5 +230,47 @@ describe('Home — usa hooks centralizados (F-002/F-003/F-004)', () => {
 
     expect(screen.getByTestId('hero').getAttribute('data-bg')).toBe('')
     expect(screen.getByTestId('navbar').getAttribute('data-over-photo')).toBe('false')
+  })
+})
+
+describe('Home — og:image/twitter:image (preview social)', () => {
+  let useConfig, useServices
+
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    document.head.querySelectorAll('meta[property="og:image"], meta[name="twitter:image"]').forEach(el => el.remove())
+    ;({ useConfig }   = await import('../../hooks/useConfig'))
+    ;({ useServices } = await import('../../hooks/useServices'))
+  })
+
+  it('usa hero.background_image_url como og:image/twitter:image y sube el twitter:card a summary_large_image', async () => {
+    const cfg = { ...CONFIG, landing: { hero: { background_image_url: 'https://cdn.example.com/hero.jpg' } } }
+    useConfig.mockReturnValue({ data: cfg, isLoading: false, isError: false, error: null })
+    useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
+
+    await act(async () => { await renderHome() })
+
+    expect(document.querySelector('meta[property="og:image"]').getAttribute('content')).toBe('https://cdn.example.com/hero.jpg')
+    expect(document.querySelector('meta[name="twitter:image"]').getAttribute('content')).toBe('https://cdn.example.com/hero.jpg')
+  })
+
+  it('sin foto de hero, cae a logo_url', async () => {
+    const cfg = { ...CONFIG, logo_url: 'https://cdn.example.com/logo.png' }
+    useConfig.mockReturnValue({ data: cfg, isLoading: false, isError: false, error: null })
+    useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
+
+    await act(async () => { await renderHome() })
+
+    expect(document.querySelector('meta[property="og:image"]').getAttribute('content')).toBe('https://cdn.example.com/logo.png')
+  })
+
+  it('sin foto de hero ni logo, no crea las etiquetas og:image/twitter:image', async () => {
+    useConfig.mockReturnValue({ data: CONFIG, isLoading: false, isError: false, error: null })
+    useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
+
+    await act(async () => { await renderHome() })
+
+    expect(document.querySelector('meta[property="og:image"]')).toBeNull()
+    expect(document.querySelector('meta[name="twitter:image"]')).toBeNull()
   })
 })

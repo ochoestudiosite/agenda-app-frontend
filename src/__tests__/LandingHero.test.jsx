@@ -224,4 +224,25 @@ describe('LandingHero — background photo + overlay', () => {
     expect(document.querySelector('h1').className).toContain('text-ink')
     expect(document.querySelector('h1').className).not.toContain('text-white')
   })
+
+  it('defaults to "center center" object-position when no focalPoint is given', async () => {
+    await act(async () => {
+      await renderHero({ backgroundImage: 'https://cdn.example.com/hero.jpg' })
+    })
+    expect(document.querySelector('img').style.objectPosition).toBe('center center')
+  })
+
+  it('maps a focalPoint value to the matching CSS object-position', async () => {
+    await act(async () => {
+      await renderHero({ backgroundImage: 'https://cdn.example.com/hero.jpg', focalPoint: 'top-right' })
+    })
+    expect(document.querySelector('img').style.objectPosition).toBe('right top')
+  })
+
+  it('falls back to "center center" for an unrecognized focalPoint value', async () => {
+    await act(async () => {
+      await renderHero({ backgroundImage: 'https://cdn.example.com/hero.jpg', focalPoint: 'not-a-real-value' })
+    })
+    expect(document.querySelector('img').style.objectPosition).toBe('center center')
+  })
 })
