@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, act } from '@testing-library/react'
+import { render, act, fireEvent } from '@testing-library/react'
 import React from 'react'
 import { MemoryRouter } from 'react-router-dom'
 
@@ -207,5 +207,21 @@ describe('LandingHero — background photo + overlay', () => {
     expect(h1.className).toContain('text-white')
     const p = Array.from(document.querySelectorAll('p')).find(el => el.textContent === 'Subtítulo')
     expect(p.className).toContain('text-white/85')
+  })
+
+  it('a broken image URL degrades to the decorative background instead of leaving white text stranded', async () => {
+    await act(async () => {
+      await renderHero({ backgroundImage: 'https://cdn.example.com/broken.jpg', title: 'Con Foto' })
+    })
+    // Todavia con foto: texto blanco, sin BackgroundDecoration.
+    expect(document.querySelector('h1').className).toContain('text-white')
+
+    const img = document.querySelector('img')
+    await act(async () => { fireEvent.error(img) })
+
+    // Tras el error: la imagen se desmonta y el hero vuelve al estado sin foto.
+    expect(document.querySelector('img')).toBeNull()
+    expect(document.querySelector('h1').className).toContain('text-ink')
+    expect(document.querySelector('h1').className).not.toContain('text-white')
   })
 })

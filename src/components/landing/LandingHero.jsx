@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   ArrowUpRight, HelpCircle,
   Calendar, Scissors, Coffee, Heart, Star, Smile, Crown, Anchor, Gem, Zap, Gift,
@@ -21,7 +22,13 @@ export default function LandingHero({
     { icon: 'Star',        text: 'Top Calidad' },
   ];
   const displayFeatures = (features?.length === 3) ? features : defaults;
-  const hasPhoto = Boolean(backgroundImage);
+
+  // Si la URL guardada deja de servir la imagen (archivo borrado, bucket
+  // caído, etc.), no queremos texto blanco varado sobre un fondo vacío —
+  // se degrada al hero decorativo normal en vez de quedar ilegible.
+  const [photoError, setPhotoError] = useState(false);
+  useEffect(() => { setPhotoError(false); }, [backgroundImage]);
+  const hasPhoto = Boolean(backgroundImage) && !photoError;
 
   const headlineFallback = (
     <>
@@ -33,7 +40,7 @@ export default function LandingHero({
 
   return (
     <section id="inicio" className="relative min-h-[100dvh] flex flex-col overflow-hidden">
-      {hasPhoto ? <HeroBackgroundPhoto src={backgroundImage} opacity={overlayOpacity} brightness={overlayBrightness} /> : <BackgroundDecoration />}
+      {hasPhoto ? <HeroBackgroundPhoto src={backgroundImage} opacity={overlayOpacity} brightness={overlayBrightness} onError={() => setPhotoError(true)} /> : <BackgroundDecoration />}
 
       {/* Contenido principal — centrado en el espacio disponible */}
       <div className="flex-1 flex flex-col justify-center section-container relative w-full pt-20">
@@ -136,7 +143,7 @@ export default function LandingHero({
   );
 }
 
-function HeroBackgroundPhoto({ src, opacity, brightness }) {
+function HeroBackgroundPhoto({ src, opacity, brightness, onError }) {
   return (
     <div aria-hidden className="absolute inset-0 overflow-hidden">
       <img
@@ -144,6 +151,7 @@ function HeroBackgroundPhoto({ src, opacity, brightness }) {
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
         style={{ filter: `brightness(${brightness})` }}
+        onError={onError}
       />
       <div className="absolute inset-0 bg-black" style={{ opacity }} />
     </div>
