@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -54,14 +54,14 @@ vi.mock('../hooks/useConfig.js', () => ({
   }),
 }))
 
+let mockCatalogServices = [
+  { id: 'corte', name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
+  { id: 'tinte', name: 'Tinte',            duration: 60, price: 500, price_type: 'fixed' },
+]
+
 vi.mock('../hooks/useServices.js', () => ({
   useServices: () => ({
-    data: {
-      services: [
-        { id: 'corte', name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
-        { id: 'tinte', name: 'Tinte',            duration: 60, price: 500, price_type: 'fixed' },
-      ],
-    },
+    data: { services: mockCatalogServices },
   }),
 }))
 
@@ -208,6 +208,10 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockPhoneVerificationRequired = true // default: Pro+OTP enabled
   mockManageVerificationRequired = undefined // default: config vieja → fallback
+  mockCatalogServices = [
+    { id: 'corte', name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
+    { id: 'tinte', name: 'Tinte',            duration: 60, price: 500, price_type: 'fixed' },
+  ]
 })
 
 // ============================================================================
@@ -538,5 +542,35 @@ describe('GroupAppointmentCard — completed status badge label (regression)', (
   it('action buttons still render for a completed group today (pre-existing gap, documented not fixed here)', async () => {
     await renderCard(COMPLETED_GROUP)
     expect(screen.queryByRole('button', { name: /Cancelar visita/i })).toBeTruthy()
+  })
+})
+
+// ============================================================================
+// 8. Chip "Requisitos previos" (RequirementsTag) por item de la lista
+// ============================================================================
+
+describe('GroupAppointmentCard — chip Requisitos previos por servicio', () => {
+  it('sin flags en el catálogo: el chip no aparece', async () => {
+    await renderCard()
+    expect(screen.queryByRole('button', { name: /Requisitos previos/i })).toBeNull()
+  })
+
+  it('con un servicio flagged en el catálogo: el chip aparece en el item correspondiente', async () => {
+    mockCatalogServices = [
+      { id: 'corte', name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
+      {
+        id: 'tinte', name: 'Tinte', duration: 60, price: 500, price_type: 'fixed',
+        requirements: 'No lavar el cabello 24 h antes.',
+        prerequisite: null,
+      },
+    ]
+    await renderCard()
+
+    const chips = screen.getAllByRole('button', { name: /Requisitos previos/i })
+    expect(chips).toHaveLength(1)
+
+    fireEvent.click(chips[0])
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.textContent).toMatch(/No lavar el cabello 24 h antes\./)
   })
 })

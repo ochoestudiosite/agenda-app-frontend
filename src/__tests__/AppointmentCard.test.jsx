@@ -42,13 +42,13 @@ vi.mock('../hooks/useConfig.js', () => ({
   }),
 }))
 
+let mockCatalogServices = [
+  { id: 'corte', dbId: 10, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
+]
+
 vi.mock('../hooks/useServices.js', () => ({
   useServices: () => ({
-    data: {
-      services: [
-        { id: 'corte', dbId: 10, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
-      ],
-    },
+    data: { services: mockCatalogServices },
   }),
 }))
 
@@ -128,6 +128,9 @@ async function renderCard(appointment = CONFIRMED_APPT) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockCatalogServices = [
+    { id: 'corte', dbId: 10, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
+  ]
 })
 
 // ============================================================================
@@ -331,5 +334,61 @@ describe('AppointmentCard — isSlotBusy (busySlots)', () => {
   it('un slot que excede la hora de cierre sigue marcado ocupado independientemente de busyMinutesSet', async () => {
     const { isSlotBusy } = await import('../components/manage/AppointmentCard.jsx')
     expect(isSlotBusy('17:45', 30, [], 18 * 60, new Set())).toBe(true)
+  })
+})
+
+// ============================================================================
+// 8. Bloque "Servicio" (singular) unificado con el patrón de "Especialista"
+// ============================================================================
+
+describe('AppointmentCard — bloque Servicio unificado con Especialista', () => {
+  it('el label "Servicio" aparece dentro de la misma estructura que "Especialista" (label-section antes del nombre)', async () => {
+    await renderCard()
+    const serviceLabels    = screen.getAllByText('Servicio')
+    const specialistLabels = screen.getAllByText('Especialista')
+    expect(serviceLabels.length).toBeGreaterThan(0)
+    expect(specialistLabels.length).toBeGreaterThan(0)
+
+    const serviceLabel    = serviceLabels[0]
+    const specialistLabel = specialistLabels[0]
+    expect(serviceLabel.className).toContain('label-section')
+    expect(specialistLabel.className).toContain('label-section')
+
+    // Ambos: el label-section es hermano inmediatamente anterior al nombre.
+    const serviceName    = serviceLabel.nextElementSibling
+    const specialistName = specialistLabel.nextElementSibling
+    expect(serviceName.textContent).toMatch(/Corte de cabello/i)
+    expect(specialistName.textContent).toMatch(/Ana García/i)
+  })
+})
+
+// ============================================================================
+// 9. Chip "Requisitos previos" (RequirementsTag) en el servicio singular
+// ============================================================================
+
+describe('AppointmentCard — chip Requisitos previos (servicio singular)', () => {
+  it('no muestra el chip cuando el servicio del catálogo no tiene requirements/prerequisite', async () => {
+    await renderCard()
+    expect(screen.queryByRole('button', { name: /Requisitos previos/i })).toBeNull()
+  })
+
+  it('muestra el chip y abre el popover con el contenido correcto cuando el servicio está flagged', async () => {
+    mockCatalogServices = [
+      {
+        id: 'corte', dbId: 10, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed',
+        requirements: 'Llegar 10 minutos antes.\nCabello limpio y seco.',
+        prerequisite: null,
+      },
+    ]
+    const user = userEvent.setup()
+    await renderCard()
+
+    const chip = screen.getByRole('button', { name: /Requisitos previos/i })
+    expect(chip).toBeTruthy()
+
+    await user.click(chip)
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.textContent).toMatch(/Llegar 10 minutos antes\./)
+    expect(dialog.textContent).toMatch(/Cabello limpio y seco\./)
   })
 })

@@ -8,6 +8,7 @@ import EntityAvatar from '../ui/EntityAvatar';
 import { PromoBadge } from '../ui/PromoPrice';
 import ExpandableText from '../ui/ExpandableText';
 import RequirementsModal from '../ui/RequirementsModal';
+import RequirementsTag from '../ui/RequirementsTag';
 
 // Un servicio está "flagged" cuando el negocio quiere que el cliente lea algo
 // antes de reservarlo (indicaciones) y/o requiere haber tomado otro servicio antes.
@@ -219,11 +220,11 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
                          ${isSelected ? 'text-gold' : 'text-ink group-hover:text-gold'}`}>
             {toTitleCase(service.name)}
           </p>
-          {isFlagged(service) && (
-            <span className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400">
-              Requisitos previos
-            </span>
-          )}
+          <RequirementsTag
+            requirements={service.requirements}
+            prerequisite={service.prerequisite}
+            serviceName={service.name}
+          />
           {service.promo && (
             <>
               <PromoBadge discountType={service.promo.discountType} discountValue={service.promo.discountValue} />

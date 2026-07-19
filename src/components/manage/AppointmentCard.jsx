@@ -14,6 +14,7 @@ import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 import SummaryStrip from '../ui/SummaryStrip';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
+import RequirementsTag from '../ui/RequirementsTag';
 import OTPPanel from '../booking/OTPPanel';
 import { api } from '../../services/api';
 
@@ -204,12 +205,14 @@ export default function AppointmentCard({ appointment, onUpdated }) {
 
         {/* Service(s) */}
         <div className="px-6 py-4 border-b border-edge">
-          <p className="label-section mb-3">
-            {appointment.services ? 'Servicios' : appointment.serviceName?.includes(' + ') ? 'Servicios' : 'Servicio'}
-          </p>
+          {(appointment.services || appointment.serviceName?.includes(' + ')) && (
+            <p className="label-section mb-3">Servicios</p>
+          )}
           {appointment.services ? (
             <div className="space-y-2.5">
-              {appointment.services.map((svc) => (
+              {appointment.services.map((svc) => {
+                const svcCatalogMatch = svcData?.services?.find(s => s.name?.toLowerCase() === svc.serviceName?.toLowerCase());
+                return (
                 <div key={svc.serviceName} className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gold/20 bg-gold/8 flex items-center justify-center shrink-0 mt-0.5">
                     {svc.imageUrl
@@ -223,6 +226,11 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className="text-xs text-ink-3">{svc.serviceDuration} min</span>
+                      <RequirementsTag
+                        requirements={svcCatalogMatch?.requirements}
+                        prerequisite={svcCatalogMatch?.prerequisite}
+                        serviceName={svc.serviceName}
+                      />
                       {svc.discountAmount > 0 && (
                         <PromoTag
                           promotionName={svc.promotionName} promotionType={svc.promotionType}
@@ -245,7 +253,8 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                     </p>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex items-center gap-3">
@@ -256,11 +265,17 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                 }
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                <p className="label-section">Servicio</p>
+                <p className="text-[14px] font-semibold text-ink mt-0.5 leading-snug truncate">
                   {toTitleCase(appointment.serviceName)}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                   <span className="text-xs text-ink-3">{appointment.serviceDuration} min</span>
+                  <RequirementsTag
+                    requirements={appointmentService?.requirements}
+                    prerequisite={appointmentService?.prerequisite}
+                    serviceName={appointment.serviceName}
+                  />
                   {appointment.discountAmount > 0 && (
                     <PromoTag
                       promotionName={appointment.promotionName} promotionType={appointment.promotionType}

@@ -40,12 +40,14 @@ vi.mock('../hooks/useConfig', () => ({
   useConfig: () => ({ data: mockConfig }),
 }))
 
+let mockCatalogServices = [
+  { id: 'corte', dbId: 1, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed', imageUrl: null },
+]
+
 vi.mock('../hooks/useServices', () => ({
   useServices: () => ({
     data: {
-      services: [
-        { id: 'corte', dbId: 1, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed', imageUrl: null },
-      ],
+      services: mockCatalogServices,
       specialists: [
         { id: 5, name: 'Ana García', initials: 'AG', avatarUrl: null },
       ],
@@ -134,6 +136,9 @@ async function renderConfirmation(confirmation = SINGLE_CONFIRMATION, extra = {}
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockCatalogServices = [
+    { id: 'corte', dbId: 1, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed', imageUrl: null },
+  ]
 })
 
 // ============================================================================
@@ -292,5 +297,46 @@ describe('BookingConfirmation — copy button', () => {
         expect(writeTextSpy).toHaveBeenCalledWith('ABC123')
       })
     }
+  })
+})
+
+// ============================================================================
+// 6. Bloque "Servicio" (singular) unificado con Especialista + chip Requisitos
+// ============================================================================
+
+describe('BookingConfirmation — bloque Servicio unificado con Especialista', () => {
+  it('el label "Servicio" aparece inline, en la misma estructura que "Especialista"', async () => {
+    await renderConfirmation()
+    const serviceLabel    = screen.getByText('Servicio')
+    const specialistLabel = screen.getByText('Especialista')
+    expect(serviceLabel.className).toContain('label-section')
+    expect(specialistLabel.className).toContain('label-section')
+    expect(serviceLabel.nextElementSibling.textContent).toMatch(/Corte de cabello/i)
+    expect(specialistLabel.nextElementSibling.textContent).toMatch(/Ana García/i)
+  })
+})
+
+describe('BookingConfirmation — chip Requisitos previos (servicio singular)', () => {
+  it('no muestra el chip cuando el servicio del catálogo no tiene requirements/prerequisite', async () => {
+    await renderConfirmation()
+    expect(screen.queryByRole('button', { name: /Requisitos previos/i })).toBeNull()
+  })
+
+  it('muestra el chip y abre el popover con el contenido correcto cuando el servicio está flagged', async () => {
+    mockCatalogServices = [
+      {
+        id: 'corte', dbId: 1, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed', imageUrl: null,
+        requirements: 'Llegar 10 minutos antes.\nCabello limpio y seco.',
+        prerequisite: null,
+      },
+    ]
+    const user = userEvent.setup()
+    await renderConfirmation()
+
+    const chip = screen.getByRole('button', { name: /Requisitos previos/i })
+    await user.click(chip)
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.textContent).toMatch(/Llegar 10 minutos antes\./)
+    expect(dialog.textContent).toMatch(/Cabello limpio y seco\./)
   })
 })

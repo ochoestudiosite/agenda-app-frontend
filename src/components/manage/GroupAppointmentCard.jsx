@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
+import RequirementsTag from '../ui/RequirementsTag';
 import { useGroupAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { findNextAvailableDate, todayDateInTz, isPastDateTime } from '../../utils/businessTime';
 import { useServices } from '../../hooks/useServices';
@@ -202,6 +203,11 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
                         discountAmount={appt.discountAmount}
                       />
                     )}
+                    <RequirementsTag
+                      requirements={svcObj?.requirements}
+                      prerequisite={svcObj?.prerequisite}
+                      serviceName={appt.serviceName}
+                    />
                     {appt.status === 'cancelled' && (
                       <span className="badge badge-cancelled text-[11px] mt-1.5 inline-block">Cancelada</span>
                     )}

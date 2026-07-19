@@ -16,6 +16,7 @@ const promoTagProps = o => ({
 });
 import Button from '../ui/Button';
 import EntityAvatar from '../ui/EntityAvatar';
+import RequirementsTag from '../ui/RequirementsTag';
 
 const MONTH_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
@@ -168,6 +169,11 @@ export default function BookingConfirmation() {
                           </p>
                         </div>
                         {appt.discountAmount > 0 && <PromoTag className="mt-1.5" {...promoTagProps(appt)} />}
+                        <RequirementsTag
+                          requirements={svcObj?.requirements}
+                          prerequisite={svcObj?.prerequisite}
+                          serviceName={appt.serviceName}
+                        />
                       </div>
                       {appt.discountAmount > 0 && appt.originalPrice != null ? (
                         <StruckPrice
@@ -227,12 +233,14 @@ export default function BookingConfirmation() {
           <>
             {/* ── SINGLE: service(s) ──────────────────────────────────────── */}
             <div className="px-6 py-4 border-b border-edge">
-              <p className="label-section mb-3">
-                {confirmation?.services?.length > 1 ? 'Servicios' : 'Servicio'}
-              </p>
+              {confirmation?.services?.length > 1 && (
+                <p className="label-section mb-3">Servicios</p>
+              )}
               {confirmation?.services?.length > 1 ? (
                 <div className="space-y-2.5">
-                  {confirmation.services.map((svc, i) => (
+                  {confirmation.services.map((svc, i) => {
+                    const catalogMatch = svcData?.services?.find(s => s.name?.toLowerCase() === svc.serviceName?.toLowerCase());
+                    return (
                     <div key={svc.id || svc.slug || i} className="flex items-start gap-3">
                       <EntityAvatar size="summary" name={svc.serviceName} imageUrl={svc.imageUrl} className="mt-0.5" />
                       <div className="flex-1 min-w-0">
@@ -241,6 +249,11 @@ export default function BookingConfirmation() {
                         </p>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <span className="text-xs text-ink-3">{svc.serviceDuration} min</span>
+                          <RequirementsTag
+                            requirements={catalogMatch?.requirements}
+                            prerequisite={catalogMatch?.prerequisite}
+                            serviceName={svc.serviceName}
+                          />
                           {svc.discountAmount > 0 && <PromoTag {...promoTagProps(svc)} />}
                         </div>
                       </div>
@@ -257,19 +270,26 @@ export default function BookingConfirmation() {
                         </p>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
                   <EntityAvatar size="confirm" name={confirmation?.serviceName} imageUrl={service?.imageUrl} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-semibold text-ink leading-snug truncate">
+                    <p className="label-section">Servicio</p>
+                    <p className="text-[14px] font-semibold text-ink mt-0.5 leading-snug truncate">
                       {toTitleCase(confirmation?.serviceName)}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       {confirmation?.serviceDuration && (
                         <span className="text-xs text-ink-3">{confirmation.serviceDuration} min</span>
                       )}
+                      <RequirementsTag
+                        requirements={service?.requirements}
+                        prerequisite={service?.prerequisite}
+                        serviceName={confirmation?.serviceName}
+                      />
                       {confirmation?.discountAmount > 0 && <PromoTag {...promoTagProps(confirmation)} />}
                     </div>
                   </div>
