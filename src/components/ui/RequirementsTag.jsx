@@ -1,29 +1,84 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toTitleCase } from '../../utils/formatters';
+
+// Margen mínimo respecto al borde de la pantalla y separación del chip.
+const EDGE_PADDING = 12;
+const TRIGGER_GAP  = 8;
 
 // Chip + popover reutilizable de "requisitos previos" — se usa en cada fila/
 // tarjeta de servicio que trae `requirements` (texto libre) y/o `prerequisite`
 // (otro servicio del catálogo que debe tomarse antes). Vive dentro de
 // contenedores con su propio onClick (seleccionar servicio, etc.), por eso
 // detiene la propagación en todos sus clicks internos.
+//
+// El popover se porta a document.body con position:fixed y coordenadas
+// calculadas en JS: varias de las tarjetas donde vive este chip (AppointmentCard,
+// GroupAppointmentCard) tienen overflow-hidden, y un chip cerca del borde
+// derecho de la pantalla desbordaría un popover posicionado con absolute —
+// el portal escapa cualquier overflow-hidden/scroll ancestro y el clamp de
+// abajo garantiza que nunca se salga del viewport, sin importar dónde caiga
+// el chip.
 export default function RequirementsTag({ requirements, prerequisite, serviceName }) {
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-  const popoverId = useId();
+  const [coords, setCoords] = useState(null); // {top, left} en coordenadas de viewport
+  const wrapRef    = useRef(null); // botón/chip disparador
+  const popoverRef = useRef(null); // contenido porteado
+  const popoverId  = useId();
+
+  // Mide el chip y el popover ya montado (oculto hasta tener coords) y calcula
+  // una posición que siempre cabe en pantalla: pega a la derecha si se
+  // desbordaría a la derecha, y voltea arriba del chip si no cabe abajo.
+  useLayoutEffect(() => {
+    if (!open) { setCoords(null); return; }
+    function reposition() {
+      const trigger = wrapRef.current;
+      const popover = popoverRef.current;
+      if (!trigger || !popover) return;
+      const triggerRect = trigger.getBoundingClientRect();
+      const popoverRect = popover.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      let left = triggerRect.left;
+      if (left + popoverRect.width > vw - EDGE_PADDING) left = vw - EDGE_PADDING - popoverRect.width;
+      if (left < EDGE_PADDING) left = EDGE_PADDING;
+
+      let top = triggerRect.bottom + TRIGGER_GAP;
+      if (top + popoverRect.height > vh - EDGE_PADDING) {
+        const above = triggerRect.top - popoverRect.height - TRIGGER_GAP;
+        top = above >= EDGE_PADDING ? above : EDGE_PADDING;
+      }
+
+      setCoords({ top, left });
+    }
+    reposition();
+    window.addEventListener('resize', reposition);
+    return () => window.removeEventListener('resize', reposition);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function handlePointerDown(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      const insideTrigger = wrapRef.current?.contains(e.target);
+      const insidePopover = popoverRef.current?.contains(e.target);
+      if (!insideTrigger && !insidePopover) setOpen(false);
     }
     function handleKeyDown(e) {
       if (e.key === 'Escape') setOpen(false);
     }
+    // Cierra en vez de re-posicionar durante scroll — más simple y evita que
+    // el popover "persiga" al chip con jank mientras el usuario navega.
+    function handleScroll() {
+      setOpen(false);
+    }
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleScroll, true);
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [open]);
 
@@ -56,12 +111,20 @@ export default function RequirementsTag({ requirements, prerequisite, serviceNam
         Requisitos previos
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
+          ref={popoverRef}
           id={popoverId}
           role="dialog"
           aria-label={serviceName ? `Indicaciones previas de ${toTitleCase(serviceName)}` : 'Indicaciones previas'}
-          className="absolute z-20 top-full left-0 mt-2 w-72 max-w-[90vw] rounded-2xl border border-amber-500/25
+          onClick={e => e.stopPropagation()}
+          style={{
+            position:   'fixed',
+            top:        coords?.top ?? 0,
+            left:       coords?.left ?? 0,
+            visibility: coords ? 'visible' : 'hidden',
+          }}
+          className="z-50 w-72 max-w-[calc(100vw-24px)] rounded-2xl border border-amber-500/25
                      bg-card shadow-deep p-4 text-xs leading-relaxed animate-fade-up"
         >
           {requirementLines.length > 0 && (
@@ -81,7 +144,8 @@ export default function RequirementsTag({ requirements, prerequisite, serviceNam
               Requiere haber tomado: {toTitleCase(prerequisite.name)}
             </p>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
