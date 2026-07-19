@@ -124,7 +124,7 @@ export default function RequirementsTag({ requirements, prerequisite, serviceNam
             left:       coords?.left ?? 0,
             visibility: coords ? 'visible' : 'hidden',
           }}
-          className="z-50 w-72 max-w-[calc(100vw-24px)] rounded-2xl border border-amber-500/25
+          className="z-[60] w-72 max-w-[calc(100vw-24px)] rounded-2xl border border-amber-500/25
                      bg-card shadow-deep p-4 text-xs leading-relaxed animate-fade-up"
         >
           {requirementLines.length > 0 && (
