@@ -700,4 +700,43 @@ describe('ClientForm — código promocional', () => {
       expect(screen.getByText(/no está disponible en la sucursal seleccionada/i)).toBeTruthy()
     })
   })
+
+  it('botón "Cancelar" cierra el control y borra lo escrito, sin validar', async () => {
+    await renderForm()
+    const user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'ALGO')
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    expect(mockValidatePromo).not.toHaveBeenCalled()
+    expect(screen.queryByPlaceholderText(/verano20/i)).toBeNull()
+    expect(screen.getByText(/¿tienes un código promocional\?/i)).toBeTruthy()
+  })
+
+  it('tras "Cancelar", reabrir el control muestra el campo vacío (no conserva lo tecleado)', async () => {
+    await renderForm()
+    let user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'ALGO')
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+
+    await user.click(screen.getByText(/¿tienes un código promocional\?/i))
+    expect(screen.getByPlaceholderText(/verano20/i).value).toBe('')
+  })
+
+  it('con un código aplicado, "Quitar" también borra el estado (comportamiento previo intacto)', async () => {
+    mockValidatePromo.mockResolvedValue({
+      valid: true, codeApplied: true,
+      pricing: { totalList: 250, totalDiscount: 25, totalFinal: 225, items: [
+        { listPrice: 250, discountAmount: 25, finalPrice: 225, promoName: 'Verano', promoType: 'percent', promoValue: 10 },
+      ] },
+    })
+    await renderForm()
+    const user = await openPromoField()
+    await user.type(screen.getByPlaceholderText(/verano20/i), 'VERANO10')
+    await user.click(screen.getByRole('button', { name: /aplicar/i }))
+    await waitFor(() => expect(screen.getByText('VERANO10')).toBeTruthy())
+
+    await user.click(screen.getByRole('button', { name: 'Quitar' }))
+    expect(screen.queryByText('VERANO10')).toBeNull()
+    expect(screen.getByPlaceholderText(/verano20/i)).toBeTruthy()
+  })
 })

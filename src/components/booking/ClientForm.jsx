@@ -281,6 +281,11 @@ export default function ClientForm() {
     setServerPricing(null);
   }
 
+  function closePromo() {
+    clearPromo();
+    setPromoOpen(false);
+  }
+
   function handleAppointmentError(err) {
     if (err.status === 409) {
       toast('El horario ya no está disponible. Por favor elige otro.', 'error');
@@ -679,8 +684,16 @@ export default function ClientForm() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="block text-[12px] font-medium text-ink-2">Código promocional</label>
-                  <div className="flex gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="block text-[12px] font-medium text-ink-2">Código promocional</label>
+                    <button type="button" onClick={closePromo} className="text-[12px] font-semibold text-ink-3 hover:text-ink transition-colors shrink-0">
+                      Cancelar
+                    </button>
+                  </div>
+                  {/* items-start: el Input crece cuando muestra su mensaje de error
+                      (fila flex sin esto estira el Button a la misma altura por
+                      align-items:stretch — se veía "crecer" con el error). */}
+                  <div className="flex items-start gap-2">
                     <Input
                       value={promoInput}
                       onChange={e => { setPromoInput(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')); if (promoStatus) setPromoStatus(null); }}
@@ -692,7 +705,7 @@ export default function ClientForm() {
                       error={promoStatus && !promoStatus.ok ? promoStatus.message : undefined}
                       className="flex-1 font-semibold tracking-wider uppercase"
                     />
-                    <Button type="button" variant="subtle" onClick={handleApplyPromo} loading={promoChecking} disabled={!promoInput.trim()} className="shrink-0">
+                    <Button type="button" variant="subtle" size="lg" onClick={handleApplyPromo} loading={promoChecking} disabled={!promoInput.trim()} className="shrink-0">
                       Aplicar
                     </Button>
                   </div>
