@@ -181,6 +181,7 @@ export default function Home() {
       <LandingNavbar
         businessName={businessName}
         config={bc}
+        overPhoto={Boolean(bc.hero?.background_image_url)}
       />
 
       <main>
@@ -194,6 +195,9 @@ export default function Home() {
           showFeatures={bc.hero?.show_features}
           badge={bc.hero?.badge_text}
           showBadge={bc.hero?.show_badge}
+          backgroundImage={bc.hero?.background_image_url}
+          overlayOpacity={bc.hero?.overlay_opacity}
+          overlayBrightness={bc.hero?.overlay_brightness}
         />
 
         {(bc.services_section?.visible !== false) && (

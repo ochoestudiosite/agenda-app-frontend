@@ -114,3 +114,36 @@ describe('LandingNavbar — business name and CTA', () => {
     expect(document.body.textContent).not.toContain('Reservar')
   })
 })
+
+describe('LandingNavbar — overPhoto (light text over hero background image)', () => {
+  function businessNameSpan(text) {
+    return Array.from(document.querySelectorAll('span')).find(el => el.textContent === text)
+  }
+  function navLink(href) {
+    return document.querySelector(`a[href="${href}"]`)
+  }
+
+  it('overPhoto=false (default) keeps business name in ink color', async () => {
+    await act(async () => { await renderNavbar({ businessName: 'Studio X', config: {} }) })
+    const nameEl = businessNameSpan('Studio X')
+    expect(nameEl.className).toContain('text-ink')
+    expect(nameEl.className).not.toContain('text-white')
+  })
+
+  it('overPhoto=true while unscrolled → business name and nav links switch to white', async () => {
+    await act(async () => { await renderNavbar({ businessName: 'Studio X', config: {}, overPhoto: true }) })
+    const nameEl = businessNameSpan('Studio X')
+    expect(nameEl.className).toContain('text-white')
+    const servicesLink = navLink('#servicios')
+    expect(servicesLink.className).toContain('text-white/85')
+  })
+
+  it('overPhoto=true but scrolled past threshold → reverts to normal ink colors', async () => {
+    await act(async () => { await renderNavbar({ businessName: 'Studio X', config: {}, overPhoto: true }) })
+    Object.defineProperty(window, 'scrollY', { value: 100, configurable: true })
+    await act(async () => { window.dispatchEvent(new Event('scroll')) })
+    const nameEl = businessNameSpan('Studio X')
+    expect(nameEl.className).toContain('text-ink')
+    expect(nameEl.className).not.toContain('text-white')
+  })
+})

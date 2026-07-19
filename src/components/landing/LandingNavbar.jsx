@@ -18,7 +18,7 @@ const ICON_MAP = {
 //   - Mobile  (<md): same bar + animated drawer below
 // All content is tenant-configurable via the `config` prop; the admin's
 // Landing Editor previews changes live over postMessage.
-export default function LandingNavbar({ businessName, config = {} }) {
+export default function LandingNavbar({ businessName, config = {}, overPhoto = false }) {
   const showCta     = config.navbar?.show_cta !== false;
   const ctaText     = config.navbar?.cta_text || 'Reservar';
   const displayName = config.navbar?.business_name || businessName || 'Cita24';
@@ -44,6 +44,11 @@ export default function LandingNavbar({ businessName, config = {} }) {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Barra transparente flotando sobre la foto de fondo del hero: usar texto
+  // blanco (independiente de light/dark mode) hasta que el scroll active el
+  // fondo sólido, momento en el que vuelve a los colores normales de --ink.
+  const lightNav = overPhoto && !isScrolled;
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
@@ -108,7 +113,7 @@ export default function LandingNavbar({ businessName, config = {} }) {
           <LogoIcon size={15} strokeWidth={2.4} />
         </span>
       )}
-      <span className="font-display text-[1.0625rem] font-bold tracking-tight text-ink leading-none">
+      <span className={`font-display text-[1.0625rem] font-bold tracking-tight leading-none transition-colors duration-300 ${lightNav ? 'text-white' : 'text-ink'}`}>
         {displayName}
       </span>
     </Link>
@@ -133,7 +138,9 @@ export default function LandingNavbar({ businessName, config = {} }) {
               <a
                 key={link.name}
                 href={link.href}
-                className="px-3 py-1.5 text-[14px] font-medium text-ink-2 hover:text-ink hover:bg-raised rounded-lg transition-colors"
+                className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors ${
+                  lightNav ? 'text-white/85 hover:text-white hover:bg-white/10' : 'text-ink-2 hover:text-ink hover:bg-raised'
+                }`}
               >
                 {link.name}
               </a>
@@ -142,7 +149,7 @@ export default function LandingNavbar({ businessName, config = {} }) {
 
           {/* Right side — desktop */}
           <div className="hidden md:flex items-center gap-2 shrink-0 ml-auto">
-            <ThemeToggle />
+            <ThemeToggle className={lightNav ? '!text-white/80 hover:!text-white hover:!bg-white/10' : ''} />
             {showCta && (
               <Link to="/agendar">
                 <button
@@ -162,7 +169,9 @@ export default function LandingNavbar({ businessName, config = {} }) {
 
           {/* Hamburger — mobile only */}
           <button
-            className="md:hidden ml-auto w-[34px] h-[34px] rounded-xl border border-edge/50 flex items-center justify-center text-ink-2 hover:bg-raised hover:text-ink transition-colors"
+            className={`md:hidden ml-auto w-[34px] h-[34px] rounded-xl border flex items-center justify-center transition-colors ${
+              lightNav ? 'border-white/30 text-white hover:bg-white/10' : 'border-edge/50 text-ink-2 hover:bg-raised hover:text-ink'
+            }`}
             onClick={() => setMobileMenu(v => !v)}
             aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
           >

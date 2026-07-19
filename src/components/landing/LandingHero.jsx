@@ -11,25 +11,29 @@ const ICON_MAP = {
   ShieldCheck, Clock, Mail, MapPin, Phone, Sparkles, Briefcase,
 };
 
-export default function LandingHero({ title, titleAccent, subtitle, cta, secondaryCta, features, showFeatures = true, badge, showBadge = true }) {
+export default function LandingHero({
+  title, titleAccent, subtitle, cta, secondaryCta, features, showFeatures = true, badge, showBadge = true,
+  backgroundImage, overlayOpacity = 0.55, overlayBrightness = 1,
+}) {
   const defaults = [
     { icon: 'ShieldCheck', text: 'Pago Seguro' },
     { icon: 'Clock',       text: 'Ahorra Tiempo' },
     { icon: 'Star',        text: 'Top Calidad' },
   ];
   const displayFeatures = (features?.length === 3) ? features : defaults;
+  const hasPhoto = Boolean(backgroundImage);
 
   const headlineFallback = (
     <>
       Tu tiempo es lo más valioso
       <br />
-      <span className="text-ink-3">que tienes.</span>
+      <span className={hasPhoto ? 'text-white/70' : 'text-ink-3'}>que tienes.</span>
     </>
   );
 
   return (
     <section id="inicio" className="relative min-h-[100dvh] flex flex-col overflow-hidden">
-      <BackgroundDecoration />
+      {hasPhoto ? <HeroBackgroundPhoto src={backgroundImage} opacity={overlayOpacity} brightness={overlayBrightness} /> : <BackgroundDecoration />}
 
       {/* Contenido principal — centrado en el espacio disponible */}
       <div className="flex-1 flex flex-col justify-center section-container relative w-full pt-20">
@@ -38,7 +42,9 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
           {/* Eyebrow */}
           {showBadge && (
             <div
-              className="animate-fade-up inline-flex items-center gap-2 px-3 py-1 rounded-full border border-edge/60 bg-card/60 backdrop-blur text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] text-ink-2 mb-8"
+              className={`animate-fade-up inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.18em] mb-8 ${
+                hasPhoto ? 'border-white/25 bg-white/10 backdrop-blur text-white' : 'border-edge/60 bg-card/60 backdrop-blur text-ink-2'
+              }`}
             >
               <span className="relative flex w-1.5 h-1.5">
                 <span className="absolute inset-0 rounded-full bg-gold animate-ping opacity-60" />
@@ -50,20 +56,20 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
 
           {/* Headline */}
           <h1
-            className="animate-fade-up font-display font-semibold text-ink leading-[1.02] tracking-[-0.03em] text-balance"
+            className={`animate-fade-up font-display font-semibold leading-[1.02] tracking-[-0.03em] text-balance ${hasPhoto ? 'text-white drop-shadow-[0_2px_20px_rgba(0,0,0,0.35)]' : 'text-ink'}`}
             style={{ fontSize: 'clamp(2.25rem, 3.5vw + 1.5rem, 5.5rem)', animationDelay: '50ms', animationFillMode: 'both' }}
           >
             {(title || titleAccent) ? (
               <>
                 {title}
-                {titleAccent && <><br /><span className="text-ink-3">{titleAccent}</span></>}
+                {titleAccent && <><br /><span className={hasPhoto ? 'text-white/70' : 'text-ink-3'}>{titleAccent}</span></>}
               </>
             ) : headlineFallback}
           </h1>
 
           {/* Subtitle */}
           <p
-            className="animate-fade-up mt-6 sm:mt-7 max-w-2xl mx-auto text-ink-2 leading-relaxed text-balance"
+            className={`animate-fade-up mt-6 sm:mt-7 max-w-2xl mx-auto leading-relaxed text-balance ${hasPhoto ? 'text-white/85' : 'text-ink-2'}`}
             style={{ fontSize: 'clamp(1rem, 0.75vw + 0.875rem, 1.1875rem)', animationDelay: '150ms', animationFillMode: 'both' }}
           >
             {subtitle || 'Reserva servicios de alta calidad con los mejores profesionales. Sin llamadas, sin esperas — sólo la mejor atención personalizada.'}
@@ -90,9 +96,9 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
               </button>
             </Link>
             <Link to="/gestionar" className="w-full sm:w-auto">
-              <button className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 h-14 px-5 text-[14px] font-semibold text-ink-2 hover:text-ink transition-colors group">
+              <button className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 h-14 px-5 text-[14px] font-semibold transition-colors group ${hasPhoto ? 'text-white/90 hover:text-white' : 'text-ink-2 hover:text-ink'}`}>
                 {secondaryCta || 'Ver mi reserva'}
-                <ArrowUpRight size={14} strokeWidth={2.4} className="text-ink-3 group-hover:text-ink transition-colors" />
+                <ArrowUpRight size={14} strokeWidth={2.4} className={hasPhoto ? 'text-white/60 group-hover:text-white transition-colors' : 'text-ink-3 group-hover:text-ink transition-colors'} />
               </button>
             </Link>
           </div>
@@ -106,7 +112,7 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
           className="animate-fade-in section-container relative pb-10 sm:pb-12"
           style={{ animationDelay: '450ms', animationFillMode: 'both' }}
         >
-          <div className="max-w-5xl mx-auto pt-8 border-t border-edge/40 flex flex-wrap items-center justify-center gap-x-8 sm:gap-x-12 gap-y-4">
+          <div className={`max-w-5xl mx-auto pt-8 border-t flex flex-wrap items-center justify-center gap-x-8 sm:gap-x-12 gap-y-4 ${hasPhoto ? 'border-white/20' : 'border-edge/40'}`}>
             {displayFeatures.map((feat, idx) => {
               const isObj    = typeof feat === 'object';
               const iconName = isObj ? feat.icon : defaults[idx]?.icon;
@@ -114,10 +120,10 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
               const Icon     = ICON_MAP[iconName] || HelpCircle;
               return (
                 <div key={idx} className="flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-full bg-gold/10 text-gold flex items-center justify-center">
+                  <span className={`w-7 h-7 rounded-full flex items-center justify-center ${hasPhoto ? 'bg-white/15 text-white' : 'bg-gold/10 text-gold'}`}>
                     <Icon size={13} strokeWidth={2.2} />
                   </span>
-                  <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-ink-2">
+                  <span className={`text-[12px] font-bold uppercase tracking-[0.16em] ${hasPhoto ? 'text-white/90' : 'text-ink-2'}`}>
                     {text}
                   </span>
                 </div>
@@ -127,6 +133,20 @@ export default function LandingHero({ title, titleAccent, subtitle, cta, seconda
         </div>
       )}
     </section>
+  );
+}
+
+function HeroBackgroundPhoto({ src, opacity, brightness }) {
+  return (
+    <div aria-hidden className="absolute inset-0 overflow-hidden">
+      <img
+        src={src}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: `brightness(${brightness})` }}
+      />
+      <div className="absolute inset-0 bg-black" style={{ opacity }} />
+    </div>
   );
 }
 

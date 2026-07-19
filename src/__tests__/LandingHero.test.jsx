@@ -158,3 +158,54 @@ describe('LandingHero — badge (pill superior)', () => {
     expect(document.body.textContent).toContain('Reserva en línea · Sin esperas')
   })
 })
+
+describe('LandingHero — background photo + overlay', () => {
+  it('no backgroundImage → no <img> layer, headline keeps ink coloring', async () => {
+    await act(async () => { await renderHero({ title: 'Sin Foto' }) })
+    expect(document.querySelector('img')).toBeNull()
+    const h1 = document.querySelector('h1')
+    expect(h1.className).toContain('text-ink')
+    expect(h1.className).not.toContain('text-white')
+  })
+
+  it('backgroundImage renders an <img> covering the section with the given src', async () => {
+    await act(async () => {
+      await renderHero({ backgroundImage: 'https://cdn.example.com/hero.jpg' })
+    })
+    const img = document.querySelector('img')
+    expect(img).not.toBeNull()
+    expect(img.getAttribute('src')).toBe('https://cdn.example.com/hero.jpg')
+    expect(img.className).toContain('object-cover')
+  })
+
+  it('applies overlayOpacity to the dark overlay div and overlayBrightness as a CSS filter on the image', async () => {
+    await act(async () => {
+      await renderHero({ backgroundImage: 'https://cdn.example.com/hero.jpg', overlayOpacity: 0.42, overlayBrightness: 1.2 })
+    })
+    const img = document.querySelector('img')
+    expect(img.style.filter).toBe('brightness(1.2)')
+    const overlay = document.querySelector('.bg-black')
+    expect(overlay).not.toBeNull()
+    expect(overlay.style.opacity).toBe('0.42')
+  })
+
+  it('defaults overlayOpacity/overlayBrightness when omitted with a photo', async () => {
+    await act(async () => {
+      await renderHero({ backgroundImage: 'https://cdn.example.com/hero.jpg' })
+    })
+    const img = document.querySelector('img')
+    expect(img.style.filter).toBe('brightness(1)')
+    const overlay = document.querySelector('.bg-black')
+    expect(overlay.style.opacity).toBe('0.55')
+  })
+
+  it('forces white headline/subtitle text when a background photo is set', async () => {
+    await act(async () => {
+      await renderHero({ backgroundImage: 'https://cdn.example.com/hero.jpg', title: 'Con Foto', subtitle: 'Subtítulo' })
+    })
+    const h1 = document.querySelector('h1')
+    expect(h1.className).toContain('text-white')
+    const p = Array.from(document.querySelectorAll('p')).find(el => el.textContent === 'Subtítulo')
+    expect(p.className).toContain('text-white/85')
+  })
+})

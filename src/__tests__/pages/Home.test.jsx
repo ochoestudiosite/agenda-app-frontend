@@ -42,8 +42,8 @@ vi.mock('../../context/ThemeContext', () => ({
   useTheme: () => ({ isDark: false, toggle: vi.fn() }),
 }))
 
-vi.mock('../../components/landing/LandingNavbar',       () => ({ default: ({ businessName }) => <div data-testid="navbar">{businessName}</div> }))
-vi.mock('../../components/landing/LandingHero',         () => ({ default: () => <div data-testid="hero" /> }))
+vi.mock('../../components/landing/LandingNavbar',       () => ({ default: ({ businessName, overPhoto }) => <div data-testid="navbar" data-over-photo={String(!!overPhoto)}>{businessName}</div> }))
+vi.mock('../../components/landing/LandingHero',         () => ({ default: ({ backgroundImage }) => <div data-testid="hero" data-bg={backgroundImage || ''} /> }))
 vi.mock('../../components/landing/LandingServices',     () => ({ default: ({ services }) => <div data-testid="landing-services">{services?.map(s => <span key={s.id}>{s.name}</span>)}</div> }))
 vi.mock('../../components/landing/LandingStaff',        () => ({ default: ({ staff }) => <div data-testid="landing-staff">{staff?.map(s => <span key={s.id}>{s.name}</span>)}</div> }))
 vi.mock('../../components/landing/LandingTestimonials', () => ({ default: () => <div data-testid="testimonials" /> }))
@@ -199,5 +199,26 @@ describe('Home — usa hooks centralizados (F-002/F-003/F-004)', () => {
     await act(async () => { await renderHome() })
 
     expect(screen.getByTestId('navbar').textContent).toContain('Barber Test')
+  })
+
+  it('pasa hero.background_image_url a LandingHero y avisa overPhoto=true al navbar', async () => {
+    const cfg = { ...CONFIG, landing: { hero: { background_image_url: 'https://cdn.example.com/hero.jpg' } } }
+    useConfig.mockReturnValue({ data: cfg, isLoading: false, isError: false, error: null })
+    useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
+
+    await act(async () => { await renderHome() })
+
+    expect(screen.getByTestId('hero').getAttribute('data-bg')).toBe('https://cdn.example.com/hero.jpg')
+    expect(screen.getByTestId('navbar').getAttribute('data-over-photo')).toBe('true')
+  })
+
+  it('sin imagen de fondo, overPhoto es false', async () => {
+    useConfig.mockReturnValue({ data: CONFIG, isLoading: false, isError: false, error: null })
+    useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
+
+    await act(async () => { await renderHome() })
+
+    expect(screen.getByTestId('hero').getAttribute('data-bg')).toBe('')
+    expect(screen.getByTestId('navbar').getAttribute('data-over-photo')).toBe('false')
   })
 })
