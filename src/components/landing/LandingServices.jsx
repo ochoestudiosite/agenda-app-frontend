@@ -129,6 +129,7 @@ function ServiceCard({ service, i, buttonText }) {
   const priceType = service.priceType || service.price_type || 'fixed';
   const showPrice = priceType !== 'ask' && service.price != null;
   const imageUrl  = service.imageUrl || service.image_url || null;
+  const flagged   = Boolean(service.requirements || service.prerequisite);
 
   return (
     <div
@@ -213,12 +214,21 @@ function ServiceCard({ service, i, buttonText }) {
               {service.name}
             </h3>
 
-            {/* Duración */}
-            {duration && (
-              <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">
-                <Clock size={10} strokeWidth={2} />
-                {duration} min
-              </span>
+            {/* Duración + requisitos previos (informativo, sin acción aquí) */}
+            {(duration || flagged) && (
+              <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                {duration && (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">
+                    <Clock size={10} strokeWidth={2} />
+                    {duration} min
+                  </span>
+                )}
+                {flagged && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-500 text-white">
+                    Requisitos previos
+                  </span>
+                )}
+              </div>
             )}
 
             {/* CTA — siempre dentro de la card */}

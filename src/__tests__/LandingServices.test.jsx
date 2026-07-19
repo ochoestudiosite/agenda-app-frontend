@@ -188,3 +188,32 @@ describe('LandingServices — promo badge', () => {
     expect(document.body.textContent).not.toContain('Promo')
   })
 })
+
+// ============================================================================
+// Requisitos previos — chip informativo (solo visual, sin modal en la landing)
+// ============================================================================
+
+describe('LandingServices — chip "Requisitos previos"', () => {
+  it('shows the chip for a service with requirements text', async () => {
+    const svc = [{ ...SERVICES[0], requirements: 'No exponerse al sol 48 h antes.', prerequisite: null }]
+    await act(async () => { await renderServices({ services: svc }) })
+    expect(document.body.textContent).toContain('Requisitos previos')
+  })
+
+  it('shows the chip for a service with a prerequisite', async () => {
+    const svc = [{ ...SERVICES[0], requirements: null, prerequisite: { id: 'valoracion', dbId: 10, name: 'Valoración', bookable: true } }]
+    await act(async () => { await renderServices({ services: svc }) })
+    expect(document.body.textContent).toContain('Requisitos previos')
+  })
+
+  it('does not show the chip for a plain service', async () => {
+    await act(async () => { await renderServices({ services: SERVICES.slice(0, 1) }) })
+    expect(document.body.textContent).not.toContain('Requisitos previos')
+  })
+
+  it('clicking the card does not open any modal (purely informational)', async () => {
+    const svc = [{ ...SERVICES[0], requirements: 'No exponerse al sol 48 h antes.', prerequisite: null }]
+    await act(async () => { await renderServices({ services: svc }) })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})

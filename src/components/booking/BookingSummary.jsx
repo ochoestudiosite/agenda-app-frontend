@@ -88,5 +88,30 @@ export default function BookingSummary() {
     });
   }
 
-  return <SummaryStrip items={items} ariaLabel="Resumen de tu selección" />;
+  // Servicios seleccionados con indicaciones y/o prerequisito — se listan
+  // aparte para que el cliente los vea antes de continuar con su reserva.
+  const flaggedServices = selectedServices.filter(s => s.requirements || s.prerequisite);
+
+  return (
+    <>
+      <SummaryStrip items={items} ariaLabel="Resumen de tu selección" />
+      {flaggedServices.length > 0 && (
+        <div className="-mt-4 mb-8 flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/8 border border-amber-500/25 animate-fade-up">
+          <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <div className="text-xs leading-relaxed text-amber-700 dark:text-amber-400 space-y-2.5 min-w-0">
+            <p className="font-semibold">Indicaciones previas</p>
+            {flaggedServices.map(s => (
+              <div key={s.id}>
+                <p className="font-semibold">{toTitleCase(s.name)}</p>
+                {s.requirements && <p className="whitespace-pre-line mt-0.5">{s.requirements}</p>}
+                {s.prerequisite && <p className="mt-0.5">Requiere haber tomado: {toTitleCase(s.prerequisite.name)}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
 }

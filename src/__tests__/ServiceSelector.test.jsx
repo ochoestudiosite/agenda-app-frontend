@@ -58,6 +58,27 @@ const MOCK_SERVICES = [
 ]
 
 // ---------------------------------------------------------------------------
+// Fixtures — Requisitos previos (requirements / prerequisite)
+// ---------------------------------------------------------------------------
+
+const PREREQ_SERVICE = {
+  id: 'valoracion', dbId: 10, name: 'Valoración', duration: 15, price: 0, price_type: 'fixed', description: '',
+  requirements: null, prerequisite: null,
+}
+
+const FLAGGED_WITH_PREREQ = {
+  id: 'botox', dbId: 11, name: 'Botox', duration: 30, price: 1200, price_type: 'fixed', description: '',
+  requirements: null,
+  prerequisite: { id: 'valoracion', dbId: 10, name: 'Valoración', bookable: true },
+}
+
+const FLAGGED_TEXT_ONLY = {
+  id: 'laser', dbId: 12, name: 'Depilación láser', duration: 45, price: 800, price_type: 'fixed', description: '',
+  requirements: 'No exponerse al sol 48 horas antes.',
+  prerequisite: null,
+}
+
+// ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
 
@@ -300,5 +321,151 @@ describe('ServiceSelector — promo badge', () => {
   it('no promo: no badge rendered', async () => {
     await renderServiceSelector()
     expect(screen.queryByText(/^−/)).toBeNull()
+  })
+})
+
+// ============================================================================
+// 9. Requisitos previos — chip + RequirementsModal interception
+// ============================================================================
+
+describe('ServiceSelector — chip "Requisitos previos"', () => {
+  beforeEach(() => {
+    mockUseServices.mockReturnValue({
+      data: { services: [...MOCK_SERVICES, PREREQ_SERVICE, FLAGGED_WITH_PREREQ, FLAGGED_TEXT_ONLY] },
+      isLoading: false,
+      isError: false,
+    })
+  })
+
+  it('shows the chip on a flagged service card', async () => {
+    await renderServiceSelector()
+    const card = screen.getByText(/depilación láser/i).closest('[role="button"]')
+    expect(card.textContent).toMatch(/Requisitos previos/)
+  })
+
+  it('does not show the chip on a service without requirements/prerequisite', async () => {
+    await renderServiceSelector()
+    const card = screen.getByText(/corte de cabello/i).closest('[role="button"]')
+    expect(card.textContent).not.toMatch(/Requisitos previos/)
+  })
+})
+
+describe('ServiceSelector — RequirementsModal interception (add only)', () => {
+  beforeEach(() => {
+    mockUseServices.mockReturnValue({
+      data: { services: [...MOCK_SERVICES, PREREQ_SERVICE, FLAGGED_WITH_PREREQ, FLAGGED_TEXT_ONLY] },
+      isLoading: false,
+      isError: false,
+    })
+  })
+
+  it('selecting a flagged service opens the modal without dispatching yet', async () => {
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/depilación láser/i).closest('[role="button"]')
+    await user.click(card)
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('"Entendido, continuar" adds a text-only flagged service', async () => {
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/depilación láser/i).closest('[role="button"]')
+    await user.click(card)
+    await user.click(screen.getByRole('button', { name: 'Entendido, continuar' }))
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_SERVICE', payload: FLAGGED_TEXT_ONLY })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('"Ya cumplo el requisito — continuar" adds the original service (has prerequisite)', async () => {
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/^Botox$/i).closest('[role="button"]')
+    await user.click(card)
+    await user.click(screen.getByRole('button', { name: /Ya cumplo el requisito — continuar/i }))
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_SERVICE', payload: FLAGGED_WITH_PREREQ })
+  })
+
+  it('"Reservar X primero" adds the prerequisite object, not the original service', async () => {
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/^Botox$/i).closest('[role="button"]')
+    await user.click(card)
+    await user.click(screen.getByRole('button', { name: /Reservar Valoración primero/i }))
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_SERVICE', payload: PREREQ_SERVICE })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('does not chain into the prerequisite\'s own modal, even if it is also flagged', async () => {
+    const flaggedPrereq = { ...PREREQ_SERVICE, requirements: 'Debe llegar 10 min antes.' }
+    mockUseServices.mockReturnValue({
+      data: {
+        services: [
+          ...MOCK_SERVICES,
+          flaggedPrereq,
+          { ...FLAGGED_WITH_PREREQ, prerequisite: { id: flaggedPrereq.id, dbId: flaggedPrereq.dbId, name: flaggedPrereq.name, bookable: true } },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    })
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/^Botox$/i).closest('[role="button"]')
+    await user.click(card)
+    await user.click(screen.getByRole('button', { name: /Reservar Valoración primero/i }))
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_SERVICE', payload: flaggedPrereq })
+    // No modal chained for flaggedPrereq's own requirements text.
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('canceling the modal does not dispatch anything', async () => {
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/depilación láser/i).closest('[role="button"]')
+    await user.click(card)
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(mockDispatch).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('selecting a service without requirements adds it directly, no modal', async () => {
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/corte de cabello/i).closest('[role="button"]')
+    await user.click(card)
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_SERVICE', payload: MOCK_SERVICES[0] })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('removing an already-selected flagged service never opens the modal', async () => {
+    mockState = { ...mockState, services: [FLAGGED_TEXT_ONLY] }
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/depilación láser/i).closest('[role="button"]')
+    await user.click(card)
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_SERVICE', payload: FLAGGED_TEXT_ONLY })
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('hides "Reservar X primero" once 5 services are already selected (would no-op)', async () => {
+    const fiveServices = [1, 2, 3, 4, 5].map(i => ({ id: `svc${i}`, dbId: 100 + i, name: `Servicio ${i}`, duration: 30, price: 100 }))
+    mockState = { ...mockState, services: fiveServices }
+    mockUseServices.mockReturnValue({
+      data: { services: [...fiveServices, FLAGGED_WITH_PREREQ, PREREQ_SERVICE] },
+      isLoading: false,
+      isError: false,
+    })
+    const user = userEvent.setup()
+    await renderServiceSelector()
+    const card = screen.getByText(/^Botox$/i).closest('[role="button"]')
+    await user.click(card)
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Entendido, continuar' })).toBeTruthy()
+    expect(screen.queryByText(/primero/i)).toBeNull()
   })
 })

@@ -464,3 +464,53 @@ describe('BookingSummary — partial state combinations', () => {
     expect(ids).not.toContain('datetime')
   })
 })
+
+// ============================================================================
+// 9. "Indicaciones previas" box — requirements / prerequisite
+// ============================================================================
+
+describe('BookingSummary — indicaciones previas', () => {
+  const PLAIN_SERVICE = { id: 'corte', name: 'corte', duration: 30, imageUrl: null }
+  const TEXT_ONLY_SERVICE = {
+    id: 'laser', name: 'depilación láser', duration: 45, imageUrl: null,
+    requirements: 'No exponerse al sol 48 h antes.\nLlegar sin cremas.',
+    prerequisite: null,
+  }
+  const PREREQ_SERVICE = {
+    id: 'botox', name: 'botox', duration: 30, imageUrl: null,
+    requirements: null,
+    prerequisite: { id: 'valoracion', dbId: 10, name: 'valoración previa', bookable: true },
+  }
+
+  it('no box when no selected service has requirements/prerequisite', async () => {
+    await renderSummary(makeState({ services: [PLAIN_SERVICE] }))
+    expect(screen.queryByText('Indicaciones previas')).toBeNull()
+  })
+
+  it('no box when there are no services at all', async () => {
+    await renderSummary(makeState())
+    expect(screen.queryByText('Indicaciones previas')).toBeNull()
+  })
+
+  it('shows the box when a selected service has requirements text', async () => {
+    await renderSummary(makeState({ services: [PLAIN_SERVICE, TEXT_ONLY_SERVICE] }))
+    expect(screen.getByText('Indicaciones previas')).toBeTruthy()
+    expect(screen.getByText('Depilación láser')).toBeTruthy()
+    const reqText = screen.getByText(/No exponerse al sol 48 h antes\./)
+    expect(reqText.className).toContain('whitespace-pre-line')
+  })
+
+  it('shows the box when a selected service has a prerequisite', async () => {
+    await renderSummary(makeState({ services: [PREREQ_SERVICE] }))
+    expect(screen.getByText('Indicaciones previas')).toBeTruthy()
+    expect(screen.getByText(/Requiere haber tomado: Valoración previa/)).toBeTruthy()
+  })
+
+  it('does not include plain (non-flagged) services in the box listing', async () => {
+    await renderSummary(makeState({ services: [PLAIN_SERVICE, TEXT_ONLY_SERVICE] }))
+    // "corte" appears in the SummaryStrip service item, but not as its own
+    // entry inside the indicaciones box (only Depilación Láser is flagged).
+    const box = screen.getByText('Indicaciones previas').closest('div')
+    expect(box.textContent).not.toMatch(/Corte/)
+  })
+})

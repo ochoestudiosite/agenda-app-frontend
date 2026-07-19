@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
 import { useBooking } from '../../context/BookingContext';
@@ -6,6 +7,13 @@ import { BackButton } from './SpecialistSelector';
 import EntityAvatar from '../ui/EntityAvatar';
 import { PromoBadge } from '../ui/PromoPrice';
 import ExpandableText from '../ui/ExpandableText';
+import RequirementsModal from '../ui/RequirementsModal';
+
+// Un servicio está "flagged" cuando el negocio quiere que el cliente lea algo
+// antes de reservarlo (indicaciones) y/o requiere haber tomado otro servicio antes.
+function isFlagged(service) {
+  return Boolean(service.requirements || service.prerequisite);
+}
 
 export default function ServiceSelector() {
   const { state, dispatch } = useBooking();
@@ -13,6 +21,44 @@ export default function ServiceSelector() {
   const selected = state.services ?? [];
   const atMax = selected.length >= 5;
   const totalDuration = selected.reduce((sum, s) => sum + (s.duration || 0), 0);
+  // Servicio flagged pendiente de confirmación en RequirementsModal (aún no agregado).
+  const [pendingService, setPendingService] = useState(null);
+
+  // Intercepta SOLO la acción de agregar. Quitar un servicio ya seleccionado
+  // nunca pasa por el modal, sin importar si está flagged.
+  function handleToggle(service) {
+    const isSelected = selected.some(s => s.id === service.id);
+    if (isSelected || !isFlagged(service)) {
+      dispatch({ type: 'TOGGLE_SERVICE', payload: service });
+      return;
+    }
+    setPendingService(service);
+  }
+
+  function closeModal() {
+    setPendingService(null);
+  }
+
+  // "Entendido, continuar" / "Ya cumplo el requisito — continuar"
+  function handleModalContinue() {
+    if (pendingService) dispatch({ type: 'TOGGLE_SERVICE', payload: pendingService });
+    setPendingService(null);
+  }
+
+  // "Reservar [prerequisito] primero" — agrega el prerequisito en vez del
+  // servicio original. Nunca encadena el modal del prerequisito aunque este
+  // también esté flagged: el cliente ya vio el aviso, encadenar sería fricción.
+  function handleBookPrerequisite() {
+    const prereq = pendingService?.prerequisite;
+    if (prereq) {
+      const prereqService = data?.services.find(s => s.dbId === prereq.dbId);
+      const alreadySelected = prereqService && selected.some(s => s.id === prereqService.id);
+      if (prereqService && !alreadySelected) {
+        dispatch({ type: 'TOGGLE_SERVICE', payload: prereqService });
+      }
+    }
+    setPendingService(null);
+  }
 
   if (isLoading) return (
     <div className="space-y-2.5">
@@ -62,7 +108,7 @@ export default function ServiceSelector() {
               isSelected={isSelected}
               isDisabled={isDisabled}
               delay={i * 40}
-              onToggle={() => dispatch({ type: 'TOGGLE_SERVICE', payload: service })}
+              onToggle={() => handleToggle(service)}
             />
           );
         })}
@@ -100,6 +146,21 @@ export default function ServiceSelector() {
             </button>
           </div>
         </div>
+      )}
+
+      {pendingService && (
+        <RequirementsModal
+          service={pendingService}
+          prerequisiteAlreadySelected={
+            pendingService.prerequisite
+              ? selected.some(s => s.dbId === pendingService.prerequisite.dbId)
+              : false
+          }
+          canBookPrerequisite={!atMax}
+          onContinue={handleModalContinue}
+          onBookPrerequisite={handleBookPrerequisite}
+          onClose={closeModal}
+        />
       )}
     </div>
   );
@@ -158,6 +219,11 @@ function ServiceCard({ service, isSelected, isDisabled, onToggle, delay }) {
                          ${isSelected ? 'text-gold' : 'text-ink group-hover:text-gold'}`}>
             {toTitleCase(service.name)}
           </p>
+          {isFlagged(service) && (
+            <span className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400">
+              Requisitos previos
+            </span>
+          )}
           {service.promo && (
             <>
               <PromoBadge discountType={service.promo.discountType} discountValue={service.promo.discountValue} />
