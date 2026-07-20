@@ -217,3 +217,49 @@ describe('LandingServices — chip "Requisitos previos"', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 })
+
+// ============================================================================
+// Single service — spotlight layout
+//
+// When only one service exists, the grid/slider leaves most of the section
+// empty. LandingServices switches to a dedicated side-by-side layout
+// (ServiceSpotlight) instead of rendering a single small card.
+// ============================================================================
+
+describe('LandingServices — single service (spotlight layout)', () => {
+  it('shows name, description, duration and price', async () => {
+    await act(async () => { await renderServices({ services: SERVICES.slice(0, 1) }) })
+    const body = document.body.textContent
+    expect(body).toContain('Corte Premium')
+    expect(body).toContain('Lavado y estilizado')
+    expect(body).toContain('45 min')
+    expect(body).toContain('450')
+  })
+
+  it('renders a single card (no duplicated grid/slider markup for the sole service)', async () => {
+    await act(async () => { await renderServices({ services: SERVICES.slice(0, 1) }) })
+    expect(document.querySelectorAll('h3').length).toBe(1)
+  })
+
+  it('does not render pagination dots', async () => {
+    await act(async () => { await renderServices({ services: SERVICES.slice(0, 1) }) })
+    expect(screen.queryByLabelText('Servicio 1')).toBeNull()
+  })
+
+  it('CTA links to /agendar', async () => {
+    await act(async () => { await renderServices({ services: SERVICES.slice(0, 1) }) })
+    expect(document.querySelectorAll('a[href="/agendar"]').length).toBeGreaterThan(0)
+  })
+
+  it('shows the "Requisitos previos" chip when flagged', async () => {
+    const svc = [{ ...SERVICES[0], requirements: 'No exponerse al sol 48 h antes.' }]
+    await act(async () => { await renderServices({ services: svc }) })
+    expect(document.body.textContent).toContain('Requisitos previos')
+  })
+
+  it('shows the promo badge when a promo is active', async () => {
+    const svc = [{ ...SERVICES[0], promo: { discountType: 'percent', discountValue: 20, discountAmount: 90, finalPrice: 360 } }]
+    await act(async () => { await renderServices({ services: svc }) })
+    expect(document.body.textContent).toContain('−20% Promo')
+  })
+})

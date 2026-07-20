@@ -14,7 +14,8 @@ export default function LandingServices({ services = [], title, subtitle, subtit
         { name: 'Experiencia Total',  duration: 90, price: 700, description: 'Nuestro servicio más completo para renovar tu imagen.' },
       ];
 
-  const needsPagination = allServices.length > VISIBLE_DESKTOP;
+  const isSolo = allServices.length === 1;
+  const needsPagination = !isSolo && allServices.length > VISIBLE_DESKTOP;
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(allServices.length / VISIBLE_DESKTOP);
   const displayServices = needsPagination
@@ -90,32 +91,38 @@ export default function LandingServices({ services = [], title, subtitle, subtit
           }
         />
 
-        {/* Desktop grid */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 mt-14 lg:mt-16">
-          {displayServices.map((service, i) => (
-            <ServiceCard key={page * VISIBLE_DESKTOP + i} service={service} i={i} buttonText={buttonText} />
-          ))}
-        </div>
-
-        {/* Mobile slider */}
-        <div ref={scrollRef} className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 mt-10">
-          {allServices.map((service, i) => (
-            <div key={(service.name || '') + i} className="snap-center shrink-0 w-[82vw] max-w-[340px] first:ml-[9vw] last:mr-[9vw]">
-              <ServiceCard service={service} i={i} buttonText={buttonText} />
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile controls */}
-        {allServices.length > 1 && (
-          <div className="flex md:hidden flex-col items-center gap-3 mt-6">
-            <div className="flex items-center gap-1.5">
-              {allServices.map((_, i) => (
-                <button key={i} onClick={() => scrollToSlide(i)} aria-label={`Servicio ${i + 1}`}
-                  className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-1.5 bg-gold' : 'w-1.5 h-1.5 bg-ink/15'}`} />
+        {isSolo ? (
+          <ServiceSpotlight service={allServices[0]} buttonText={buttonText} />
+        ) : (
+          <>
+            {/* Desktop grid */}
+            <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6 mt-14 lg:mt-16">
+              {displayServices.map((service, i) => (
+                <ServiceCard key={page * VISIBLE_DESKTOP + i} service={service} i={i} buttonText={buttonText} />
               ))}
             </div>
-          </div>
+
+            {/* Mobile slider */}
+            <div ref={scrollRef} className="md:hidden flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 mt-10">
+              {allServices.map((service, i) => (
+                <div key={(service.name || '') + i} className="snap-center shrink-0 w-[82vw] max-w-[340px] first:ml-[9vw] last:mr-[9vw]">
+                  <ServiceCard service={service} i={i} buttonText={buttonText} />
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile controls */}
+            {allServices.length > 1 && (
+              <div className="flex md:hidden flex-col items-center gap-3 mt-6">
+                <div className="flex items-center gap-1.5">
+                  {allServices.map((_, i) => (
+                    <button key={i} onClick={() => scrollToSlide(i)} aria-label={`Servicio ${i + 1}`}
+                      className={`rounded-full transition-all duration-300 ${activeSlide === i ? 'w-6 h-1.5 bg-gold' : 'w-1.5 h-1.5 bg-ink/15'}`} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>
@@ -246,6 +253,117 @@ function ServiceCard({ service, i, buttonText }) {
           </div>
         </div>
       </Link>
+    </div>
+  );
+}
+
+// Cuando solo hay un servicio, el grid/slider deja la mayor parte de la
+// sección vacía. En su lugar mostramos un layout "spotlight": foto grande a
+// un lado, info editorial (nombre, descripción, precio) al otro.
+function ServiceSpotlight({ service, buttonText }) {
+  const { data: config } = useConfig();
+  const bizTz     = config?.business_timezone ?? null;
+  const duration  = service.duration || service.duration_mins;
+  const priceType = service.priceType || service.price_type || 'fixed';
+  const showPrice = priceType !== 'ask' && service.price != null;
+  const imageUrl  = service.imageUrl || service.image_url || null;
+  const flagged   = Boolean(service.requirements || service.prerequisite);
+
+  return (
+    <div className="mt-14 lg:mt-16 grid md:grid-cols-[minmax(0,420px)_1fr] lg:grid-cols-[460px_1fr] gap-8 lg:gap-16 items-center animate-fade-up">
+      {/* Photo */}
+      <Link to="/agendar" className="group block relative aspect-[4/5] w-full max-w-sm mx-auto md:max-w-none rounded-[32px] landing-card-shape overflow-hidden bg-raised">
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
+          <span className="font-display text-8xl font-bold text-gold/20 select-none tracking-tight">
+            {service.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+          </span>
+        </div>
+
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt={service.name}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03]"
+            style={{ opacity: 0, transition: 'opacity 200ms ease, transform 800ms cubic-bezier(0.16,1,0.3,1)' }}
+            onLoad={e  => { e.currentTarget.style.opacity = '1'; }}
+            onError={e => { e.currentTarget.style.display = 'none'; }}
+          />
+        )}
+
+        <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-card/85 backdrop-blur-md
+                       flex items-center justify-center text-ink
+                       opacity-0 -translate-y-1
+                       group-hover:opacity-100 group-hover:translate-y-0
+                       transition-all duration-300">
+          <ArrowUpRight size={14} strokeWidth={2.4} />
+        </div>
+      </Link>
+
+      {/* Info panel */}
+      <div className="text-center md:text-left">
+        {duration && (
+          <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gold mb-4">
+            <Clock size={12} strokeWidth={2.4} />
+            {duration} min
+          </div>
+        )}
+
+        <h3 className="font-display text-3xl sm:text-4xl lg:text-[44px] font-semibold text-ink tracking-[-0.025em] leading-[1.05] text-balance">
+          {service.name}
+        </h3>
+
+        {service.description && (
+          <p className="mt-4 text-[15px] leading-relaxed text-ink-2 max-w-md mx-auto md:mx-0">
+            {service.description}
+          </p>
+        )}
+
+        {showPrice && (
+          <div className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3">
+            {service.promo ? (
+              <>
+                <span className="text-[15px] text-ink-3 line-through tabular-nums">
+                  {formatServicePrice(service)}
+                </span>
+                <span className="font-display text-3xl font-bold text-ink tabular-nums">
+                  {formatServicePrice({ ...service, price: service.promo.finalPrice })}
+                </span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide bg-gold text-on-gold">
+                  {promoConceptLabel({ discountType: service.promo.discountType, discountValue: service.promo.discountValue })} Promo
+                </span>
+                {promoEndsLabel(service.promo.endsAt, bizTz) && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-raised border border-edge text-ink-2">
+                    {promoEndsLabel(service.promo.endsAt, bizTz)}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="font-display text-3xl font-bold text-ink tabular-nums">
+                {formatServicePrice(service)}
+              </span>
+            )}
+          </div>
+        )}
+
+        {flagged && (
+          <div className="mt-4 flex justify-center md:justify-start">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide bg-amber-500 text-white">
+              Requisitos previos
+            </span>
+          </div>
+        )}
+
+        <Link
+          to="/agendar"
+          className="mt-8 inline-flex items-center gap-2 bg-gold text-on-gold px-6 h-12 rounded-full
+                     text-[13px] font-bold hover:opacity-90 active:scale-[0.98] transition-all
+                     shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        >
+          {service.button_text || buttonText || 'Reservar'}
+          <ArrowUpRight size={15} strokeWidth={2.4} />
+        </Link>
+      </div>
     </div>
   );
 }
