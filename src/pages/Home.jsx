@@ -55,7 +55,10 @@ function inferParentOrigin() {
 
 export default function Home() {
   const { data: config, isLoading: loadingConfig, isError: configIsError, error: configError } = useConfig();
-  const { data: catalogData, isLoading: loadingCatalog } = useServices();
+  // Landing page: mounts once per session, so it can afford a much shorter
+  // freshness window than the booking wizard's default (60s) — admin edits
+  // to services/staff should show up quickly. Matches useConfig()'s 10s.
+  const { data: catalogData, isLoading: loadingCatalog } = useServices(undefined, { staleTime: 10_000 });
 
   const isLoading = loadingConfig || loadingCatalog;
 

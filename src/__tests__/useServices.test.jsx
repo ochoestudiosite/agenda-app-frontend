@@ -104,3 +104,49 @@ describe('useServices — branch param wiring', () => {
     expect(mockGetServices).toHaveBeenCalledTimes(1)
   })
 })
+
+// ============================================================================
+// staleTime override — per-caller freshness window
+//
+// The booking wizard (Home → Booking → SpecialistSelector) remounts this hook
+// repeatedly within one session and relies on the 60s default to avoid
+// redundant refetches. The public landing page mounts once per session and
+// needs admin edits (services/staff) to show up quickly, so it passes a
+// shorter window. Each caller must get its own staleTime — React Query
+// tracks staleness per observer even when they share the same queryKey/cache
+// entry, so this can't silently regress into a single shared value.
+// ============================================================================
+
+describe('useServices — staleTime override', () => {
+  it('defaults to a 60s staleTime when no override is given (wizard dedupe)', async () => {
+    const { useServices } = await import('../hooks/useServices.js')
+    const qc = makeQC()
+    renderHook(() => useServices(), { wrapper: wrapper(qc) })
+
+    await waitFor(() => expect(mockGetServices).toHaveBeenCalled())
+    const query = qc.getQueryCache().find({ queryKey: ['services', null] })
+    expect(query.observers[0].options.staleTime).toBe(60_000)
+  })
+
+  it('honors a custom staleTime override (e.g. the landing page freshness window)', async () => {
+    const { useServices } = await import('../hooks/useServices.js')
+    const qc = makeQC()
+    renderHook(() => useServices(undefined, { staleTime: 10_000 }), { wrapper: wrapper(qc) })
+
+    await waitFor(() => expect(mockGetServices).toHaveBeenCalled())
+    const query = qc.getQueryCache().find({ queryKey: ['services', null] })
+    expect(query.observers[0].options.staleTime).toBe(10_000)
+  })
+
+  it('two observers on the same query key keep independent staleTime values', async () => {
+    const { useServices } = await import('../hooks/useServices.js')
+    const qc = makeQC()
+    renderHook(() => useServices(undefined, { staleTime: 10_000 }), { wrapper: wrapper(qc) })
+    renderHook(() => useServices(), { wrapper: wrapper(qc) })
+
+    await waitFor(() => expect(mockGetServices).toHaveBeenCalled())
+    const query = qc.getQueryCache().find({ queryKey: ['services', null] })
+    const staleTimes = query.observers.map(o => o.options.staleTime).sort((a, b) => a - b)
+    expect(staleTimes).toEqual([10_000, 60_000])
+  })
+})

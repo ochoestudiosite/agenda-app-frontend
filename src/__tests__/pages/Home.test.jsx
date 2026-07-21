@@ -105,6 +105,15 @@ describe('Home — usa hooks centralizados (F-002/F-003/F-004)', () => {
     expect(screen.getByTestId('hero')).toBeTruthy()
   })
 
+  it('pide un staleTime corto a useServices (la landing debe reflejar ediciones del admin rápido, a diferencia del wizard de reserva)', async () => {
+    useConfig.mockReturnValue({ data: CONFIG, isLoading: false, isError: false, error: null })
+    useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
+
+    await act(async () => { await renderHome() })
+
+    expect(useServices).toHaveBeenCalledWith(undefined, { staleTime: 10_000 })
+  })
+
   it('pasa los servicios de useServices().data.services a LandingServices', async () => {
     useConfig.mockReturnValue({ data: CONFIG, isLoading: false, isError: false, error: null })
     useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
