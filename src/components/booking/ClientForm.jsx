@@ -4,7 +4,7 @@ import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useCreateAppointment } from '../../hooks/useAppointment';
 import { useConfig } from '../../hooks/useConfig';
-import { formatDate, formatTime, formatServicePrice, formatCombinedPrice, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatServicePrice, formatCombinedPrice, formatPrice, formatPriceFromCents, promoSavings, toTitleCase, effectiveServicePrice } from '../../utils/formatters';
 import { api } from '../../services/api';
 import Input from '../ui/Input';
 import PhoneInput, { COUNTRIES } from '../ui/PhoneInput';
@@ -15,6 +15,7 @@ import EntityAvatar from '../ui/EntityAvatar';
 import { BackButton } from './SpecialistSelector';
 import BookingUnavailable from './BookingUnavailable';
 import OTPPanel from './OTPPanel';
+import PaymentPanel from './PaymentPanel';
 
 const PERSON_WORD_RE = /^[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]+$/;
 
@@ -138,6 +139,40 @@ export default function ClientForm() {
     : null;
   const promoNames = [...new Set(displayServices.filter(s => s.promo).map(s => s.promo.name))].join(' + ');
 
+  // ── Cobro anticipado (Etapa 2b) — preview informativo, el backend es la
+  // autoridad final. Se omite en price types variables ('ask'/'range'/
+  // 'starting_from') porque no hay un total cerrado sobre el cual calcular
+  // un anticipo — mostrar un número ahí sería prometer algo que no se sabe.
+  const paymentsCfg = config?.payments;
+  const hasVariablePricing = displayServices.some(s => ['ask', 'range', 'starting_from'].includes(s.priceType));
+  const numericTotal = displayServices.reduce((sum, s) => sum + effectiveServicePrice(s), 0);
+  // Espeja chargesService.computeChargeAmountCents (backend, la autoridad):
+  // un anticipo bajo el mínimo de Stripe para MXN ($10.00) escala a pago
+  // total — sin este espejo, un servicio barato con % bajo mostraría "$9" y
+  // el cobro real sería el total (sorpresa exactamente donde no debe haberla).
+  const MIN_CHARGE_CENTS = 1000;
+  let chargePreview = null;
+  // Reservas grupales nunca cobran hoy — createGroupAppointment (backend) no
+  // pasa por chargesService bajo ningún caso. Mostrar un anticipo aquí sería
+  // prometerle un cobro al cliente que jamás ocurre (la cita se confirma sin
+  // cobrar un peso). Cuando exista soporte real de cobro para grupos, quitar
+  // este guard junto con la implementación correspondiente en el backend.
+  if (paymentsCfg?.enabled && !hasVariablePricing && numericTotal > 0 && !groupMode) {
+    const totalCents = Math.round(numericTotal * 100);
+    if (paymentsCfg.charge_mode === 'full') {
+      chargePreview = { label: 'Pago total', amountCents: totalCents, isDeposit: false };
+    } else if (paymentsCfg.charge_mode === 'deposit_percent' && paymentsCfg.deposit_percent != null) {
+      const amountCents = Math.round(totalCents * (paymentsCfg.deposit_percent / 100));
+      chargePreview = { label: `Anticipo (${paymentsCfg.deposit_percent}%)`, amountCents, isDeposit: true };
+    } else if (paymentsCfg.charge_mode === 'deposit_fixed' && paymentsCfg.deposit_fixed_cents != null) {
+      const amountCents = Math.min(paymentsCfg.deposit_fixed_cents, totalCents);
+      chargePreview = { label: 'Anticipo', amountCents, isDeposit: true };
+    }
+    if (chargePreview && chargePreview.isDeposit && chargePreview.amountCents < MIN_CHARGE_CENTS) {
+      chargePreview = { label: 'Pago total', amountCents: totalCents, isDeposit: false };
+    }
+  }
+
   // Precio de una línea de servicio: tachado + promocional cuando aplica.
   const servicePriceTag = (svc, size = 'md') => svc?.promo
     ? <StruckPrice original={formatServicePrice(svc)} final={formatServicePrice({ ...svc, price: svc.promo.finalPrice })} size={size} className="mt-0.5" />
@@ -171,12 +206,58 @@ export default function ClientForm() {
   const resendInFlightRef = useRef(false); // prevents double-submit on rapid taps
   const submitInFlightRef = useRef(false); // prevents double-submit on the confirm action
 
+  // ── Payment sub-flow (Stripe Connect, Etapa 2b) ─────────────────────────────
+  // Entered when the appointment-creation response (direct or via confirm-otp)
+  // carries a `payment` block — the tenant has payments active. The appointment
+  // already exists server-side in 'pending_payment' at this point; `pendingResult`
+  // is that full creation response (unmasked client data + payment info), reused
+  // as-is for SET_CONFIRMATION once polling observes status 'confirmed'.
+  const [paymentPhase,  setPaymentPhase]  = useState(false);
+  const [pendingResult, setPendingResult] = useState(null);
+  const [paymentBusy,   setPaymentBusy]   = useState(false); // true while charging/confirming — hides the back escape hatch
+
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const id = setInterval(() => setResendCooldown(c => Math.max(0, c - 1)), 1000);
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resendCooldown > 0]);
+
+  // Hallazgo de auditoría 2026-07-21 (Promo A1): cuando el negocio no exige
+  // verificación por SMS, este componente nunca vuelve a tocar al backend
+  // entre el catálogo (sin teléfono) y crear la cita — una promo
+  // new_clients_only/per_client_limit se muestra como aplicada porque el
+  // catálogo público no conoce el teléfono todavía, y el anticipo mostrado
+  // puede subestimar lo que realmente se cobrará. Con OTP activo, requestOTP
+  // ya resuelve esto (pricing revalidado con el teléfono). Aquí replicamos
+  // ese mismo punto de revalidación, solo cuando hay algo que revalidar
+  // (una promo de catálogo visible) y en las mismas condiciones bajo las que
+  // se muestra el anticipo.
+  useEffect(() => {
+    if (!paymentsCfg?.enabled || hasVariablePricing || numericTotal <= 0 || groupMode) return;
+    if (config?.phone_verification_required) return;
+    if (otpPhase || paymentPhase) return;
+    if (phoneErr(phone)) return;
+    if (!activeServices.some(s => s.promo)) return;
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.pricePreview({
+          serviceIds:  activeServices.map(s => s.id),
+          date:        state.date,
+          time:        state.time,
+          clientPhone: phone.trim(),
+          ...(getBranchId() ? { branchId: getBranchId() } : {}),
+          ...(appliedCode ? { code: appliedCode } : {}),
+        });
+        setServerPricing(res.pricing ?? null);
+      } catch {
+        // Informativo — un fallo aquí nunca bloquea nada; el backend revalida
+        // en serio dentro de la transacción de creación de la cita.
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone]);
 
   function validate() {
     const errs = {};
@@ -348,7 +429,12 @@ export default function ClientForm() {
         const result = groupMode
           ? await createGroupMutation.mutateAsync(buildBookingPayload())
           : await createMutation.mutateAsync(buildBookingPayload());
-        dispatch({ type: 'SET_CONFIRMATION', payload: result });
+        if (result.payment) {
+          setPendingResult(result);
+          setPaymentPhase(true);
+        } else {
+          dispatch({ type: 'SET_CONFIRMATION', payload: result });
+        }
       } catch (err) {
         handleAppointmentError(err);
       }
@@ -362,8 +448,14 @@ export default function ClientForm() {
     setOtpError(null);
     try {
       const result = await api.confirmOTP({ pendingId, clientPhone: phone.trim(), otpCode: code });
-      dispatch({ type: 'SET_CONFIRMATION', payload: result });
-      // No setSubmitting(false) — component unmounts on success
+      if (result.payment) {
+        setPendingResult(result);
+        setPaymentPhase(true);
+        setSubmitting(false);
+      } else {
+        dispatch({ type: 'SET_CONFIRMATION', payload: result });
+        // No setSubmitting(false) — component unmounts on success
+      }
     } catch (err) {
       if (err.status === 409) {
         // Slot was taken while awaiting OTP — pending booking deleted server-side.
@@ -402,17 +494,31 @@ export default function ClientForm() {
     }
   }
 
+  // Polling confirmed the appointment (status flipped to 'confirmed' via the
+  // payment_intent.succeeded webhook). pendingResult already carries the full,
+  // unmasked appointment data plus `.payment` from the creation response —
+  // GET /api/appointments/:code (used only as the polling signal) masks PII
+  // and doesn't echo payment info back, so it is never used to build the
+  // confirmation payload, only to detect the status transition.
+  function handlePaymentConfirmed() {
+    dispatch({ type: 'SET_CONFIRMATION', payload: pendingResult });
+  }
+
   if (quotaExceeded) return <BookingUnavailable />;
 
   return (
     <div className="animate-fade-up max-w-lg mx-auto">
-      <BackButton onClick={otpPhase ? () => setOtpPhase(false) : () => dispatch({ type: 'GO_BACK' })} />
+      {!paymentBusy && (
+        <BackButton onClick={otpPhase ? () => setOtpPhase(false) : () => dispatch({ type: 'GO_BACK' })} />
+      )}
       <div className="mb-7">
         <h2 className="font-display text-2xl font-semibold text-ink tracking-tight">
           Confirma tu cita
         </h2>
         <p className="text-ink-3 text-sm mt-1">
-          {otpPhase
+          {paymentPhase
+            ? 'Un último paso — completa el pago para asegurar tu lugar'
+            : otpPhase
             ? 'Verifica tu identidad para completar la reservación'
             : 'Revisa los detalles y completa tus datos'}
         </p>
@@ -563,6 +669,25 @@ export default function ClientForm() {
             </span>
           )}
         </div>
+
+        {/* ── Cobro anticipado — el cliente nunca debe sorprenderse del cobro ── */}
+        {chargePreview && !otpPhase && !paymentPhase && (
+          <div className="px-5 py-3.5 border-t border-edge bg-gold/6 flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-gold mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-9-10.5h16.5a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5v-9a1.5 1.5 0 011.5-1.5z" />
+            </svg>
+            <div>
+              <p className="text-[13px] font-semibold text-ink">
+                {chargePreview.label}: <span className="text-gold">{formatPriceFromCents(chargePreview.amountCents)}</span>
+              </p>
+              <p className="text-[12px] text-ink-3 mt-0.5">
+                {chargePreview.isDeposit
+                  ? 'Se cobra ahora para confirmar tu cita · el resto se paga en el local.'
+                  : 'Se cobra ahora para confirmar tu cita.'}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Aviso: la promo del catálogo ya no aplica para este cliente ──── */}
@@ -580,16 +705,37 @@ export default function ClientForm() {
         </div>
       )}
 
+      {/* ── Política de reembolso (Etapa 3, §16.2) — oración generada por el
+           backend a partir de refund_window_hours/refund_percent, ÚNICA
+           fuente de verdad sobre la parte MONETARIA de cancelar. Bloque
+           separado a propósito: nunca se mezcla con el texto libre de
+           cancellation_policy, que queda solo para reglas no monetarias. ── */}
+      {paymentsCfg?.refund_policy_text && !otpPhase && !paymentPhase && (
+        <div className="mb-5 px-4 py-4 rounded-2xl border border-edge bg-raised/30">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-ink-3 mb-1.5">Política de reembolso</p>
+          <p className="text-[13px] text-ink-2 leading-relaxed">{paymentsCfg.refund_policy_text}</p>
+        </div>
+      )}
+
       {/* ── Política de cancelación (UX-1) ─────────────────────────────── */}
-      {config?.cancellation_policy && !otpPhase && (
+      {config?.cancellation_policy && !otpPhase && !paymentPhase && (
         <div className="mb-5 px-4 py-4 rounded-2xl border border-edge bg-raised/30">
           <p className="text-[11px] font-bold uppercase tracking-widest text-ink-3 mb-1.5">Política de cancelación</p>
           <p className="text-[13px] text-ink-2 leading-relaxed">{config.cancellation_policy}</p>
         </div>
       )}
 
-      {/* ── Client form / OTP panel ──────────────────────────────────────── */}
-      {otpPhase ? (
+      {/* ── Client form / OTP panel / payment panel ──────────────────────── */}
+      {paymentPhase ? (
+        <PaymentPanel
+          payment={pendingResult.payment}
+          paymentConfig={config.payments}
+          code={pendingResult.code}
+          onConfirmed={handlePaymentConfirmed}
+          onBack={() => dispatch({ type: 'GO_BACK' })}
+          onBusyChange={setPaymentBusy}
+        />
+      ) : otpPhase ? (
         <OTPPanel
           key={otpKey}
           phone={phone}

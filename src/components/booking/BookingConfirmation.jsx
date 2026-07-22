@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { useConfig } from '../../hooks/useConfig';
 import { useServices } from '../../hooks/useServices';
-import { formatDate, formatTime, formatPrice, promoSavings, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, formatPriceFromCents, promoSavings, toTitleCase } from '../../utils/formatters';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 
 // Snapshot de la cita → props del pill de promoción
@@ -118,6 +118,27 @@ export default function BookingConfirmation() {
             Confirmada
           </span>
         </div>
+
+        {/* Pagado — monto real cobrado (payment.amount_cents de la respuesta de
+            creación, no un estimado); pagos solo aplican a citas individuales. */}
+        {!isGroup && confirmation?.payment && (
+          <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-emerald-500/6">
+            <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <p className="text-[13px] leading-tight">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                Pagado: {formatPriceFromCents(confirmation.payment.amount_cents)}
+              </span>
+              {confirmation.servicePrice != null && (() => {
+                const remainingCents = Math.round(confirmation.servicePrice * 100) - confirmation.payment.amount_cents;
+                return remainingCents > 0
+                  ? <span className="text-ink-3"> · Resto en el local: {formatPrice(remainingCents / 100)}</span>
+                  : null;
+              })()}
+            </p>
+          </div>
+        )}
 
         {/* Date + Time */}
         <div className="px-6 py-4 flex items-center gap-4 border-b border-edge">

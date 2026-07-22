@@ -137,6 +137,7 @@ export const api = {
   requestOTP:          (body) => request('POST', '/appointments/request-otp', body),
   confirmOTP:          (body) => request('POST', '/appointments/confirm-otp', body),
   validatePromo:       (body) => request('POST', '/appointments/validate-promo', body),
+  pricePreview:        (body) => request('POST', '/appointments/price-preview', body),
   requestManageOTP:    (body) => request('POST', '/appointments/request-manage-otp', body),
   createAppointment:   (body) => request('POST', '/appointments', body),
   getAppointment:      (code, options = {}) => request('GET', `/appointments/${code}`, null, 0, options),

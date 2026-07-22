@@ -36,10 +36,12 @@ vi.mock('../hooks/useAppointment.js', () => ({
   }),
 }))
 
+// Mutable so el bloque de estimado de reembolso (Etapa 3) pueda inyectar
+// config.payments/business_timezone sin re-mockear el módulo.
+let mockConfigData = { time_format: '12h', branches: [{ id: 1, name: 'Sucursal Principal' }] }
+
 vi.mock('../hooks/useConfig.js', () => ({
-  useConfig: () => ({
-    data: { time_format: '12h', branches: [{ id: 1, name: 'Sucursal Principal' }] },
-  }),
+  useConfig: () => ({ data: mockConfigData }),
 }))
 
 let mockCatalogServices = [
@@ -131,6 +133,7 @@ beforeEach(() => {
   mockCatalogServices = [
     { id: 'corte', dbId: 10, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
   ]
+  mockConfigData = { time_format: '12h', branches: [{ id: 1, name: 'Sucursal Principal' }] }
 })
 
 // ============================================================================
@@ -390,5 +393,202 @@ describe('AppointmentCard — chip Requisitos previos (servicio singular)', () =
     const dialog = screen.getByRole('dialog')
     expect(dialog.textContent).toMatch(/Llegar 10 minutos antes\./)
     expect(dialog.textContent).toMatch(/Cabello limpio y seco\./)
+  })
+})
+
+// ============================================================================
+// 10. Estado de pago (Etapa 2d, Stripe Connect) — appointment.payment
+// ============================================================================
+
+describe('AppointmentCard — estado de pago', () => {
+  it('no muestra nada cuando appointment.payment no existe (mayoría de citas, sin Connect activo)', async () => {
+    await renderCard(CONFIRMED_APPT)
+    expect(screen.queryByText(/Pagado:/)).toBeNull()
+    expect(screen.queryByText(/Reembolsado:/)).toBeNull()
+    expect(screen.queryByText(/Pago pendiente/)).toBeNull()
+  })
+
+  it('succeeded con resto por cobrar: muestra "Pagado: $X" y "Resto en el local: $Y"', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'succeeded', amountCents: 9600, totalCents: 32000, refundedAmountCents: 0, paidAt: '2026-07-21T16:17:25.325Z' } }
+    await renderCard(appt)
+    expect(screen.getByText(/Pagado: \$96/)).toBeTruthy()
+    expect(screen.getByText(/Resto en el local: \$224/)).toBeTruthy()
+  })
+
+  it('succeeded cubriendo el total: no muestra "Resto en el local"', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'succeeded', amountCents: 32000, totalCents: 32000, refundedAmountCents: 0, paidAt: '2026-07-21T16:17:25.325Z' } }
+    await renderCard(appt)
+    expect(screen.getByText(/Pagado: \$320/)).toBeTruthy()
+    expect(screen.queryByText(/Resto en el local/)).toBeNull()
+  })
+
+  it('refunded: muestra "Reembolsado: $X"', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'refunded', amountCents: 9600, totalCents: 32000, refundedAmountCents: 9600, paidAt: '2026-07-21T16:17:25.325Z' } }
+    await renderCard(appt)
+    expect(screen.getByText(/Reembolsado: \$96/)).toBeTruthy()
+  })
+
+  it('partially_refunded: muestra "Reembolso parcial: $X de $Y"', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'partially_refunded', amountCents: 9600, totalCents: 32000, refundedAmountCents: 4000, paidAt: '2026-07-21T16:17:25.325Z' } }
+    await renderCard(appt)
+    expect(screen.getByText(/Reembolso parcial: \$40.*\$96/)).toBeTruthy()
+  })
+
+  it('failed: muestra "Pago pendiente" sin alarmar', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'failed', amountCents: 9600, totalCents: 32000, refundedAmountCents: 0, paidAt: null } }
+    await renderCard(appt)
+    expect(screen.getByText(/Pago pendiente/)).toBeTruthy()
+  })
+
+  it('requires_payment: muestra "Pago pendiente"', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'requires_payment', amountCents: 9600, totalCents: 32000, refundedAmountCents: 0, paidAt: null } }
+    await renderCard(appt)
+    expect(screen.getByText(/Pago pendiente/)).toBeTruthy()
+  })
+
+  it('canceled: no muestra ningún bloque de pago', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'canceled', amountCents: 9600, totalCents: 32000, refundedAmountCents: 0, paidAt: null } }
+    await renderCard(appt)
+    expect(screen.queryByText(/Pagado:/)).toBeNull()
+    expect(screen.queryByText(/Reembolsado:/)).toBeNull()
+    expect(screen.queryByText(/Reembolso parcial/)).toBeNull()
+    expect(screen.queryByText(/Pago pendiente/)).toBeNull()
+  })
+
+  // ── Etapa 3 (16.1) — disputas, lenguaje del cliente final ──────────────────
+  it('disputed: mensaje orientado al cliente ("tu banco"), nunca confundido con succeeded/failed', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'disputed', amountCents: 9600, totalCents: 32000, refundedAmountCents: 0, paidAt: '2026-07-21T16:17:25.325Z' } }
+    await renderCard(appt)
+    expect(screen.getByText(/en revisión con tu banco/i)).toBeTruthy()
+    expect(screen.queryByText(/Pagado:/)).toBeNull()
+    expect(screen.queryByText(/Pago pendiente/)).toBeNull()
+  })
+
+  it('dispute_lost: mensaje orientado al cliente', async () => {
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'dispute_lost', amountCents: 9600, totalCents: 32000, refundedAmountCents: 0, paidAt: '2026-07-21T16:17:25.325Z' } }
+    await renderCard(appt)
+    expect(screen.getByText(/tu banco revirtió este pago/i)).toBeTruthy()
+  })
+
+  // ── Etapa 3 (16.7) — cita cancelada: ya no hay "resto en el local" ─────────
+  it('succeeded + cita cancelada: NO muestra "Resto en el local" (no hay servicio que prestar)', async () => {
+    const appt = { ...CANCELLED_APPT, payment: { status: 'succeeded', amountCents: 9600, totalCents: 32000, refundedAmountCents: 0, paidAt: '2026-07-21T16:17:25.325Z' } }
+    await renderCard(appt)
+    expect(screen.getByText(/^Pagado: \$96/)).toBeTruthy()
+    expect(screen.queryByText(/Resto en el local/)).toBeNull()
+  })
+
+  it('refunded + cita cancelada: antepone "Cancelada —"', async () => {
+    const appt = { ...CANCELLED_APPT, payment: { status: 'refunded', amountCents: 9600, totalCents: 32000, refundedAmountCents: 9600, paidAt: '2026-07-21T16:17:25.325Z' } }
+    await renderCard(appt)
+    expect(screen.getByText(/Cancelada — Reembolsado: \$96/)).toBeTruthy()
+  })
+})
+
+// ============================================================================
+// 11. Estimado de reembolso antes de cancelar (Etapa 3, §14) — client-side,
+//     nunca autoritativo; usa config.payments (refund_window_hours/percent)
+//     comparado contra la fecha/hora real de la cita.
+// ============================================================================
+
+function futureApptDateTime(hoursFromNow) {
+  const d = new Date(Date.now() + hoursFromNow * 3_600_000)
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return { date, time }
+}
+
+describe('AppointmentCard — estimado de reembolso antes de cancelar', () => {
+  it('dentro de la ventana configurada: "recibirías de vuelta $X", marcado como estimado', async () => {
+    const { date, time } = futureApptDateTime(48)
+    mockConfigData = { ...mockConfigData, payments: { enabled: true, refund_window_hours: 24, refund_percent: 100 } }
+    const appt = { ...CONFIRMED_APPT, date, time, payment: { status: 'succeeded', amountCents: 9600, totalCents: 9600, refundedAmountCents: 0, paidAt: null } }
+    const user = userEvent.setup()
+    await renderCard(appt)
+    await user.click(screen.getByRole('button', { name: /cancelar/i }))
+    // El monto va en un <span> anidado dentro del párrafo del estimado — RTL
+    // solo matchea el texto DIRECTO de cada nodo, así que se toma el párrafo
+    // por "recibirías de vuelta" (único) y se valida el monto vía textContent
+    // nativo (sí incluye descendientes), en vez de un getByText("$96") que
+    // colisionaría con el badge "Pagado: $96.00" de más arriba en la tarjeta.
+    await waitFor(() => {
+      const estimateP = screen.getByText(/recibirías de vuelta/i)
+      expect(estimateP.textContent).toMatch(/\$96/)
+      expect(screen.getByText(/solo un estimado/i)).toBeTruthy()
+    })
+  })
+
+  it('fuera de la ventana configurada: "no aplicaría reembolso automático"', async () => {
+    const { date, time } = futureApptDateTime(2)
+    mockConfigData = { ...mockConfigData, payments: { enabled: true, refund_window_hours: 24, refund_percent: 100 } }
+    const appt = { ...CONFIRMED_APPT, date, time, payment: { status: 'succeeded', amountCents: 9600, totalCents: 9600, refundedAmountCents: 0, paidAt: null } }
+    const user = userEvent.setup()
+    await renderCard(appt)
+    await user.click(screen.getByRole('button', { name: /cancelar/i }))
+    await waitFor(() => expect(screen.getByText(/no aplicaría reembolso automático/i)).toBeTruthy())
+  })
+
+  it('sin política automática (refund_window_hours: null): no muestra ningún estimado', async () => {
+    const { date, time } = futureApptDateTime(48)
+    mockConfigData = { ...mockConfigData, payments: { enabled: true, refund_window_hours: null, refund_percent: 100 } }
+    const appt = { ...CONFIRMED_APPT, date, time, payment: { status: 'succeeded', amountCents: 9600, totalCents: 9600, refundedAmountCents: 0, paidAt: null } }
+    const user = userEvent.setup()
+    await renderCard(appt)
+    await user.click(screen.getByRole('button', { name: /cancelar/i }))
+    await waitFor(() => expect(screen.getByText(/¿Cancelar esta cita\?/i)).toBeTruthy())
+    expect(screen.queryByText(/estimado/i)).toBeNull()
+  })
+
+  it('cita sin pago cobrado: no muestra ningún estimado aunque haya política automática', async () => {
+    const { date, time } = futureApptDateTime(48)
+    mockConfigData = { ...mockConfigData, payments: { enabled: true, refund_window_hours: 24, refund_percent: 100 } }
+    const appt = { ...CONFIRMED_APPT, date, time }
+    const user = userEvent.setup()
+    await renderCard(appt)
+    await user.click(screen.getByRole('button', { name: /cancelar/i }))
+    await waitFor(() => expect(screen.getByText(/¿Cancelar esta cita\?/i)).toBeTruthy())
+    expect(screen.queryByText(/estimado/i)).toBeNull()
+  })
+})
+
+// ============================================================================
+// 12. Resultado REAL del reembolso tras cancelar (Etapa 3, §14)
+// ============================================================================
+
+describe('AppointmentCard — resultado del reembolso tras cancelar', () => {
+  it('refund.initiated:true → "tu reembolso está en proceso" con el monto', async () => {
+    mockCancelMutateAsync.mockResolvedValue({ refund: { initiated: true, amountCents: 9600 } })
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'succeeded', amountCents: 9600, totalCents: 9600, refundedAmountCents: 0, paidAt: null } }
+    const user = userEvent.setup()
+    await renderCard(appt)
+    await user.click(screen.getByRole('button', { name: /cancelar/i }))
+    await user.click(await screen.findByRole('button', { name: /Sí, cancelar/i }))
+    // Regex combinado en una sola query: "$96" solo también aparece en el
+    // badge "Pagado: $96.00" de la tarjeta — separar la aserción produciría
+    // "multiple elements" en vez de validar que es la línea de resultado real.
+    await waitFor(() => {
+      expect(screen.getByText(/en proceso.*\$96/)).toBeTruthy()
+    })
+  })
+
+  it('refund.initiated:false → mensaje neutro, nunca como error (comportamiento esperado fuera de ventana)', async () => {
+    mockCancelMutateAsync.mockResolvedValue({ refund: { initiated: false, reason: 'outside_window' } })
+    const appt = { ...CONFIRMED_APPT, payment: { status: 'succeeded', amountCents: 9600, totalCents: 9600, refundedAmountCents: 0, paidAt: null } }
+    const user = userEvent.setup()
+    await renderCard(appt)
+    await user.click(screen.getByRole('button', { name: /cancelar/i }))
+    await user.click(await screen.findByRole('button', { name: /Sí, cancelar/i }))
+    await waitFor(() => expect(screen.getByText(/no tuvo un reembolso automático/i)).toBeTruthy())
+    expect(mockToast).not.toHaveBeenCalledWith(expect.anything(), 'error')
+  })
+
+  it('respuesta sin campo refund (cita sin pago cobrado): no muestra ningún bloque de resultado', async () => {
+    mockCancelMutateAsync.mockResolvedValue({ ok: true })
+    const user = userEvent.setup()
+    await renderCard(CONFIRMED_APPT)
+    await user.click(screen.getByRole('button', { name: /cancelar/i }))
+    await user.click(await screen.findByRole('button', { name: /Sí, cancelar/i }))
+    await waitFor(() => expect(mockOnUpdated).toHaveBeenCalled())
+    expect(screen.queryByText(/reembolso/i)).toBeNull()
   })
 })

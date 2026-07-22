@@ -59,6 +59,7 @@ vi.mock('../utils/formatters', () => ({
   formatDate:  (d) => d ?? '',
   formatTime:  (t) => t ?? '',
   formatPrice: (p) => `$${Number(p ?? 0).toFixed(0)}`,
+  formatPriceFromCents: (c) => `$${(Number(c ?? 0) / 100).toFixed(2)}`,
   toTitleCase: (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : '',
   promoSavings: () => null,
 }))
@@ -338,5 +339,34 @@ describe('BookingConfirmation — chip Requisitos previos (servicio singular)', 
     const dialog = screen.getByRole('dialog')
     expect(dialog.textContent).toMatch(/Llegar 10 minutos antes\./)
     expect(dialog.textContent).toMatch(/Cabello limpio y seco\./)
+  })
+})
+
+// ============================================================================
+// 7. Pagos (Etapa 2b) — badge "Pagado" con el monto real cobrado
+// ============================================================================
+
+describe('BookingConfirmation — pagos: badge "Pagado"', () => {
+  it('no muestra nada de pago cuando la confirmación no trae `payment` (regresión — la inmensa mayoría de tenants)', async () => {
+    await renderConfirmation()
+    expect(screen.queryByText(/Pagado:/i)).toBeNull()
+  })
+
+  it('muestra "Pagado: $84.00" cuando la confirmación trae `payment.amount_cents` (anticipo)', async () => {
+    await renderConfirmation({ ...SINGLE_CONFIRMATION, servicePrice: 280, payment: { amount_cents: 8400 } })
+    expect(screen.getByText(/Pagado: \$84\.00/)).toBeTruthy()
+    // Resto en el local = $280 - $84 = $196
+    expect(screen.getByText(/Resto en el local: \$196/)).toBeTruthy()
+  })
+
+  it('pago total (amount_cents cubre el precio completo) → no muestra "Resto en el local"', async () => {
+    await renderConfirmation({ ...SINGLE_CONFIRMATION, servicePrice: 250, payment: { amount_cents: 25000 } })
+    expect(screen.getByText(/Pagado: \$250\.00/)).toBeTruthy()
+    expect(screen.queryByText(/Resto en el local/i)).toBeNull()
+  })
+
+  it('citas de grupo nunca muestran el badge de pago (fuera de alcance del MVP)', async () => {
+    await renderConfirmation({ ...GROUP_CONFIRMATION, payment: { amount_cents: 8400 } })
+    expect(screen.queryByText(/Pagado:/i)).toBeNull()
   })
 })

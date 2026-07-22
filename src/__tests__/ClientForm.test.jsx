@@ -40,16 +40,29 @@ vi.mock('../hooks/useConfig.js', () => ({
 }))
 
 const mockValidatePromo = vi.fn()
+const mockPricePreview  = vi.fn()
 
 vi.mock('../services/api.js', () => ({
   api: {
     createGroupAppointment: mockGroupMutateAsync,
     validatePromo: (...args) => mockValidatePromo(...args),
+    pricePreview: (...args) => mockPricePreview(...args),
   },
 }))
 
 vi.mock('../components/ui/Toast.jsx', () => ({
   useToast: () => mockToast,
+}))
+
+// PaymentPanel is Stripe Elements territory — covered in its own test file.
+// Stubbed here so ClientForm's branching into paymentPhase can be asserted
+// without mounting real Stripe.js.
+vi.mock('../components/booking/PaymentPanel.jsx', () => ({
+  default: (props) => (
+    <div data-testid="payment-panel" data-code={props.code} data-amount={props.payment?.amount_cents}>
+      payment-panel
+    </div>
+  ),
 }))
 
 // BookingContext mock — we inject controlled state
@@ -465,6 +478,47 @@ describe('ClientForm — UX-1 cancellation policy', () => {
 })
 
 // ============================================================================
+// 7b. Etapa 3 (§16.2) — refund_policy_text: bloque SEPARADO de cancellation_policy
+// ============================================================================
+
+describe('ClientForm — política de reembolso (payments.refund_policy_text)', () => {
+  it('muestra el bloque "Política de reembolso" cuando payments.refund_policy_text viene del backend', async () => {
+    mockConfigData = {
+      time_format: '12h',
+      branches: [],
+      payments: { enabled: true, refund_window_hours: 24, refund_percent: 100, refund_policy_text: 'Cancela con más de 24 horas de anticipación y te devolvemos tu anticipo completo.' },
+    }
+
+    await renderForm()
+    expect(screen.getByText(/Política de reembolso/i)).toBeTruthy()
+    expect(screen.getByText(/te devolvemos tu anticipo completo/i)).toBeTruthy()
+  })
+
+  it('no muestra el bloque cuando refund_policy_text es null', async () => {
+    mockConfigData = { time_format: '12h', branches: [], payments: { enabled: true, refund_window_hours: null, refund_percent: 100, refund_policy_text: null } }
+
+    await renderForm()
+    expect(screen.queryByText(/Política de reembolso/i)).toBeNull()
+  })
+
+  it('muestra AMBOS bloques por separado, nunca mezclados, cuando los dos vienen configurados', async () => {
+    mockConfigData = {
+      time_format: '12h',
+      branches: [],
+      cancellation_policy: 'Avísanos por WhatsApp si vas a llegar tarde.',
+      payments: { enabled: true, refund_window_hours: 24, refund_percent: 80, refund_policy_text: 'Cancela con más de 24 horas de anticipación y te devolvemos el 80% de tu anticipo.' },
+    }
+
+    await renderForm()
+    const refundBlock = screen.getByText(/Política de reembolso/i).closest('div')
+    const cancelBlock  = screen.getByText(/^Política de cancelación$/i).closest('div')
+    expect(refundBlock).not.toBe(cancelBlock)
+    expect(screen.getByText(/te devolvemos el 80% de tu anticipo/i)).toBeTruthy()
+    expect(screen.getByText(/Avísanos por WhatsApp/i)).toBeTruthy()
+  })
+})
+
+// ============================================================================
 // 8. phoneErr — validación por país (ejercitada vía blur del campo de teléfono)
 // ============================================================================
 
@@ -738,5 +792,200 @@ describe('ClientForm — código promocional', () => {
     await user.click(screen.getByRole('button', { name: 'Quitar' }))
     expect(screen.queryByText('VERANO10')).toBeNull()
     expect(screen.getByPlaceholderText(/verano20/i)).toBeTruthy()
+  })
+})
+
+// ============================================================================
+// Pagos (Etapa 2b) — anticipo en el resumen + entrada a paymentPhase
+// ============================================================================
+
+describe('ClientForm — pagos: regresión sin config.payments', () => {
+  it('no muestra ninguna línea de cobro cuando config.payments es null (comportamiento actual intacto)', async () => {
+    await renderForm() // mockConfigData por defecto no trae `payments`
+    expect(screen.queryByText(/Anticipo/i)).toBeNull()
+    expect(screen.queryByText(/Pago total/i)).toBeNull()
+  })
+
+  it('una respuesta de creación sin `payment` sigue yendo directo a SET_CONFIRMATION (sin PaymentPanel)', async () => {
+    const user = userEvent.setup()
+    const mockResult = { code: 'NOPAY1', date: '2026-06-20', time: '10:00' }
+    mockMutateAsync.mockResolvedValue(mockResult)
+
+    await renderForm()
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Luz')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'Nava')
+    await user.type(screen.getByLabelText(/Teléfono/i), '5511122233')
+    await user.click(screen.getByRole('button', { name: /Confirmar/i }))
+
+    await waitFor(() => {
+      expect(mockDispatch).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'SET_CONFIRMATION', payload: mockResult })
+      )
+    })
+    expect(screen.queryByTestId('payment-panel')).toBeNull()
+  })
+})
+
+describe('ClientForm — pagos: anticipo mostrado en el resumen', () => {
+  beforeEach(() => {
+    mockConfigData = {
+      time_format: '12h', branches: [],
+      payments: {
+        enabled: true, charge_mode: 'deposit_percent', deposit_percent: 30,
+        deposit_fixed_cents: null, stripe_account_id: 'acct_test', publishable_key: 'pk_test_x',
+      },
+    }
+  })
+
+  it('muestra "Anticipo (30%)" con el monto calculado sobre el precio del servicio ($250 → $75.00)', async () => {
+    await renderForm()
+    expect(screen.getByText(/Anticipo \(30%\)/i)).toBeTruthy()
+    expect(screen.getByText(/\$75\.00/)).toBeTruthy()
+    expect(screen.getByText(/el resto se paga en el local/i)).toBeTruthy()
+  })
+
+  it('charge_mode "full" muestra "Pago total" sin nota de resto', async () => {
+    mockConfigData = {
+      ...mockConfigData,
+      payments: { ...mockConfigData.payments, charge_mode: 'full', deposit_percent: null },
+    }
+    await renderForm()
+    expect(screen.getByText(/Pago total/i)).toBeTruthy()
+    expect(screen.getByText(/\$250\.00/)).toBeTruthy()
+    expect(screen.queryByText(/el resto se paga en el local/i)).toBeNull()
+  })
+
+  it('modo grupo (2+ servicios) NUNCA muestra anticipo/pago total — createGroupAppointment no cobra hoy, mostrarlo sería prometer un cobro que no ocurre', async () => {
+    const svcA = { id: 10, name: 'Corte de cabello', duration: 30, price: 250 };
+    const svcB = { id: 11, name: 'Barba', duration: 20, price: 150 };
+    await renderForm({
+      services: [svcA, svcB],
+      serviceAssignments: [
+        { service: svcA, specialist: { id: 5, name: 'Ana García', slug: 'ana-garcia' } },
+        { service: svcB, specialist: { id: 6, name: 'Luis Pérez', slug: 'luis-perez' } },
+      ],
+    });
+    expect(screen.queryByText(/Anticipo/i)).toBeNull();
+    expect(screen.queryByText(/Pago total/i)).toBeNull();
+  });
+})
+
+// ============================================================================
+// Promo A1 (auditoría 2026-07-21) — revalidación de precio con teléfono
+// cuando el OTP está desactivado, para que el anticipo mostrado no
+// subestime lo que realmente se cobrará (new_clients_only/per_client_limit
+// evaluados sin teléfono en el catálogo público).
+// ============================================================================
+
+describe('ClientForm — Promo A1: revalida el anticipo con teléfono cuando el OTP está desactivado', () => {
+  const promoService = {
+    id: 10, name: 'Corte de cabello', duration: 30, price: 250,
+    promo: { name: 'Nuevos clientes', discountAmount: 25, finalPrice: 225, discountType: 'percent', discountValue: 10 },
+  };
+
+  beforeEach(() => {
+    mockConfigData = {
+      time_format: '12h', branches: [], phone_verification_required: false,
+      payments: {
+        enabled: true, charge_mode: 'deposit_percent', deposit_percent: 30,
+        deposit_fixed_cents: null, stripe_account_id: 'acct_test', publishable_key: 'pk_test_x',
+      },
+    };
+  });
+
+  it('escribe un teléfono válido → llama a price-preview y corrige el anticipo mostrado', async () => {
+    mockPricePreview.mockResolvedValue({
+      pricing: {
+        totalList: 250, totalDiscount: 0, totalFinal: 250,
+        items: [{ listPrice: 250, discountAmount: 0, finalPrice: 250, promoName: null, promoType: null, promoValue: null }],
+      },
+    });
+    const user = userEvent.setup();
+    await renderForm({ services: [promoService] });
+
+    // Antes de conocer el teléfono, el anticipo optimista usa el precio con
+    // promo del catálogo (30% de $225 = $67.50) — exactamente lo que Promo A1
+    // señala como subestimado.
+    expect(screen.getByText(/\$67\.50/)).toBeTruthy();
+
+    await user.type(screen.getByLabelText(/Teléfono/i), '5511122233');
+
+    await waitFor(() => expect(mockPricePreview).toHaveBeenCalled(), { timeout: 2000 });
+    expect(mockPricePreview).toHaveBeenCalledWith(expect.objectContaining({
+      serviceIds: [10], date: '2026-06-20', time: '10:00',
+      clientPhone: expect.stringContaining('5511122233'),
+    }));
+
+    await waitFor(() => expect(screen.getByText(/\$75\.00/)).toBeTruthy(), { timeout: 2000 });
+    expect(screen.queryByText(/\$67\.50/)).toBeNull();
+  });
+
+  it('con OTP activado (phone_verification_required) → nunca llama a price-preview', async () => {
+    mockConfigData.phone_verification_required = true;
+    const user = userEvent.setup();
+    await renderForm({ services: [promoService] });
+
+    await user.type(screen.getByLabelText(/Teléfono/i), '5511122233');
+    await new Promise(resolve => setTimeout(resolve, 700));
+    expect(mockPricePreview).not.toHaveBeenCalled();
+  });
+
+  it('sin promo de catálogo visible → nunca llama (nada que revalidar)', async () => {
+    const user = userEvent.setup();
+    await renderForm({ services: [{ id: 10, name: 'Corte de cabello', duration: 30, price: 250 }] });
+
+    await user.type(screen.getByLabelText(/Teléfono/i), '5511122233');
+    await new Promise(resolve => setTimeout(resolve, 700));
+    expect(mockPricePreview).not.toHaveBeenCalled();
+  });
+
+  it('modo grupo → nunca llama (createGroupAppointment no cobra hoy)', async () => {
+    const svcB = { id: 11, name: 'Barba', duration: 20, price: 150 };
+    const user = userEvent.setup();
+    await renderForm({
+      services: [promoService, svcB],
+      serviceAssignments: [
+        { service: promoService, specialist: { id: 5, name: 'Ana García', slug: 'ana-garcia' } },
+        { service: svcB, specialist: { id: 6, name: 'Luis Pérez', slug: 'luis-perez' } },
+      ],
+    });
+
+    await user.type(screen.getByLabelText(/Teléfono/i), '5511122233');
+    await new Promise(resolve => setTimeout(resolve, 700));
+    expect(mockPricePreview).not.toHaveBeenCalled();
+  });
+});
+
+describe('ClientForm — pagos: la respuesta con `payment` entra a paymentPhase', () => {
+  beforeEach(() => {
+    mockConfigData = {
+      time_format: '12h', branches: [],
+      payments: {
+        enabled: true, charge_mode: 'deposit_percent', deposit_percent: 30,
+        deposit_fixed_cents: null, stripe_account_id: 'acct_test', publishable_key: 'pk_test_x',
+      },
+    }
+  })
+
+  it('createMutation resuelve con `payment` → renderiza PaymentPanel en vez de despachar SET_CONFIRMATION', async () => {
+    const user = userEvent.setup()
+    const mockResult = {
+      code: 'PAY001', status: 'pending_payment',
+      payment: { client_secret: 'pi_abc_secret', amount_cents: 7500, expires_at: '2026-06-20T10:15:00.000Z' },
+    }
+    mockMutateAsync.mockResolvedValue(mockResult)
+
+    await renderForm()
+    await user.type(screen.getByLabelText(/Nombre\(s\)/i), 'Vero')
+    await user.type(screen.getByLabelText(/Apellido\(s\)/i), 'Salas')
+    await user.type(screen.getByLabelText(/Teléfono/i), '5544455566')
+    await user.click(screen.getByRole('button', { name: /Confirmar/i }))
+
+    const panel = await screen.findByTestId('payment-panel')
+    expect(panel.dataset.code).toBe('PAY001')
+    expect(panel.dataset.amount).toBe('7500')
+    expect(mockDispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'SET_CONFIRMATION' })
+    )
   })
 })

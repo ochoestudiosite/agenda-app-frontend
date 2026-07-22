@@ -28,6 +28,13 @@ export function formatPrice(price) {
   }).format(price);
 }
 
+// Stripe amounts travel as integer cents (payment.amount_cents). Distinct from
+// formatPrice (pesos, 0 decimals) because a deposit split can land on cents
+// (e.g. 30% of $280.00 = $84.00, but other combos won't round to whole pesos).
+export function formatPriceFromCents(cents) {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format((Number(cents) || 0) / 100);
+}
+
 export function formatServicePrice(service) {
   switch (service.priceType) {
     case 'starting_from': return `Desde ${formatPrice(service.price)}`;

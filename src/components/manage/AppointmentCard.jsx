@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatDate, formatTime, formatPrice, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
+import { formatDate, formatTime, formatPrice, formatPriceFromCents, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { findNextAvailableDate, todayDateInTz, nowMinutesInTz, isPastDateTime } from '../../utils/businessTime';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
 import { useServices } from '../../hooks/useServices';
@@ -36,6 +36,37 @@ function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+// ── Estimado de reembolso previo a cancelar (Etapa 3, §14) — SOLO client-side,
+// nunca autoritativo: el backend recalcula todo al ejecutar la cancelación
+// real. Mismos datos ya expuestos por GET /api/config (refund_window_hours,
+// refund_percent), comparados contra la fecha/hora de la cita en la tz del
+// negocio (mismo criterio que el resto del archivo — nowMinutesInTz/todayDateInTz).
+function hoursUntilAppointment(appointment, tz) {
+  const today   = todayDateInTz(tz);
+  const nowMins = nowMinutesInTz(tz);
+  const now = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  now.setMinutes(nowMins);
+
+  const [ay, amo, ad] = appointment.date.split('-').map(Number);
+  const [ah, amin]    = (appointment.time || '00:00').split(':').map(Number);
+  const apptDateTime  = new Date(ay, amo - 1, ad, ah, amin);
+
+  return (apptDateTime.getTime() - now.getTime()) / 3_600_000;
+}
+
+function estimateRefundPreview(appointment, paymentsCfg, tz) {
+  if (!paymentsCfg || paymentsCfg.refund_window_hours == null) return null;
+  const payment = appointment.payment;
+  if (!payment || !['succeeded', 'partially_refunded'].includes(payment.status)) return null;
+  const remainderCents = (payment.amountCents ?? 0) - (payment.refundedAmountCents ?? 0);
+  if (remainderCents <= 0) return null;
+
+  const withinWindow = hoursUntilAppointment(appointment, tz) >= paymentsCfg.refund_window_hours;
+  const pct = paymentsCfg.refund_percent ?? 100;
+  const amountCents = withinWindow ? Math.round(remainderCents * (pct / 100)) : 0;
+  return { withinWindow, amountCents, windowHours: paymentsCfg.refund_window_hours };
+}
+
 export default function AppointmentCard({ appointment, onUpdated }) {
   const toast             = useToast();
   const queryClient       = useQueryClient();
@@ -65,6 +96,10 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), 1);
   });
+  // Resultado REAL del reembolso tras cancelar (Etapa 3) — distinto del
+  // estimado previo. { initiated, amountCents?, reason? } o null si la cita
+  // no tenía pago cobrado.
+  const [refundResult, setRefundResult] = useState(null);
 
   const rescheduleMutation = useRescheduleAppointment();
   const cancelMutation     = useCancelAppointment();
@@ -87,7 +122,15 @@ export default function AppointmentCard({ appointment, onUpdated }) {
     phoneVerificationRequired: manageOtpRequired,
     cancelMutation,
     requestOtpFn: () => api.requestManageOTP({ code: appointment.code }),
-    onSuccess: () => { onUpdated?.({ ...appointment, status: 'cancelled' }); setMode('view'); },
+    // `updated` es la respuesta cruda de DELETE /appointments/:code — puede
+    // traer `refund: { initiated, amountCents?, reason? }` cuando la cita
+    // tenía un pago cobrado (Etapa 3, §14). El resultado real siempre
+    // reemplaza cualquier estimado que se haya mostrado antes de confirmar.
+    onSuccess: (updated) => {
+      setRefundResult(updated?.refund ?? null);
+      onUpdated?.({ ...appointment, status: 'cancelled' });
+      setMode('view');
+    },
     onOtpReady: () => setMode('cancel-otp'),
     toastFn: toast,
     successMessage: 'Cita cancelada.',
@@ -120,6 +163,11 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   // Mientras config no ha cargado, bizTz es null e isPastDateTime cae a hora
   // local del navegador como aproximación segura (nunca bloquea acciones).
   const isPastAppt = isPastDateTime(appointment.date, appointment.time, bizTz);
+
+  // Estimado de reembolso antes de cancelar (Etapa 3) — null si el tenant no
+  // tiene política automática configurada o la cita no tiene pago cobrado.
+  const paymentsCfg   = config?.payments;
+  const refundPreview = estimateRefundPreview(appointment, paymentsCfg, bizTz);
 
   const maxReschedules      = config?.max_reschedules ?? null;
   const rescheduleCount     = appointment.rescheduleCount ?? 0;
@@ -353,6 +401,11 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           )}
         </div>
 
+        {/* Estado de pago — solo cuando la cita tuvo un intento de cobro real
+            (Stripe Connect, Etapa 2d). appointment.payment nunca existe si el
+            negocio no tiene el cobro activo o el precio es variable. */}
+        <PaymentStatusRow payment={appointment.payment} apptStatus={appointment.status} />
+
         {/* Reagendada banner */}
         {appointment.status === 'rescheduled' && appointment.previousDate && appointment.previousTime && (
           <div className="mx-4 mt-3 mb-4 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/6 border border-amber-500/20">
@@ -376,6 +429,29 @@ export default function AppointmentCard({ appointment, onUpdated }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
             </svg>
             Esta cita fue cancelada.
+          </div>
+        )}
+
+        {/* Resultado REAL del reembolso (Etapa 3, §14) — solo aparece justo
+            después de cancelar en esta misma sesión; se pierde al recargar
+            (la fuente permanente es PaymentStatusRow, que refleja el status
+            confirmado por el webhook). initiated:false es el comportamiento
+            ESPERADO fuera de ventana, nunca se muestra como error. Gateado
+            solo por refundResult (no por isCancelled) — ese state únicamente
+            se llena dentro de cancelFlow.onSuccess, así que ya implica que
+            la cancelación fue real, sin depender de que el padre haya vuelto
+            a renderizar con appointment.status actualizado. */}
+        {refundResult?.initiated && (
+          <div className="mx-4 mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-500/6 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            Tu reembolso está en proceso{refundResult.amountCents ? ` — ${formatPriceFromCents(refundResult.amountCents)}` : ''}. Puede tardar unos días hábiles en reflejarse.
+          </div>
+        )}
+        {refundResult && !refundResult.initiated && (
+          <div className="mx-4 mb-4 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
+            Esta cancelación no tuvo un reembolso automático.
           </div>
         )}
 
@@ -432,6 +508,22 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         <div className="card p-5 sm:p-6 animate-fade-in">
           <p className="text-[14px] font-semibold text-ink mb-0.5">¿Cancelar esta cita?</p>
           <p className="text-xs text-ink-3 mb-4">Esta acción no se puede deshacer.</p>
+
+          {/* Estimado de reembolso — NUNCA autoritativo, el backend recalcula
+              todo al ejecutar la cancelación real (Etapa 3, §14). */}
+          {refundPreview && (
+            <div className="mb-4 px-3.5 py-3 rounded-xl border border-edge bg-raised/30">
+              <p className="text-[12.5px] text-ink-2 leading-relaxed">
+                {refundPreview.withinWindow ? (
+                  <>Estimado: recibirías de vuelta <span className="font-semibold text-ink">{formatPriceFromCents(refundPreview.amountCents)}</span>.</>
+                ) : (
+                  <>Estimado: no aplicaría reembolso automático — estás cancelando dentro de la ventana de {refundPreview.windowHours}h antes de tu cita.</>
+                )}
+              </p>
+              <p className="text-[11px] text-ink-3 mt-1">Este cálculo es solo un estimado, sujeto a confirmación al cancelar.</p>
+            </div>
+          )}
+
           <div className="flex gap-2.5">
             <Button
               variant="danger"
@@ -1100,6 +1192,109 @@ function ReschedulePanel({
       )}
     </div>
   );
+}
+
+// ── Payment status row — mismo patrón visual que BookingConfirmation.jsx ────
+// (fila "Pagado: $X" bajo el Total). Cubre todos los status del contrato
+// congelado; 'canceled' no renderiza nada (equivale a que nunca hubo cobro
+// real — la cita se expiró antes de pagar).
+//
+// Etapa 3 (16.1/16.7): apptStatus evita seguir implicando "resto en el
+// local" en una cita cancelada (no hay servicio que prestar), sin importar
+// si el status del pago todavía dice 'succeeded' porque el webhook de
+// reembolso no ha confirmado el cambio. disputed/dispute_lost usan lenguaje
+// del cliente final (su banco, no "el negocio"), nunca el interno de
+// admin-app.
+function PaymentStatusRow({ payment, apptStatus }) {
+  if (!payment) return null;
+
+  const isCancelledAppt = apptStatus === 'cancelled';
+
+  if (payment.status === 'succeeded') {
+    const remainingCents = payment.totalCents - payment.amountCents;
+    return (
+      <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-emerald-500/6">
+        <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <p className="text-[13px] leading-tight">
+          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+            Pagado: {formatPriceFromCents(payment.amountCents)}
+          </span>
+          {!isCancelledAppt && remainingCents > 0 && (
+            <span className="text-ink-3"> · Resto en el local: {formatPriceFromCents(remainingCents)}</span>
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  if (payment.status === 'refunded') {
+    return (
+      <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-amber-500/6">
+        <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+        </svg>
+        <p className="text-[13px] leading-tight font-semibold text-amber-600 dark:text-amber-400">
+          {isCancelledAppt ? 'Cancelada — ' : ''}Reembolsado: {formatPriceFromCents(payment.refundedAmountCents)}
+        </p>
+      </div>
+    );
+  }
+
+  if (payment.status === 'partially_refunded') {
+    return (
+      <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-amber-500/6">
+        <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+        </svg>
+        <p className="text-[13px] leading-tight font-semibold text-amber-600 dark:text-amber-400">
+          {isCancelledAppt ? 'Cancelada — ' : ''}Reembolso parcial: {formatPriceFromCents(payment.refundedAmountCents)} de {formatPriceFromCents(payment.amountCents)}
+        </p>
+      </div>
+    );
+  }
+
+  if (payment.status === 'disputed') {
+    return (
+      <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-[#6366F1]/6">
+        <svg className="w-4 h-4 text-[#6366F1] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+        <p className="text-[13px] leading-tight font-semibold text-[#6366F1]">
+          Tu pago está en revisión con tu banco.
+        </p>
+      </div>
+    );
+  }
+
+  if (payment.status === 'dispute_lost') {
+    return (
+      <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-[#9F1239]/6">
+        <svg className="w-4 h-4 text-[#9F1239] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+        </svg>
+        <p className="text-[13px] leading-tight font-semibold text-[#9F1239]">
+          Tu banco revirtió este pago.
+        </p>
+      </div>
+    );
+  }
+
+  if (payment.status === 'failed' || payment.status === 'requires_payment') {
+    return (
+      <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-ink/4">
+        <svg className="w-4 h-4 text-ink-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l2 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p className="text-[13px] leading-tight font-medium text-ink-3">Pago pendiente</p>
+      </div>
+    );
+  }
+
+  // 'canceled' (o cualquier otro status futuro no contemplado): sin cobro
+  // real que mostrar, no ensucia la tarjeta.
+  return null;
 }
 
 function StatusBadge({ status }) {
