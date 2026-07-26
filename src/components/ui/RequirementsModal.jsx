@@ -74,7 +74,7 @@ export default function RequirementsModal({
           <div className="min-w-0 flex-1 pt-0.5">
             <h2 id="requirements-modal-title" className="leading-snug">
               <span className="block text-[11px] font-bold uppercase tracking-[0.14em] text-ink-3">Antes de reservar</span>
-              <span className="block mt-0.5 font-display text-xl font-semibold text-ink tracking-tight truncate">
+              <span className="block mt-0.5 font-display text-xl font-semibold text-ink tracking-tight">
                 {toTitleCase(service.name)}
               </span>
             </h2>

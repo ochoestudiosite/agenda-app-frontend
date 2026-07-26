@@ -40,9 +40,12 @@ function CalendarIcon() {
   );
 }
 
+// Mobile stacks each item full-width so long branch/service/specialist names
+// wrap and stay fully readable; sm+ keeps the original compact horizontal strip
+// (constrained width + truncate) where the row has to fit several items.
 function SummaryItem({ item }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 shrink-0">
+    <div className="flex items-center gap-3 px-4 py-3 w-full sm:w-auto sm:shrink-0">
       {item.avatars ? (
         <AvatarStack avatars={item.avatars} />
       ) : (
@@ -50,15 +53,15 @@ function SummaryItem({ item }) {
           <CalendarIcon />
         </div>
       )}
-      <div className="min-w-0 max-w-[160px]">
+      <div className="min-w-0 flex-1 sm:flex-none sm:max-w-[160px]">
         <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-gold/70 leading-none mb-1">
           {item.category}
         </p>
-        <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+        <p className="text-[13px] font-semibold text-ink leading-snug break-words sm:truncate">
           {item.label}
         </p>
         {item.sub && (
-          <p className="text-[11px] text-ink-3 leading-none mt-0.5 truncate">
+          <p className="text-[11px] text-ink-3 leading-snug sm:leading-none mt-0.5 break-words sm:truncate">
             {item.sub}
           </p>
         )}
@@ -75,13 +78,13 @@ export default function SummaryStrip({ items, ariaLabel = 'Resumen de selección
   return (
     <div className="mb-8 animate-fade-in" role="status" aria-label={ariaLabel}>
       <div className="bg-card border border-edge/60 dark:border-white/[0.08] rounded-2xl shadow-xs dark:shadow-[0_4px_20px_rgba(0,0,0,0.45)] overflow-hidden">
-        <div className="flex items-stretch overflow-x-auto scrollbar-hide">
+        <div className="flex flex-col sm:flex-row items-stretch sm:overflow-x-auto scrollbar-hide">
           {items.map((item, i) => (
             <Fragment key={item.id}>
               <SummaryItem item={item} />
               {i < items.length - 1 && (
-                <div className="self-stretch flex items-center shrink-0 py-3" aria-hidden>
-                  <div className="w-px h-full bg-edge/40" />
+                <div className="self-stretch flex items-center shrink-0 px-4 sm:px-0 sm:py-3" aria-hidden>
+                  <div className="h-px w-full bg-edge/40 sm:w-px sm:h-full" />
                 </div>
               )}
             </Fragment>

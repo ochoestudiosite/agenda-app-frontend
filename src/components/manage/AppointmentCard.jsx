@@ -13,6 +13,7 @@ import { useToast } from '../ui/Toast';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 import SummaryStrip from '../ui/SummaryStrip';
+import ExpandableText from '../ui/ExpandableText';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import RequirementsTag from '../ui/RequirementsTag';
 import OTPPanel from '../booking/OTPPanel';
@@ -269,7 +270,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+                    <p className="text-[13px] font-semibold text-ink leading-snug">
                       {toTitleCase(svc.serviceName)}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -314,7 +315,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="label-section">Servicio</p>
-                <p className="text-[14px] font-semibold text-ink mt-0.5 leading-snug truncate">
+                <p className="text-[14px] font-semibold text-ink mt-0.5 leading-snug">
                   {toTitleCase(appointment.serviceName)}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -924,12 +925,21 @@ function ReschedulePanel({
           <p className="text-ink-3 text-sm mb-6">¿En cuál ubicación deseas tu nueva cita?</p>
           <div className="space-y-2.5">
             {branches.map((b, i) => (
-              <button
+              <div
                 key={b.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => { setReBranch(b); setReSpecialist(null); setNewDate(null); setNewTime(null); setReschedStep('specialist'); }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setReBranch(b); setReSpecialist(null); setNewDate(null); setNewTime(null); setReschedStep('specialist');
+                  }
+                }}
                 className="w-full text-left group flex items-center gap-4 p-5 rounded-2xl border border-edge bg-card
                            hover:border-gold/40 hover:shadow-card active:scale-[0.99]
-                           transition-all duration-200 cursor-pointer animate-fade-up"
+                           transition-all duration-200 cursor-pointer animate-fade-up
+                           focus:outline-none focus:ring-2 focus:ring-gold/30"
                 style={{ animationDelay: `${i * 40}ms`, animationFillMode: 'both' }}
               >
                 <div className="shrink-0 w-14 h-14 rounded-full overflow-hidden flex items-center justify-center
@@ -942,15 +952,17 @@ function ReschedulePanel({
                   }
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-150 truncate">
+                  <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-150">
                     {toTitleCase(b.name)}
                   </p>
-                  {b.address && <p className="text-xs text-ink-3 mt-0.5 line-clamp-1">{b.address}</p>}
+                  {b.address && (
+                    <ExpandableText text={b.address} className="text-xs text-ink-3 mt-0.5 leading-snug" />
+                  )}
                 </div>
                 <svg className="w-4 h-4 text-ink-3 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -981,9 +993,17 @@ function ReschedulePanel({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {filteredSpecialists.map((s, i) => (
-                <button
+                <div
                   key={s.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => { setReSpecialist(s); setNewDate(null); setNewTime(null); setReschedStep('datetime'); }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setReSpecialist(s); setNewDate(null); setNewTime(null); setReschedStep('datetime');
+                    }
+                  }}
                   className="group flex sm:flex-col items-start sm:items-center gap-4 sm:gap-3 p-5 rounded-2xl border border-edge bg-card
                              text-left sm:text-center hover:border-gold/40 hover:shadow-card
                              active:scale-[0.99] transition-all duration-200 cursor-pointer animate-fade-up
@@ -998,16 +1018,24 @@ function ReschedulePanel({
                     }
                   </div>
                   <div className="flex-1 sm:flex-none min-w-0">
-                    <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-150 truncate">
+                    <p className="font-semibold text-[0.9375rem] text-ink group-hover:text-gold transition-colors duration-150">
                       {toTitleCase(s.name)}
                     </p>
-                    {s.specialty && <p className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug">{s.specialty}</p>}
-                    {s.bio && <p className="text-xs text-ink-3/70 mt-1.5 leading-relaxed line-clamp-2 sm:line-clamp-3">{s.bio}</p>}
+                    {s.specialty && (
+                      <ExpandableText text={s.specialty} className="text-xs text-ink-3 mt-0.5 sm:mt-1 leading-snug" />
+                    )}
+                    {s.bio && (
+                      <ExpandableText
+                        text={s.bio}
+                        className="text-xs text-ink-3/70 mt-1.5 leading-relaxed"
+                        clampClassName="line-clamp-2 sm:line-clamp-3"
+                      />
+                    )}
                   </div>
                   <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
                   </svg>
-                </button>
+                </div>
               ))}
             </div>
           )}

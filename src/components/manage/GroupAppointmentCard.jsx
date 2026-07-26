@@ -760,8 +760,8 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
                           }
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[12px] font-semibold text-ink leading-snug truncate">{toTitleCase(appt.serviceName)}</p>
-                          <p className="text-[11px] text-ink-3 truncate">{toTitleCase(appt.specialistName)}</p>
+                          <p className="text-[12px] font-semibold text-ink leading-snug">{toTitleCase(appt.serviceName)}</p>
+                          <p className="text-[11px] text-ink-3">{toTitleCase(appt.specialistName)}</p>
                         </div>
                       </div>
                       <div className="text-right shrink-0">

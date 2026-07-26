@@ -531,7 +531,7 @@ export default function DateTimePicker() {
                   {/* Content */}
                   <div className={`flex-1 min-w-0 flex items-start justify-between gap-2 ${!isLast ? 'pb-3' : ''}`}>
                     <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-ink leading-tight truncate">
+                      <p className="text-[13px] font-semibold text-ink leading-tight">
                         {toTitleCase(service.name)}
                       </p>
                       <p className="text-[12px] text-ink-3 mt-0.5">

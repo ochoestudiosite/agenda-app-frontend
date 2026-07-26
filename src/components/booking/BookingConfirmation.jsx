@@ -265,7 +265,7 @@ export default function BookingConfirmation() {
                     <div key={svc.id || svc.slug || i} className="flex items-start gap-3">
                       <EntityAvatar size="summary" name={svc.serviceName} imageUrl={svc.imageUrl} className="mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-ink leading-snug truncate">
+                        <p className="text-[13px] font-semibold text-ink leading-snug">
                           {toTitleCase(svc.serviceName)}
                         </p>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -299,7 +299,7 @@ export default function BookingConfirmation() {
                   <EntityAvatar size="confirm" name={confirmation?.serviceName} imageUrl={service?.imageUrl} />
                   <div className="flex-1 min-w-0">
                     <p className="label-section">Servicio</p>
-                    <p className="text-[14px] font-semibold text-ink mt-0.5 leading-snug truncate">
+                    <p className="text-[14px] font-semibold text-ink mt-0.5 leading-snug">
                       {toTitleCase(confirmation?.serviceName)}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">

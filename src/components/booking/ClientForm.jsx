@@ -605,8 +605,8 @@ export default function ClientForm() {
                     <div key={i} className="flex items-center gap-3">
                       <EntityAvatar size="summary" name={svc.name} imageUrl={svc.imageUrl} />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <p className="text-[13px] font-semibold text-ink leading-snug truncate">{toTitleCase(svc.name)}</p>
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <p className="text-[13px] font-semibold text-ink leading-snug">{toTitleCase(svc.name)}</p>
                           {svc.promo && <PromoTag promotionName={svc.promo.name} promotionType={svc.promo.discountType} promotionValue={svc.promo.discountValue} discountAmount={svc.promo.discountAmount} />}
                         </div>
                         <p className="text-xs text-ink-3 mt-0.5">{svc.duration} min</p>
@@ -623,7 +623,7 @@ export default function ClientForm() {
                   <EntityAvatar size="summary" name={displayServices[0]?.name} imageUrl={displayServices[0]?.imageUrl} />
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-semibold uppercase tracking-widest text-ink-3 mb-0.5">Servicio</p>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
                       <p className="text-[14px] font-semibold text-ink leading-snug">{toTitleCase(displayServices[0]?.name)}</p>
                       {displayServices[0]?.promo && <PromoTag promotionName={displayServices[0].promo.name} promotionType={displayServices[0].promo.discountType} promotionValue={displayServices[0].promo.discountValue} discountAmount={displayServices[0].promo.discountAmount} />}
                     </div>
