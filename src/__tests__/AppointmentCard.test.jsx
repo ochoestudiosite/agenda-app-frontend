@@ -218,6 +218,33 @@ describe('AppointmentCard — completed status', () => {
 })
 
 // ============================================================================
+// 4.5 Pending-payment appointment (Etapa 2a, TTL de 15 min) — read-only
+// ============================================================================
+
+// Mismo patrón de regresión que 'completed' arriba (2026-07-27): 'pending_payment'
+// se agregó al enum de status en la migración 033 (Etapa 2a) pero nunca se
+// agregó al mapa de StatusBadge — un cliente que consultaba "Mis Citas" DENTRO
+// del TTL de 15 min (pago aún en proceso) veía el literal "pending_payment"
+// sin traducir, con el mismo estilo rojo que una cita cancelada.
+const PENDING_PAYMENT_APPT = { ...CONFIRMED_APPT, code: 'CITA004', status: 'pending_payment' }
+
+describe('AppointmentCard — pending_payment status', () => {
+  it('shows the "Esperando pago" label, not the raw "pending_payment" string', async () => {
+    await renderCard(PENDING_PAYMENT_APPT)
+    expect(document.body.textContent).toMatch(/Esperando pago/)
+    expect(document.body.textContent).not.toMatch(/pending_payment/)
+  })
+
+  // El backend rechaza reagendar 'pending_payment' con 400 (appointmentService.js)
+  // — el botón no debe ni aparecer. Cancelar SÍ sigue soportado para este status.
+  it('hides Reschedule (backend rejects it) but keeps Cancel available', async () => {
+    await renderCard(PENDING_PAYMENT_APPT)
+    expect(screen.queryByRole('button', { name: /reagendar/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /cancelar/i })).toBeTruthy()
+  })
+})
+
+// ============================================================================
 // 5. Cancel flow
 // ============================================================================
 

@@ -812,7 +812,9 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
 function StatusBadge({ status }) {
   // no_show: mismo label/estilo que AppointmentCard (cita individual) — el
   // backend ahora refleja el no-show total en appointment_groups.status.
-  const cls    = { confirmed: 'badge badge-confirmed', completed: 'badge badge-completed', cancelled: 'badge badge-cancelled', rescheduled: 'badge badge-rescheduled', no_show: 'badge badge-noshow', payment_expired: 'badge badge-payment-expired' };
-  const labels = { confirmed: 'Confirmada', completed: 'Completada', cancelled: 'Cancelada', rescheduled: 'Reagendada', no_show: 'No asistió', payment_expired: 'Pago no completado' };
+  // pending_payment (hallazgo real 2026-07-27): sin esta entrada, el fallback
+  // de abajo mostraba el literal "pending_payment" sin traducir.
+  const cls    = { confirmed: 'badge badge-confirmed', completed: 'badge badge-completed', cancelled: 'badge badge-cancelled', rescheduled: 'badge badge-rescheduled', no_show: 'badge badge-noshow', payment_expired: 'badge badge-payment-expired', pending_payment: 'badge badge-pending-payment' };
+  const labels = { confirmed: 'Confirmada', completed: 'Completada', cancelled: 'Cancelada', rescheduled: 'Reagendada', no_show: 'No asistió', payment_expired: 'Pago no completado', pending_payment: 'Esperando pago' };
   return <span className={cls[status] || 'badge badge-cancelled'}>{labels[status] || status}</span>;
 }

@@ -161,6 +161,12 @@ export default function AppointmentCard({ appointment, onUpdated }) {
   const nowMins    = nowMinutesInTz(bizTz);
   const cutoffMins = isToday ? nowMins + leadMins : 0;
   const isCancelled        = appointment.status === 'cancelled';
+  // El backend rechaza reagendar una cita 'pending_payment' con 400
+  // (appointmentService.js: "moveria un cobro en curso a otro slot/hora, un
+  // caso no soportado") — sin este gate, el botón "Reagendar" quedaba visible
+  // y clickeable durante el TTL de 15 min, solo para fallar con ese error al
+  // enviarse. Cancelar sí sigue soportado para este status, no se oculta.
+  const isPendingPayment   = appointment.status === 'pending_payment';
   // Mientras config no ha cargado, bizTz es null e isPastDateTime cae a hora
   // local del navegador como aproximación segura (nunca bloquea acciones).
   const isPastAppt = isPastDateTime(appointment.date, appointment.time, bizTz);
@@ -483,9 +489,11 @@ export default function AppointmentCard({ appointment, onUpdated }) {
                       </p>
                     )}
                     <div className="flex gap-2.5">
-                      <Button variant="outline" onClick={openReschedule} className="flex-1">
-                        Reagendar
-                      </Button>
+                      {!isPendingPayment && (
+                        <Button variant="outline" onClick={openReschedule} className="flex-1">
+                          Reagendar
+                        </Button>
+                      )}
                       <Button variant="danger" onClick={() => setMode('cancel-confirm')} className="flex-1">
                         Cancelar cita
                       </Button>
@@ -1333,6 +1341,10 @@ function StatusBadge({ status }) {
     rescheduled:     { cls: 'badge badge-rescheduled',       label: 'Reagendada'         },
     no_show:         { cls: 'badge badge-noshow',            label: 'No asistió'         },
     payment_expired: { cls: 'badge badge-payment-expired',   label: 'Pago no completado' },
+    // Hallazgo real 2026-07-27: sin esta entrada, una cita consultada dentro
+    // del TTL de 15 min (Etapa 2a) caía al fallback de abajo y mostraba el
+    // literal "pending_payment" sin traducir, con estilo de cancelada.
+    pending_payment: { cls: 'badge badge-pending-payment',   label: 'Esperando pago'     },
   };
   const { cls, label } = map[status] ?? { cls: 'badge badge-cancelled', label: status };
   return <span className={cls}>{label}</span>;
