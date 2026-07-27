@@ -50,11 +50,15 @@ export default {
         'float': '0 2px 8px 0 rgb(0 0 0 / 0.06), 0 12px 40px 0 rgb(0 0 0 / 0.08)',
         'deep':  '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 24px 64px -8px rgb(0 0 0 / 0.12)',
       },
+      // ── Motion canónico Cita24 — misma curva que admin-app y platform-admin ──
+      // Ojo: el color, la tipografía y el radio de esta app SÍ los controla el
+      // tenant (BrandTokensApplier). El motion no: es comportamiento de producto
+      // y se mantiene idéntico en las 4 apps.
       animation: {
-        'fade-in':     'fadeIn 0.2s cubic-bezier(0.25,0.46,0.45,0.94)',
-        'fade-up':     'fadeUp 0.28s cubic-bezier(0.25,0.46,0.45,0.94)',
-        'fade-up-sm':  'fadeUpSm 0.22s cubic-bezier(0.25,0.46,0.45,0.94)',
-        'scale-in':    'scaleIn 0.2s cubic-bezier(0.34,1.56,0.64,1)',
+        'fade-in':     'fadeIn 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
+        'fade-up':     'fadeUp 0.26s cubic-bezier(0.23, 1, 0.32, 1)',
+        'fade-up-sm':  'fadeUpSm 0.22s cubic-bezier(0.23, 1, 0.32, 1)',
+        'scale-in':    'scaleIn 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
         'shimmer':     'shimmer 1.6s infinite',
         // Testimonials marquee — scrolls the duplicated track left by 50 % (= 1 full set)
         'scroll-left': 'scrollLeft 60s linear infinite',
@@ -68,12 +72,20 @@ export default {
         scrollLeft: { from: { transform: 'translateX(0)' },               to:  { transform: 'translateX(-50%)' } },
       },
       transitionTimingFunction: {
-        'spring':    'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        'bounce-sm': 'cubic-bezier(0.34, 1.3, 0.64, 1)',
+        // `spring` conserva su nombre (23 usos en la app) pero apunta a la curva
+        // canónica: ease-out fuerte. La anterior (0.25,0.46,0.45,0.94) era débil
+        // y no daba el arranque inmediato que hace sentir responsiva la UI.
+        'spring':        'cubic-bezier(0.23, 1, 0.32, 1)',
+        'out-strong':    'cubic-bezier(0.23, 1, 0.32, 1)',
+        'in-out-strong': 'cubic-bezier(0.77, 0, 0.175, 1)',
+        'drawer':        'cubic-bezier(0.32, 0.72, 0, 1)',
       },
       transitionDuration: {
         '160': '160ms',
         '240': '240ms',
+        press:   '160ms',
+        control: '200ms',
+        panel:   '260ms',
       },
     },
   },
