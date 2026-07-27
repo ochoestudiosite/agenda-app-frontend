@@ -188,6 +188,12 @@
   .badge-rescheduled {
     @apply bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20;
   }
+
+  /* Pago no completado — el cliente no finalizó el pago dentro del TTL.
+     Amber/naranja distingue de badge-cancelled (rojo = cancelación activa). */
+  .badge-payment-expired {
+    @apply bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20;
+  }
 }
 
 @layer utilities {

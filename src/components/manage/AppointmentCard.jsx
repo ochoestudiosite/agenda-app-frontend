@@ -514,7 +514,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
               todo al ejecutar la cancelación real (Etapa 3, §14). */}
           {refundPreview && (
             <div className="mb-4 px-3.5 py-3 rounded-xl border border-edge bg-raised/30">
-              <p className="text-[12.5px] text-ink-2 leading-relaxed">
+              <p className="text-[12px] text-ink-2 leading-relaxed">
                 {refundPreview.withinWindow ? (
                   <>Estimado: recibirías de vuelta <span className="font-semibold text-ink">{formatPriceFromCents(refundPreview.amountCents)}</span>.</>
                 ) : (
@@ -1327,12 +1327,13 @@ function PaymentStatusRow({ payment, apptStatus }) {
 
 function StatusBadge({ status }) {
   const map = {
-    confirmed:   { cls: 'badge badge-confirmed',   label: 'Confirmada'  },
-    completed:   { cls: 'badge badge-completed',   label: 'Completada'  },
-    cancelled:   { cls: 'badge badge-cancelled',   label: 'Cancelada'   },
-    rescheduled: { cls: 'badge badge-rescheduled', label: 'Reagendada'  },
-    no_show:     { cls: 'badge badge-noshow',       label: 'No asistió'  },
+    confirmed:       { cls: 'badge badge-confirmed',         label: 'Confirmada'         },
+    completed:       { cls: 'badge badge-completed',         label: 'Completada'         },
+    cancelled:       { cls: 'badge badge-cancelled',         label: 'Cancelada'          },
+    rescheduled:     { cls: 'badge badge-rescheduled',       label: 'Reagendada'         },
+    no_show:         { cls: 'badge badge-noshow',            label: 'No asistió'         },
+    payment_expired: { cls: 'badge badge-payment-expired',   label: 'Pago no completado' },
   };
-  const { cls, label } = map[status] ?? { cls: 'badge', label: status };
+  const { cls, label } = map[status] ?? { cls: 'badge badge-cancelled', label: status };
   return <span className={cls}>{label}</span>;
 }

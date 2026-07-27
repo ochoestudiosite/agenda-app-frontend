@@ -812,7 +812,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
 function StatusBadge({ status }) {
   // no_show: mismo label/estilo que AppointmentCard (cita individual) — el
   // backend ahora refleja el no-show total en appointment_groups.status.
-  const cls    = { confirmed: 'badge badge-confirmed', completed: 'badge badge-confirmed', cancelled: 'badge badge-cancelled', rescheduled: 'badge badge-rescheduled', no_show: 'badge badge-noshow' };
-  const labels = { confirmed: 'Confirmada', completed: 'Completada', cancelled: 'Cancelada', rescheduled: 'Reagendada', no_show: 'No asistió' };
-  return <span className={cls[status] || 'badge'}>{labels[status] || status}</span>;
+  const cls    = { confirmed: 'badge badge-confirmed', completed: 'badge badge-completed', cancelled: 'badge badge-cancelled', rescheduled: 'badge badge-rescheduled', no_show: 'badge badge-noshow', payment_expired: 'badge badge-payment-expired' };
+  const labels = { confirmed: 'Confirmada', completed: 'Completada', cancelled: 'Cancelada', rescheduled: 'Reagendada', no_show: 'No asistió', payment_expired: 'Pago no completado' };
+  return <span className={cls[status] || 'badge badge-cancelled'}>{labels[status] || status}</span>;
 }
