@@ -98,15 +98,39 @@ export default function PaymentPanel({ payment, paymentConfig, code, onConfirmed
     return () => clearInterval(id);
   }, [payment.expires_at, remainingMs]);
 
+  // Guard: paymentConfig can theoretically arrive as null if the /config
+  // endpoint returns payments:null (e.g. missing STRIPE_PUBLISHABLE_KEY env)
+  // while the creation endpoint already returned a payment block. The early
+  // return below makes this safe; the useMemo must also use optional chaining
+  // so it doesn't throw before that return is reached.
   const stripePromise = useMemo(
-    () => getStripePromise(paymentConfig.publishable_key, paymentConfig.stripe_account_id),
-    [paymentConfig.publishable_key, paymentConfig.stripe_account_id],
+    () => paymentConfig
+      ? getStripePromise(paymentConfig.publishable_key, paymentConfig.stripe_account_id)
+      : null,
+    [paymentConfig?.publishable_key, paymentConfig?.stripe_account_id],
   );
   const appearance = useMemo(() => buildAppearance(), []);
 
   function handleChildBusyChange(busy) {
     setChildBusy(busy);
     onBusyChange?.(busy);
+  }
+
+  // Stripe config unavailable — surface a clear error instead of crashing.
+  if (!paymentConfig) {
+    return (
+      <div className="card p-5 sm:p-6 animate-fade-in text-center">
+        <p className="text-[15px] font-semibold text-ink mb-1">No se pudo inicializar el pago</p>
+        <p className="text-[13px] text-ink-3 mb-5">Hubo un problema de configuración. Vuelve a intentarlo o contacta al negocio.</p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full py-3 rounded-xl text-[13px] font-semibold bg-gold text-on-gold hover:bg-gold-light transition-colors duration-150 cursor-pointer"
+        >
+          Volver
+        </button>
+      </div>
+    );
   }
 
   if (expired) {
