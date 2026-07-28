@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 const mockConfirmPayment  = vi.fn()
@@ -244,6 +244,48 @@ describe('PaymentPanel — countdown expira durante una confirmación en curso',
     resolveConfirm({ error: undefined })
     await waitFor(() => expect(props.onConfirmed).toHaveBeenCalled())
   })
+})
+
+// ============================================================================
+// 4e. El webhook payment_intent.succeeded nunca llega (endpoint caído, evento
+// perdido) — el cliente YA pagó pero la cita nunca transiciona a 'confirmed'.
+// Auditoría 2026-07-27: este es el síntoma visible en el navegador del bug
+// real corregido en el backend (chargesService.applyPaymentSucceeded +
+// pendingPaymentExpiryJob, que ahora reconcilian aunque el webhook se pierda).
+// Aquí solo se verifica que el CLIENTE nunca se queda colgado sin explicación
+// cuando eso pasa — el mensaje debe ser tranquilizador (el pago SÍ se cobró)
+// y nunca disparar onConfirmed() con una cita que sigue sin confirmar.
+// ============================================================================
+
+describe('PaymentPanel — el webhook nunca confirma la cita (POLL_GIVE_UP_AFTER)', () => {
+  afterEach(() => { vi.useRealTimers() })
+
+  it('tras 2 minutos sin transición a confirmed/cancelled: mensaje tranquilizador con el código, deja de confirmar, NUNCA llama a onConfirmed', async () => {
+    // Fake timers ANTES del click: el poll loop agenda su primer sleep() con
+    // el reloj real si la conmutación llega tarde, y ese timer real jamás
+    // avanza con vi.advanceTimersByTimeAsync — se queda esperando 2s reales
+    // por vuelta y nunca alcanza el umbral de 2 minutos dentro del timeout
+    // del test.
+    vi.useFakeTimers()
+    mockConfirmPayment.mockResolvedValue({ error: undefined })
+    // El pago YA se cobró (esto es justo lo que pasa si el webhook se
+    // perdió) — el status nunca avanza más allá de pending_payment.
+    mockGetAppointment.mockResolvedValue({ status: 'pending_payment' })
+    const { props } = await renderPanel({
+      payment: { client_secret: 'pi_lost_webhook', amount_cents: 8400, expires_at: isoFromNow(15 * 60 * 1000) },
+    })
+
+    // fireEvent (no userEvent) evita la capa de delays reales de user-event,
+    // que no coopera bien con fake timers para un click simple sin teclado.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Pagar/i }))
+      await vi.advanceTimersByTimeAsync(0) // flushea confirmPayment/getAppointment ya resueltos
+    })
+    await act(async () => { await vi.advanceTimersByTimeAsync(2 * 60_000 + 5_000) })
+
+    expect(screen.getByText(/tardando más de lo normal/i).textContent).toMatch(/ABC123/)
+    expect(props.onConfirmed).not.toHaveBeenCalled()
+  }, 10_000)
 })
 
 // ============================================================================
