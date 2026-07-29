@@ -293,10 +293,6 @@ export default function Home() {
           config={bc}
         />
       </footer>
-
-      <div className="fixed bottom-10 right-10 pointer-events-none opacity-20">
-        <div className="w-px h-24 bg-gradient-to-b from-transparent via-gold to-transparent" />
-      </div>
     </div>
   );
 }
