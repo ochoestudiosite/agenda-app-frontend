@@ -1,15 +1,13 @@
+import Logo from '../components/Logo';
+
 export default function TenantNotFound({ suspended = false }) {
   return (
     <div className="min-h-dvh bg-surface flex flex-col items-center justify-center px-6 py-16">
 
-      {/* Cita24 wordmark */}
-      <a href="https://cita24.com" className="flex items-center gap-2.5 mb-12 no-underline">
-        <span className="w-8 h-8 rounded-xl bg-gold flex items-center justify-center shrink-0">
-          <CalendarIcon />
-        </span>
-        <span className="font-display text-[1.125rem] font-bold tracking-tight text-ink">
-          Cita<span className="text-gold">24</span>
-        </span>
+      {/* Cita24 wordmark — this page has no tenant context, always show the
+          real Cita24 brand (not the neutral gray tenant-branding fallback). */}
+      <a href="https://cita24.com" className="flex items-center mb-12 no-underline">
+        <Logo variant="green" height={24} />
       </a>
 
       {/* Giant status number */}
@@ -49,8 +47,9 @@ export default function TenantNotFound({ suspended = false }) {
           <a
             href="https://cita24.com/registro"
             className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl
-                       border border-transparent bg-gold text-on-gold text-sm font-semibold
+                       border border-transparent text-on-gold text-sm font-semibold
                        hover:opacity-90 transition-opacity duration-150"
+            style={{ background: '#00C853' }}
           >
             Registra tu negocio
             <ArrowRight />
@@ -60,8 +59,8 @@ export default function TenantNotFound({ suspended = false }) {
 
       <p className="mt-10 text-xs text-ink-3 text-center">
         ¿Crees que es un error?{' '}
-        <a href="mailto:hola@cita24.com" className="text-gold hover:underline">
-          hola@cita24.com
+        <a href="mailto:soporte@cita24.com" className="hover:underline" style={{ color: '#00C853' }}>
+          soporte@cita24.com
         </a>
       </p>
 
@@ -69,14 +68,6 @@ export default function TenantNotFound({ suspended = false }) {
   );
 }
 
-function CalendarIcon() {
-  return (
-    <svg className="w-4 h-4 text-on-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
 
 function GhostIcon() {
   return (
