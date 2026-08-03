@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Phone, Clock, Mail, Navigation } from 'lucide-react';
 import { nowPartsInTz } from '../../utils/businessTime';
-import { useReveal } from '../../hooks/useReveal';
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -185,8 +184,6 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
     return () => clearTimeout(timer);
   }, [activeIdx, displayedIdx]);
 
-  const { ref: headerRef, className: headerRevealClass, style: headerRevealStyle } = useReveal();
-
   if (!locations.length) return null;
 
   const isMulti = locations.length > 1;
@@ -216,7 +213,7 @@ export default function LandingLocation({ config = {}, locationConfig = {}, titl
       <div className="section-container">
 
         {/* ── Section header + branch tabs ── */}
-        <div ref={headerRef} className={headerRevealClass} style={headerRevealStyle}>
+        <div className="animate-fade-up">
           <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gold">
             <span className="w-6 h-px bg-gold" />
             {title || 'Encuéntranos'}

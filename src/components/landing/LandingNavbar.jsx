@@ -126,8 +126,8 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
       <nav
         className={`fixed top-0 inset-x-0 z-50 h-[60px] transition-all duration-300 ${
           isScrolled
-            ? 'bg-card/80 backdrop-blur-xl backdrop-saturate-200 shadow-[0_1px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_20px_rgba(0,0,0,0.5)]'
-            : 'bg-transparent'
+            ? 'bg-card/80 backdrop-blur-xl backdrop-saturate-200 border-b border-edge/50'
+            : 'bg-transparent border-b border-transparent'
         }`}
       >
         <div className="section-container h-full flex items-center justify-between gap-4">
@@ -154,7 +154,7 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
             {showCta && (
               <Link to="/agendar">
                 <button
-                  className="group inline-flex items-center gap-1.5 h-9 pl-4 pr-3 rounded-full text-[13px] font-bold transition-all hover:opacity-90 active:scale-[0.97]"
+                  className="inline-flex items-center gap-1.5 h-9 pl-4 pr-3 rounded-full text-[13px] font-bold transition-all hover:opacity-90 active:scale-[0.97]"
                   style={{
                     background: 'linear-gradient(135deg, rgb(var(--gold-light)), rgb(var(--gold)))',
                     color: 'rgb(var(--on-gold))',
@@ -162,11 +162,7 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
                   }}
                 >
                   {ctaText}
-                  <ArrowUpRight
-                    size={13}
-                    strokeWidth={2.5}
-                    className="transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
+                  <ArrowUpRight size={13} strokeWidth={2.5} />
                 </button>
               </Link>
             )}
@@ -218,18 +214,14 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
                   {showCta && (
                     <Link to="/agendar" onClick={() => setMobileMenu(false)} className="flex-1">
                       <button
-                        className="group w-full inline-flex items-center justify-center gap-1.5 h-11 rounded-full font-bold text-sm active:scale-[0.98] transition-transform"
+                        className="w-full inline-flex items-center justify-center gap-1.5 h-11 rounded-full font-bold text-sm"
                         style={{
                           background: 'linear-gradient(135deg, rgb(var(--gold-light)), rgb(var(--gold)))',
                           color: 'rgb(var(--on-gold))',
                         }}
                       >
                         {ctaText}
-                        <ArrowUpRight
-                          size={14}
-                          strokeWidth={2.4}
-                          className="transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                        />
+                        <ArrowUpRight size={14} strokeWidth={2.4} />
                       </button>
                     </Link>
                   )}

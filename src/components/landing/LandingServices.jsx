@@ -3,7 +3,6 @@ import { ArrowUpRight, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatServicePrice, promoEndsLabel } from '../../utils/formatters';
 import { useConfig } from '../../hooks/useConfig';
-import { useReveal } from '../../hooks/useReveal';
 import { promoConceptLabel } from '../ui/PromoPrice';
 
 const VISIBLE_DESKTOP = 6;
@@ -138,14 +137,13 @@ function ServiceCard({ service, i, buttonText }) {
   const showPrice = priceType !== 'ask' && service.price != null;
   const imageUrl  = service.imageUrl || service.image_url || null;
   const flagged   = Boolean(service.requirements || service.prerequisite);
-  const { ref, className: revealClass, style: revealStyle } = useReveal({ delay: Math.min(i * 50, 300) });
 
   return (
-    <div ref={ref} className={`group ${revealClass}`} style={revealStyle}>
-      <Link
-        to="/agendar"
-        className="block rounded-[28px] landing-card-shape overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:-translate-y-1"
-      >
+    <div
+      className="group animate-fade-up"
+      style={{ animationDelay: `${Math.min(i * 50, 300)}ms`, animationFillMode: 'both' }}
+    >
+      <Link to="/agendar" className="block rounded-[28px] landing-card-shape overflow-hidden">
         <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full bg-raised">
 
           {/* Placeholder — siempre visible mientras carga o si no hay imagen */}
@@ -270,14 +268,9 @@ function ServiceSpotlight({ service, buttonText }) {
   const showPrice = priceType !== 'ask' && service.price != null;
   const imageUrl  = service.imageUrl || service.image_url || null;
   const flagged   = Boolean(service.requirements || service.prerequisite);
-  const { ref, className: revealClass, style: revealStyle } = useReveal();
 
   return (
-    <div
-      ref={ref}
-      className={`mt-14 lg:mt-16 grid md:grid-cols-[minmax(0,420px)_1fr] lg:grid-cols-[460px_1fr] gap-8 lg:gap-16 items-center ${revealClass}`}
-      style={revealStyle}
-    >
+    <div className="mt-14 lg:mt-16 grid md:grid-cols-[minmax(0,420px)_1fr] lg:grid-cols-[460px_1fr] gap-8 lg:gap-16 items-center animate-fade-up">
       {/* Photo */}
       <Link to="/agendar" className="group block relative aspect-[4/5] w-full max-w-sm mx-auto md:max-w-none rounded-[32px] landing-card-shape overflow-hidden bg-raised">
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">
@@ -384,9 +377,8 @@ function ServiceSpotlight({ service, buttonText }) {
 //          with a single flat line.
 // fallback runs when the admin has not provided a custom title at all.
 export function SectionHeader({ eyebrow, title, accent, fallback, right }) {
-  const { ref, className: revealClass, style: revealStyle } = useReveal();
   return (
-    <div ref={ref} className={`flex flex-col md:flex-row md:items-end justify-between gap-6 ${revealClass}`} style={revealStyle}>
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
       <div className="max-w-xl">
         <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gold">
           <span className="w-6 h-px bg-gold" />

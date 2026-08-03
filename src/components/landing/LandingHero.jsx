@@ -113,10 +113,7 @@ export default function LandingHero({
                 }}
               >
                 {cta || 'Reservar cita'}
-                <span
-                  className="w-7 h-7 rounded-full flex items-center justify-center transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  style={{ background: 'rgb(255 255 255 / 0.18)' }}
-                >
+                <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: 'rgb(255 255 255 / 0.18)' }}>
                   <ArrowUpRight size={14} strokeWidth={2.4} />
                 </span>
               </button>
