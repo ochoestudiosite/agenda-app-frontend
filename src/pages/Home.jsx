@@ -8,6 +8,7 @@ import LandingServices from '../components/landing/LandingServices';
 import LandingStaff from '../components/landing/LandingStaff';
 import LandingTestimonials from '../components/landing/LandingTestimonials';
 import LandingLocation from '../components/landing/LandingLocation';
+import LandingFAQ from '../components/landing/LandingFAQ';
 import LandingContact from '../components/landing/LandingContact';
 import LandingSkeleton from '../components/landing/LandingSkeleton';
 import LandingBottomBar from '../components/landing/LandingBottomBar';
@@ -272,6 +273,15 @@ export default function Home() {
             title={bc.location_section?.title}
             subtitle={bc.location_section?.subtitle}
             subtitleAccent={bc.location_section?.subtitle_accent}
+          />
+        )}
+
+        {(bc.faq_section?.visible === true) && (
+          <LandingFAQ
+            items={bc.faq}
+            title={bc.faq_section?.title}
+            subtitle={bc.faq_section?.subtitle}
+            subtitleAccent={bc.faq_section?.subtitle_accent}
           />
         )}
       </main>

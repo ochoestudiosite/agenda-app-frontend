@@ -87,6 +87,25 @@ describe('LandingNavbar — nav link visibility (config-driven)', () => {
     })
     expect(document.body.textContent).not.toContain('Servicios')
   })
+
+  it('hides the Preguntas (FAQ) link by default — matches the section itself being hidden on the page', async () => {
+    await act(async () => { await renderNavbar({ config: {} }) })
+    expect(document.body.textContent).not.toContain('Preguntas')
+  })
+
+  it('shows the Preguntas link once explicitly enabled (visible: true)', async () => {
+    await act(async () => {
+      await renderNavbar({ config: { faq_section: { visible: true } } })
+    })
+    expect(document.body.textContent).toContain('Preguntas')
+  })
+
+  it('hides Preguntas link when explicitly set to visible: false', async () => {
+    await act(async () => {
+      await renderNavbar({ config: { faq_section: { visible: false } } })
+    })
+    expect(document.body.textContent).not.toContain('Preguntas')
+  })
 })
 
 describe('LandingNavbar — business name and CTA', () => {

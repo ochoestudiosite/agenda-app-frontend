@@ -81,6 +81,7 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
     { name: 'Equipo',        href: '#equipo',        configKey: 'staff_section',        defaultVisible: true },
     { name: 'Testimoniales', href: '#testimoniales', configKey: 'testimonials_section', defaultVisible: false },
     { name: 'Ubicación',     href: '#ubicacion',     configKey: 'location_section',     defaultVisible: true },
+    { name: 'Preguntas',     href: '#faq',           configKey: 'faq_section',          defaultVisible: false },
   ];
   const navLinks = allLinks.filter(l => {
     const v = config[l.configKey]?.visible;

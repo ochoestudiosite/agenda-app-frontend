@@ -48,6 +48,7 @@ vi.mock('../../components/landing/LandingServices',     () => ({ default: ({ ser
 vi.mock('../../components/landing/LandingStaff',        () => ({ default: ({ staff }) => <div data-testid="landing-staff">{staff?.map(s => <span key={s.id}>{s.name}</span>)}</div> }))
 vi.mock('../../components/landing/LandingTestimonials', () => ({ default: () => <div data-testid="testimonials" /> }))
 vi.mock('../../components/landing/LandingLocation',     () => ({ default: () => <div data-testid="location" /> }))
+vi.mock('../../components/landing/LandingFAQ',           () => ({ default: () => <div data-testid="faq" /> }))
 vi.mock('../../components/landing/LandingContact',      () => ({ default: () => <div data-testid="contact" /> }))
 vi.mock('../../components/landing/LandingSkeleton',     () => ({ default: () => <div data-testid="skeleton" /> }))
 vi.mock('../../components/landing/LandingBottomBar',    () => ({ default: () => <div data-testid="bottombar" /> }))
@@ -281,5 +282,36 @@ describe('Home — og:image/twitter:image (preview social)', () => {
 
     expect(document.querySelector('meta[property="og:image"]')).toBeNull()
     expect(document.querySelector('meta[name="twitter:image"]')).toBeNull()
+  })
+})
+
+describe('Home — sección FAQ (opt-in, mismo patrón que Testimoniales)', () => {
+  let useConfig, useServices
+
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    ;({ useConfig }   = await import('../../hooks/useConfig'))
+    ;({ useServices } = await import('../../hooks/useServices'))
+    useServices.mockReturnValue({ data: { services: SERVICES, specialists: SPECIALISTS }, isLoading: false })
+  })
+
+  it('no renderiza FAQ cuando faq_section nunca se configuró', async () => {
+    useConfig.mockReturnValue({ data: CONFIG, isLoading: false, isError: false, error: null })
+    await act(async () => { await renderHome() })
+    expect(screen.queryByTestId('faq')).toBeNull()
+  })
+
+  it('no renderiza FAQ cuando visible: false explícito', async () => {
+    const cfg = { ...CONFIG, landing: { faq_section: { visible: false } } }
+    useConfig.mockReturnValue({ data: cfg, isLoading: false, isError: false, error: null })
+    await act(async () => { await renderHome() })
+    expect(screen.queryByTestId('faq')).toBeNull()
+  })
+
+  it('renderiza FAQ cuando visible: true', async () => {
+    const cfg = { ...CONFIG, landing: { faq_section: { visible: true }, faq: [{ question: '¿Puedo cancelar?', answer: 'Sí.' }] } }
+    useConfig.mockReturnValue({ data: cfg, isLoading: false, isError: false, error: null })
+    await act(async () => { await renderHome() })
+    expect(screen.getByTestId('faq')).toBeTruthy()
   })
 })
