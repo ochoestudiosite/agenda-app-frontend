@@ -16,13 +16,14 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, act } from '@testing-library/react'
+import { useTheme } from '../context/ThemeContext'
 
 vi.mock('../hooks/useConfig', () => ({
   useConfig: vi.fn(),
 }))
 
 vi.mock('../context/ThemeContext', () => ({
-  useTheme: vi.fn(() => ({ isDark: false })),
+  useTheme: vi.fn(() => ({ isDark: false, toggle: vi.fn() })),
 }))
 
 function styleTagContent() {
@@ -50,6 +51,7 @@ const GOLD_VARS = ['--gold', '--gold-light', '--gold-muted', '--on-gold']
 
 beforeEach(() => {
   vi.clearAllMocks()
+  useTheme.mockReturnValue({ isDark: false, toggle: vi.fn() })
   document.getElementById('tenant-style-overrides')?.remove()
   document.documentElement.style.removeProperty('--radius')
   GOLD_VARS.forEach(v => document.documentElement.style.removeProperty(v))
@@ -172,5 +174,52 @@ describe('BrandTokensApplier — brand colour (--gold)', () => {
     await act(async () => { await renderApplier({}, { primary_color: '#1E90FF' }) })
     await act(async () => { postPreview({ primary: '#FF0000' }, 'https://evil-example.com') })
     expect(document.documentElement.style.getPropertyValue('--gold')).toBe('30 144 255')
+  })
+})
+
+// ────────────────────────────────────────────────────────────────────────────
+// Regression: SET_THEME (Studio Editor's Claro/Oscuro toggle) used to be
+// handled only inside Home.jsx. Home unmounts the instant the preview
+// client-side-routes to /agendar or /gestionar, taking its listener with it,
+// so the toggle silently stopped working outside the landing view. It now
+// lives in BrandTokensApplier, which is mounted for the whole SPA lifetime.
+// ────────────────────────────────────────────────────────────────────────────
+
+function postSetTheme(theme, origin = 'http://localhost:5174') {
+  window.dispatchEvent(new MessageEvent('message', {
+    origin,
+    data: { type: 'SET_THEME', theme },
+  }))
+}
+
+describe('BrandTokensApplier — SET_THEME (Claro/Oscuro toggle)', () => {
+  it('calls toggle() when SET_THEME requests a mode different from the current one', async () => {
+    const toggle = vi.fn()
+    useTheme.mockReturnValue({ isDark: false, toggle })
+
+    await act(async () => { await renderApplier({}) })
+    await act(async () => { postSetTheme('dark') })
+
+    expect(toggle).toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT call toggle() when SET_THEME requests the mode already active (no toggle loop)', async () => {
+    const toggle = vi.fn()
+    useTheme.mockReturnValue({ isDark: true, toggle })
+
+    await act(async () => { await renderApplier({}) })
+    await act(async () => { postSetTheme('dark') })
+
+    expect(toggle).not.toHaveBeenCalled()
+  })
+
+  it('ignores SET_THEME from a disallowed origin', async () => {
+    const toggle = vi.fn()
+    useTheme.mockReturnValue({ isDark: false, toggle })
+
+    await act(async () => { await renderApplier({}) })
+    await act(async () => { postSetTheme('dark', 'https://evil-example.com') })
+
+    expect(toggle).not.toHaveBeenCalled()
   })
 })

@@ -65,7 +65,7 @@ function relativeLuminance(r, g, b) {
 
 export default function BrandTokensApplier() {
   const { data: config } = useConfig();
-  const { isDark }       = useTheme();
+  const { isDark, toggle } = useTheme();
   // The admin Landing Editor pushes live preview updates via postMessage. We
   // hold the latest preview design here so the iframe reflects colour / font
   // / radius changes the moment the user moves a slider — the saved config
@@ -78,10 +78,18 @@ export default function BrandTokensApplier() {
       if (e.data?.type === 'LANDING_PREVIEW') {
         setPreviewDesign(e.data?.config?.design || null);
       }
+      // Lives here (not in Home.jsx) so the Studio Editor's Claro/Oscuro
+      // toggle keeps working after the preview client-side-routes to
+      // /agendar or /gestionar — this component never unmounts, those pages'
+      // do. See Home.jsx for the matching LANDING_READY handshake.
+      if (e.data?.type === 'SET_THEME') {
+        const wantDark = e.data.theme === 'dark';
+        if (wantDark !== isDark) toggle();
+      }
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, []);
+  }, [isDark, toggle]);
 
   // Pull the design block from the server-merged landing_config (works whether
   // landing is premium-enabled or not — the server returns the same shape).

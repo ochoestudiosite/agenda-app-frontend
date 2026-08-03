@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
 import { useConfig } from '../hooks/useConfig';
 import { useServices } from '../hooks/useServices';
 import LandingNavbar from '../components/landing/LandingNavbar';
@@ -85,7 +84,6 @@ export default function Home() {
   }, [isLoading]);
 
   const [previewConfig, setPreviewConfig] = useState(null);
-  const { isDark, toggle } = useTheme();
 
   // SaaS Feature Flag: Verificar si el tenant tiene contratada la Landing Page
   // (Por defecto es true para retrocompatibilidad, solo se desactiva si es explícitamente false)
@@ -101,11 +99,9 @@ export default function Home() {
       if (event.data?.type === 'LANDING_PREVIEW') {
         setPreviewConfig(event.data.config);
       }
-      if (event.data?.type === 'SET_THEME') {
-        const wantDark = event.data.theme === 'dark';
-        // Only toggle if the current state doesn't match
-        if (wantDark !== isDark) toggle();
-      }
+      // SET_THEME is handled by BrandTokensApplier (mounted for the whole
+      // SPA lifetime), not here — Home unmounts on route change and would
+      // stop reacting to the Studio Editor's Claro/Oscuro toggle otherwise.
     };
     window.addEventListener('message', handleMessage);
 
@@ -117,7 +113,7 @@ export default function Home() {
     }
 
     return () => window.removeEventListener('message', handleMessage);
-  }, [isDark, toggle]);
+  }, []);
 
   const businessName = config?.business_name || 'Cita24';
 
