@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SectionHeader } from './LandingServices';
+import { useReveal } from '../../hooks/useReveal';
 
 const VISIBLE_DESKTOP = 6;
 
@@ -136,14 +137,12 @@ function StaffCard({ member, services, i }) {
   // nombre de servicio realmente larguísimo.
   const firstService = allMemberServices[0];
   const extraCount = Math.max(0, allMemberServices.length - 1);
+  const { ref, className: revealClass, style: revealStyle } = useReveal({ delay: Math.min(i * 50, 300) });
 
   return (
-    <div
-      className="group animate-fade-up"
-      style={{ animationDelay: `${Math.min(i * 50, 300)}ms`, animationFillMode: 'both' }}
-    >
+    <div ref={ref} className={`group ${revealClass}`} style={revealStyle}>
       <Link to="/agendar" className="block">
-        <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] landing-card-shape overflow-hidden bg-raised">
+        <div className="relative aspect-[4/5] sm:aspect-[5/6] w-full rounded-[28px] landing-card-shape overflow-hidden bg-raised transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:-translate-y-1">
 
           {/* Photo */}
           {/* Placeholder — siempre visible mientras carga o si no hay imagen */}
@@ -228,9 +227,14 @@ function StaffSpotlight({ member, services }) {
   const memberServices = services.filter(s =>
     (member.serviceIds || []).some(id => Number(id) === Number(s.dbId))
   );
+  const { ref, className: revealClass, style: revealStyle } = useReveal();
 
   return (
-    <div className="mt-14 lg:mt-16 grid md:grid-cols-[minmax(0,420px)_1fr] lg:grid-cols-[460px_1fr] gap-8 lg:gap-16 items-center animate-fade-up">
+    <div
+      ref={ref}
+      className={`mt-14 lg:mt-16 grid md:grid-cols-[minmax(0,420px)_1fr] lg:grid-cols-[460px_1fr] gap-8 lg:gap-16 items-center ${revealClass}`}
+      style={revealStyle}
+    >
       {/* Photo */}
       <Link to="/agendar" className="group block relative aspect-[4/5] w-full max-w-sm mx-auto md:max-w-none rounded-[32px] landing-card-shape overflow-hidden bg-raised">
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-raised via-card to-raised">

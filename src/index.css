@@ -321,3 +321,21 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ── Reduced motion — global kill-switch ──────────────────────────────────
+   Every animation/transition in the app (fade-up entrances, the "abierto
+   ahora" ping, hover transforms) collapses to its end state near-instantly
+   instead of being fully disabled — content still appears, nothing slides,
+   pulses or drifts.
+   Exception: .animate-scroll-left (testimonials marquee) — product decision
+   2026-08-03, it keeps auto-scrolling for everyone regardless of this
+   preference, same as most premium marketing sites. It already ships a real
+   pause control (pauses on hover/mouse-enter, see LandingTestimonials.jsx). */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-scroll-left), *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
