@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Calendar } from 'lucide-react';
 import { useConfig } from '../../hooks/useConfig';
 import { ToastProvider } from '../ui/Toast';
 import TenantNotFound from '../../pages/TenantNotFound';
@@ -118,12 +119,7 @@ function MobileNavLink({ to, active, children }) {
 
 
 function CalendarIcon({ className = 'w-3.5 h-3.5 text-on-gold' }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
+  return <Calendar className={className} />;
 }
 
 // Renders the business logo if logo_url is set and loads correctly, otherwise

@@ -88,11 +88,13 @@ vi.mock('../context/BookingContext.jsx', () => ({
   BookingProvider: ({ children }) => children,
 }))
 
-// Lucide icons used inside component
-vi.mock('lucide-react', () => ({
-  ArrowLeft:  () => null,
-  ChevronLeft: () => null,
-}))
+// Lucide icons used inside component (and its children, e.g. BackButton)
+vi.mock('lucide-react', async () => {
+  const actual = await vi.importActual('lucide-react')
+  const stub = {}
+  for (const key of Object.keys(actual)) stub[key] = () => null
+  return stub
+})
 
 // ---------------------------------------------------------------------------
 // Helpers

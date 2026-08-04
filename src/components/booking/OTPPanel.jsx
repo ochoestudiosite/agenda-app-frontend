@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { Lock, AlertCircle, Loader2, Clock, RefreshCw, ChevronLeft } from 'lucide-react';
 
 function maskPhone(phone) {
   const digits = (phone || '').replace(/\D/g, '');
@@ -78,9 +79,7 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
-          <svg className="w-4.5 h-4.5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-          </svg>
+          <Lock className="w-4.5 h-4.5 text-gold" strokeWidth={1.75} />
         </div>
         <div className="text-left">
           <p className="text-[15px] font-semibold text-ink leading-tight">Ingresa el código</p>
@@ -149,17 +148,12 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
       <div className="min-h-[20px] flex items-center justify-center mt-4">
         {error ? (
           <p className="text-center text-[13px] text-red-500 flex items-center gap-1.5" role="alert">
-            <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             {error}
           </p>
         ) : loading ? (
           <p className="text-center text-[13px] text-ink-3 flex items-center gap-2">
-            <svg className="animate-spin h-3.5 w-3.5 text-gold shrink-0" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+            <Loader2 className="animate-spin h-3.5 w-3.5 text-gold shrink-0" />
             Verificando…
           </p>
         ) : null}
@@ -175,16 +169,12 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
         >
           {resendCooldown > 0 ? (
             <>
-              <svg className="w-3.5 h-3.5 text-ink-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <Clock className="w-3.5 h-3.5 text-ink-3 shrink-0" />
               <span className="text-ink-3">Reenviar en <span className="tabular-nums">{resendCooldown}s</span></span>
             </>
           ) : (
             <>
-              <svg className="w-3.5 h-3.5 text-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              <RefreshCw className="w-3.5 h-3.5 text-gold shrink-0" />
               <span className="text-gold">¿No llegó? Reenviar código</span>
             </>
           )}
@@ -196,9 +186,7 @@ export default function OTPPanel({ phone, loading, error, resendCooldown, onVeri
           disabled={loading}
           className="w-full py-2 flex items-center justify-center gap-1.5 rounded-xl text-[13px] text-ink-3 hover:text-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 hover:bg-raised/70"
         >
-          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
           {backLabel}
         </button>
       </div>

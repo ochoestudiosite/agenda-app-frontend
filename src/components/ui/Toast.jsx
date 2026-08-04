@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Check, X, Info } from 'lucide-react';
 
 const ToastContext = createContext(null);
 let _id = 0;
@@ -46,27 +47,15 @@ function ToastItem({ toast, onRemove }) {
   const config = {
     success: {
       bar:  'bg-green-500',
-      icon: (
-        <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      ),
+      icon: <Check className="w-3.5 h-3.5 text-green-500" strokeWidth={2.5} />,
     },
     error: {
       bar:  'bg-red-500',
-      icon: (
-        <svg className="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      ),
+      icon: <X className="w-3.5 h-3.5 text-red-500" strokeWidth={2.5} />,
     },
     info: {
       bar:  'bg-gold',
-      icon: (
-        <svg className="w-3.5 h-3.5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: <Info className="w-3.5 h-3.5 text-gold" strokeWidth={2.5} />,
     },
   };
 
@@ -87,9 +76,7 @@ function ToastItem({ toast, onRemove }) {
         aria-label="Cerrar notificación"
         className="text-ink-3 hover:text-ink transition-colors shrink-0 mt-0.5 cursor-pointer"
       >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <X className="w-3.5 h-3.5" strokeWidth={2.5} />
       </button>
     </div>
   );

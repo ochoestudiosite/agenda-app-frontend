@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { Clock, ChevronLeft, ChevronRight, Calendar, AlertTriangle } from 'lucide-react';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
 import { useAvailability, useGroupAvailability, useBlockedDates, usePrefetchAvailability } from '../../hooks/useAvailability';
@@ -326,9 +327,7 @@ export default function DateTimePicker() {
           </p>
           {timezone && (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
+              <Clock className="w-3 h-3" />
               {timezone.replace('America/', '').replace('_', ' ')}
             </span>
           )}
@@ -346,9 +345,7 @@ export default function DateTimePicker() {
               className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
               aria-label="Mes anterior"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-              </svg>
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-sm font-semibold text-ink capitalize">
               {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
@@ -358,9 +355,7 @@ export default function DateTimePicker() {
               className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
               aria-label="Mes siguiente"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
@@ -414,9 +409,7 @@ export default function DateTimePicker() {
           {!selectedDate && !waitingForSetup && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                </svg>
+                <Calendar className="w-5 h-5 text-ink-3" strokeWidth={1.5} />
               </div>
               <p className="text-sm text-ink-3">Selecciona una fecha</p>
             </div>
@@ -430,9 +423,7 @@ export default function DateTimePicker() {
           {selectedDate && !activeFetching && activeError && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-                </svg>
+                <AlertTriangle className="w-5 h-5 text-red-400" strokeWidth={1.5} />
               </div>
               <div>
                 <p className="text-sm font-medium text-ink">Error al cargar horarios</p>
@@ -446,9 +437,7 @@ export default function DateTimePicker() {
             <div className="space-y-4 flex-1">
               {isSelectedToday && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gold/8 border border-gold/20">
-                  <svg className="w-3.5 h-3.5 text-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
+                  <Clock className="w-3.5 h-3.5 text-gold shrink-0" />
                   <p className="text-xs text-gold font-medium">
                     Solo horarios con al menos {leadMins} min de anticipación
                   </p>
@@ -459,9 +448,7 @@ export default function DateTimePicker() {
                 // Solo llega aquí si autoAdvanceCountRef >= MAX_AUTO_ADVANCES (todos los días próximos agendados)
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                   <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
+                    <Clock className="w-5 h-5 text-ink-3" strokeWidth={1.5} />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
@@ -570,9 +557,7 @@ export default function DateTimePicker() {
             onClick={() => dispatch({ type: 'SET_DATETIME', payload: { date: dateStr, time: selectedTime } })}
           >
             Continuar
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
+            <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       )}

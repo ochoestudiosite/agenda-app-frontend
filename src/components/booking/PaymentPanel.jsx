@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { AlertCircle, CreditCard, Loader2, ChevronLeft } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { api } from '../../services/api';
@@ -137,9 +138,7 @@ export default function PaymentPanel({ payment, paymentConfig, code, onConfirmed
     return (
       <div className="card p-5 sm:p-6 animate-fade-in text-center">
         <div className="w-12 h-12 mx-auto rounded-xl bg-red-500/8 border border-red-400/25 flex items-center justify-center mb-4">
-          <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.007M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <AlertCircle className="w-5 h-5 text-red-500" strokeWidth={1.75} />
         </div>
         <p className="text-[15px] font-semibold text-ink mb-1">El tiempo para pagar expiró</p>
         <p className="text-[13px] text-ink-3 mb-5">Tu lugar fue liberado. Elige un nuevo horario para continuar.</p>
@@ -159,9 +158,7 @@ export default function PaymentPanel({ payment, paymentConfig, code, onConfirmed
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
-          <svg className="w-4.5 h-4.5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-9-10.5h16.5a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5v-9a1.5 1.5 0 011.5-1.5z" />
-          </svg>
+          <CreditCard className="w-4.5 h-4.5 text-gold" strokeWidth={1.75} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-semibold text-ink leading-tight">Completa tu pago</p>
@@ -279,9 +276,7 @@ function PaymentForm({ amountCents, code, onConfirmed, onBack, onBusyChange }) {
     return (
       <div className="space-y-4">
         <p className="text-[13px] text-red-500 flex items-start gap-1.5" role="alert">
-          <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
+          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           {error}
         </p>
         <button
@@ -301,9 +296,7 @@ function PaymentForm({ amountCents, code, onConfirmed, onBack, onBusyChange }) {
 
       {error && (
         <p className="text-[13px] text-red-500 flex items-start gap-1.5" role="alert">
-          <svg className="w-3.5 h-3.5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
+          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           {error}
         </p>
       )}
@@ -325,10 +318,7 @@ function PaymentForm({ amountCents, code, onConfirmed, onBack, onBusyChange }) {
                      disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {submitting && (
-            <svg className="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" />
-              <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+            <Loader2 className="animate-spin h-4 w-4 shrink-0" />
           )}
           {submitting ? 'Procesando…' : `Pagar ${formatPriceFromCents(amountCents)}`}
         </button>
@@ -340,9 +330,7 @@ function PaymentForm({ amountCents, code, onConfirmed, onBack, onBusyChange }) {
           onClick={onBack}
           className="w-full py-2 flex items-center justify-center gap-1.5 rounded-xl text-[13px] text-ink-3 hover:text-ink transition-colors duration-150 hover:bg-raised/70 cursor-pointer"
         >
-          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
           Cancelar y elegir otro horario
         </button>
       )}

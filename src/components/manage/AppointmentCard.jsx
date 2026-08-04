@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Calendar, X, Check, Clock, Ban, ChevronLeft, ChevronRight, User, AlertTriangle, Undo2 } from 'lucide-react';
 import { formatDate, formatTime, formatPrice, formatPriceFromCents, generateSlots, groupSlots, toTitleCase } from '../../utils/formatters';
 import { findNextAvailableDate, todayDateInTz, nowMinutesInTz, isPastDateTime } from '../../utils/businessTime';
 import { useAvailability, useBlockedDates } from '../../hooks/useAvailability';
@@ -416,9 +417,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         {/* Reagendada banner */}
         {appointment.status === 'rescheduled' && appointment.previousDate && appointment.previousTime && (
           <div className="mx-4 mt-3 mb-4 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/6 border border-amber-500/20">
-            <svg className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
+            <Calendar className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
             <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
               <span className="font-semibold">Reagendada.</span>{' '}
               Antes:{' '}
@@ -432,9 +431,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
         {/* Cancelled notice */}
         {isCancelled && (
           <div className="mx-4 mt-3 mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/6 border border-red-500/20 text-xs text-red-500">
-            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
+            <X className="w-3.5 h-3.5 shrink-0" />
             Esta cita fue cancelada.
           </div>
         )}
@@ -450,9 +447,7 @@ export default function AppointmentCard({ appointment, onUpdated }) {
             a renderizar con appointment.status actualizado. */}
         {refundResult?.initiated && (
           <div className="mx-4 mb-4 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-500/6 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
-            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-            </svg>
+            <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
             Tu reembolso está en proceso{refundResult.amountCents ? ` — ${formatPriceFromCents(refundResult.amountCents)}` : ''}. Puede tardar unos días hábiles en reflejarse.
           </div>
         )}
@@ -467,18 +462,14 @@ export default function AppointmentCard({ appointment, onUpdated }) {
           <div className="px-6 pt-4 pb-6">
             {isPastAppt ? (
               <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+                <Clock className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
                 Esta cita ya ocurrió.
               </div>
             ) : (
               <div className="space-y-3">
                 {reschedLimitReached ? (
                   <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
-                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                    </svg>
+                    <Ban className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
                     Límite de reagendamientos alcanzado ({rescheduleCount}/{maxReschedules}).
                   </div>
                 ) : (
@@ -642,9 +633,7 @@ function RescheduleStepIndicator({ reschedStep, isMulti }) {
                             : 'bg-surface border-edge/50',
                 ].join(' ')}>
                   {done ? (
-                    <svg className="w-3 h-3 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-                    </svg>
+                    <Check className="w-3 h-3 text-on-gold" strokeWidth={3} />
                   ) : (
                     <span className={`text-[11px] font-bold tabular-nums leading-none ${current ? 'text-gold' : 'text-ink-3/40'}`}>
                       {idx + 1}
@@ -707,10 +696,7 @@ function ReBack({ onClick: handleClick, label }) {
                  transition-all duration-200 cursor-pointer active:scale-[0.98] mb-6">
       <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30 group-hover:bg-card
                        flex items-center justify-center shrink-0 transition-all duration-200">
-        <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
-             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-        </svg>
+        <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" strokeWidth={2.5} />
       </span>
       {label}
     </button>
@@ -967,9 +953,7 @@ function ReschedulePanel({
                     <ExpandableText text={b.address} className="text-xs text-ink-3 mt-0.5 leading-snug" />
                   )}
                 </div>
-                <svg className="w-4 h-4 text-ink-3 group-hover:text-gold transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
+                <ChevronRight className="w-4 h-4 text-ink-3 group-hover:text-gold transition-colors shrink-0" />
               </div>
             ))}
           </div>
@@ -991,9 +975,7 @@ function ReschedulePanel({
           {filteredSpecialists.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 text-center card">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-                </svg>
+                <User className="w-5 h-5 text-ink-3" strokeWidth={1.5} />
               </div>
               <p className="text-sm font-semibold text-ink">Sin especialistas disponibles</p>
               <p className="text-xs text-ink-3 mt-1 max-w-xs">Ningún colaborador tiene asignado este servicio.</p>
@@ -1040,9 +1022,7 @@ function ReschedulePanel({
                       />
                     )}
                   </div>
-                  <svg className="w-4 h-4 text-ink-3 sm:hidden shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                  </svg>
+                  <ChevronRight className="w-4 h-4 text-ink-3 sm:hidden shrink-0 mt-1" />
                 </div>
               ))}
             </div>
@@ -1064,9 +1044,7 @@ function ReschedulePanel({
             </p>
             {config?.business_timezone && (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+                <Clock className="w-3 h-3" />
                 {config.business_timezone.replace('America/', '').replace('_', ' ')}
               </span>
             )}
@@ -1080,18 +1058,14 @@ function ReschedulePanel({
               <div className="flex items-center justify-between mb-5">
                 <button onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1))}
                   className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer" aria-label="Mes anterior">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-                  </svg>
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
                 <span className="text-sm font-semibold text-ink capitalize">
                   {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
                 </span>
                 <button onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1))}
                   className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer" aria-label="Mes siguiente">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                  </svg>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
               <div className="grid grid-cols-7 mb-2">
@@ -1137,9 +1111,7 @@ function ReschedulePanel({
               {!newDate && !waitingForSetup && (
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
                   <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                    </svg>
+                    <Calendar className="w-5 h-5 text-ink-3" strokeWidth={1.5} />
                   </div>
                   <p className="text-sm text-ink-3">Selecciona una fecha</p>
                 </div>
@@ -1153,9 +1125,7 @@ function ReschedulePanel({
               {newDate && !isFetching && isError && (
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                   <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                    <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-                    </svg>
+                    <AlertTriangle className="w-5 h-5 text-red-400" strokeWidth={1.5} />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-ink">Error al cargar horarios</p>
@@ -1170,9 +1140,7 @@ function ReschedulePanel({
                   {allSlots.length === 0 || allSlotsExhausted ? (
                     <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                       <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                        <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
+                        <Clock className="w-5 h-5 text-ink-3" strokeWidth={1.5} />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
@@ -1250,9 +1218,7 @@ function PaymentStatusRow({ payment, apptStatus }) {
     const remainingCents = payment.totalCents - payment.amountCents;
     return (
       <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-emerald-500/6">
-        <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
+        <Check className="w-4 h-4 text-emerald-500 shrink-0" strokeWidth={2.5} />
         <p className="text-[13px] leading-tight">
           <span className="font-semibold text-emerald-600 dark:text-emerald-400">
             Pagado: {formatPriceFromCents(payment.amountCents)}
@@ -1268,9 +1234,7 @@ function PaymentStatusRow({ payment, apptStatus }) {
   if (payment.status === 'refunded') {
     return (
       <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-amber-500/6">
-        <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-        </svg>
+        <Undo2 className="w-4 h-4 text-amber-500 shrink-0" strokeWidth={2.5} />
         <p className="text-[13px] leading-tight font-semibold text-amber-600 dark:text-amber-400">
           {isCancelledAppt ? 'Cancelada — ' : ''}Reembolsado: {formatPriceFromCents(payment.refundedAmountCents)}
         </p>
@@ -1281,9 +1245,7 @@ function PaymentStatusRow({ payment, apptStatus }) {
   if (payment.status === 'partially_refunded') {
     return (
       <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-amber-500/6">
-        <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-        </svg>
+        <Undo2 className="w-4 h-4 text-amber-500 shrink-0" strokeWidth={2.5} />
         <p className="text-[13px] leading-tight font-semibold text-amber-600 dark:text-amber-400">
           {isCancelledAppt ? 'Cancelada — ' : ''}Reembolso parcial: {formatPriceFromCents(payment.refundedAmountCents)} de {formatPriceFromCents(payment.amountCents)}
         </p>
@@ -1294,9 +1256,7 @@ function PaymentStatusRow({ payment, apptStatus }) {
   if (payment.status === 'disputed') {
     return (
       <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-[#6366F1]/6">
-        <svg className="w-4 h-4 text-[#6366F1] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-        </svg>
+        <AlertTriangle className="w-4 h-4 text-[#6366F1] shrink-0" />
         <p className="text-[13px] leading-tight font-semibold text-[#6366F1]">
           Tu pago está en revisión con tu banco.
         </p>
@@ -1307,9 +1267,7 @@ function PaymentStatusRow({ payment, apptStatus }) {
   if (payment.status === 'dispute_lost') {
     return (
       <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-[#9F1239]/6">
-        <svg className="w-4 h-4 text-[#9F1239] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-        </svg>
+        <Undo2 className="w-4 h-4 text-[#9F1239] shrink-0" />
         <p className="text-[13px] leading-tight font-semibold text-[#9F1239]">
           Tu banco revirtió este pago.
         </p>
@@ -1320,9 +1278,7 @@ function PaymentStatusRow({ payment, apptStatus }) {
   if (payment.status === 'failed' || payment.status === 'requires_payment') {
     return (
       <div className="px-6 py-3 flex items-center gap-2.5 border-b border-edge bg-ink/4">
-        <svg className="w-4 h-4 text-ink-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l2 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <Clock className="w-4 h-4 text-ink-3 shrink-0" />
         <p className="text-[13px] leading-tight font-medium text-ink-3">Pago pendiente</p>
       </div>
     );

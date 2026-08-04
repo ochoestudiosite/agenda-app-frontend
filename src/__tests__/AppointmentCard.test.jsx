@@ -73,18 +73,12 @@ vi.mock('../components/ui/Toast.jsx', () => ({
   useToast: () => mockToast,
 }))
 
-vi.mock('lucide-react', () => ({
-  ChevronLeft:  () => null,
-  ChevronRight: () => null,
-  Calendar:     () => null,
-  Clock:        () => null,
-  X:            () => null,
-  Check:        () => null,
-  RefreshCw:    () => null,
-  User:         () => null,
-  MapPin:       () => null,
-  Scissors:     () => null,
-}))
+vi.mock('lucide-react', async () => {
+  const actual = await vi.importActual('lucide-react')
+  const stub = {}
+  for (const key of Object.keys(actual)) stub[key] = () => null
+  return stub
+})
 
 // ---------------------------------------------------------------------------
 // Test fixtures

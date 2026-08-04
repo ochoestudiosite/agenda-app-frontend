@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { CreditCard, AlertTriangle, Tag, CheckCircle2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useBooking } from '../../context/BookingContext';
 import { isGroupMode } from '../../context/BookingContext';
@@ -673,9 +674,7 @@ export default function ClientForm() {
         {/* ── Cobro anticipado — el cliente nunca debe sorprenderse del cobro ── */}
         {chargePreview && !otpPhase && !paymentPhase && (
           <div className="px-5 py-3.5 border-t border-edge bg-gold/6 flex items-start gap-2.5">
-            <svg className="w-4 h-4 text-gold mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-9-10.5h16.5a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5v-9a1.5 1.5 0 011.5-1.5z" />
-            </svg>
+            <CreditCard className="w-4 h-4 text-gold mt-0.5 shrink-0" strokeWidth={1.75} />
             <div>
               <p className="text-[13px] font-semibold text-ink">
                 {chargePreview.label}: <span className="text-gold">{formatPriceFromCents(chargePreview.amountCents)}</span>
@@ -693,9 +692,7 @@ export default function ClientForm() {
       {/* ── Aviso: la promo del catálogo ya no aplica para este cliente ──── */}
       {promoDropped && (
         <div className="mb-5 flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-amber-500/8 border border-amber-500/25 animate-fade-up">
-          <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-          </svg>
+          <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
           <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
             <span className="font-semibold">La promoción ya no está disponible para este número.</span>{' '}
             {serverPricing?.totalDiscount > 0
@@ -808,17 +805,13 @@ export default function ClientForm() {
                   onClick={() => setPromoOpen(true)}
                   className="text-[13px] font-medium text-gold hover:text-gold/80 transition-colors inline-flex items-center gap-1.5"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M3 3h7.5a2 2 0 011.414.586l7.5 7.5a2 2 0 010 2.828l-5.086 5.086a2 2 0 01-2.828 0l-7.5-7.5A2 2 0 013 10.5V3z" />
-                  </svg>
+                  <Tag className="w-3.5 h-3.5" />
                   ¿Tienes un código promocional?
                 </button>
               ) : appliedCode ? (
                 <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl bg-gold/8 border border-gold/25">
                   <div className="flex items-center gap-2 min-w-0">
-                    <svg className="w-4 h-4 text-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <CheckCircle2 className="w-4 h-4 text-gold shrink-0" />
                     <div className="min-w-0">
                       <p className="text-[13px] font-bold text-ink tabular-nums tracking-wider truncate">{appliedCode}</p>
                       {promoStatus?.message && <p className="text-[12px] text-ink-3 truncate">{promoStatus.message}</p>}

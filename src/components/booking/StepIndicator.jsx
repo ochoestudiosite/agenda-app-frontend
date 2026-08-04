@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { Check } from 'lucide-react';
 
 const BASE_STEPS = [
   { n: 1, label: 'Servicio' },
@@ -56,9 +57,7 @@ export default function StepIndicator({ currentStep, hasBranch = false, onNaviga
                   ].join(' ')}
                 >
                   {isCompleted ? (
-                    <svg className="w-3 h-3 text-on-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="w-3 h-3 text-on-gold" strokeWidth={3} />
                   ) : (
                     <span className={`text-[11px] font-bold tabular-nums leading-none ${isCurrent ? 'text-gold' : 'text-ink-3/40'}`}>
                       {idx + 1}

@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { Calendar } from 'lucide-react';
 
 function AvatarStack({ avatars }) {
   const show  = avatars.slice(0, 3);
@@ -32,12 +33,7 @@ function AvatarStack({ avatars }) {
 }
 
 function CalendarIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
+  return <Calendar className="w-3.5 h-3.5" />;
 }
 
 // Mobile stacks each item full-width so long branch/service/specialist names

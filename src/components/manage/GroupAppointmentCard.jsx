@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Calendar, X, Clock, Ban, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import RequirementsTag from '../ui/RequirementsTag';
@@ -273,9 +274,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
         {/* Reagendada banner */}
         {status === 'rescheduled' && group.previousDate && (
           <div className="mx-4 mt-3 mb-1 flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/6 border border-amber-500/20">
-            <svg className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
+            <Calendar className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
             <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400">
               <span className="font-semibold">Reagendada.</span>{' '}
               Antes:{' '}
@@ -290,9 +289,7 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
         {/* Cancelled notice */}
         {isCancelled && (
           <div className="mx-4 mb-4 mt-3 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/6 border border-red-500/20 text-xs text-red-500">
-            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
+            <X className="w-3.5 h-3.5 shrink-0" />
             Esta visita fue cancelada.
           </div>
         )}
@@ -302,18 +299,14 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
           <div className="px-6 pt-4 pb-6">
             {isPast ? (
               <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+                <Clock className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
                 Esta visita ya ocurrió.
               </div>
             ) : (
               <div className="space-y-3">
                 {reschedLimitReached ? (
                   <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-ink/4 border border-edge text-xs text-ink-3">
-                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                    </svg>
+                    <Ban className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
                     Límite de reagendamientos alcanzado ({rescheduleCount}/{maxReschedules}).
                   </div>
                 ) : (
@@ -565,10 +558,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
       >
         <span className="w-7 h-7 rounded-full border border-edge/80 group-hover:border-ink/30 group-hover:bg-card
                          flex items-center justify-center shrink-0 transition-all duration-200">
-          <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200"
-               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-          </svg>
+          <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" strokeWidth={2.5} />
         </span>
         Volver
       </button>
@@ -581,9 +571,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
         </p>
         {config?.business_timezone && (
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink-3 bg-raised px-2 py-0.5 rounded-full">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+            <Clock className="w-3 h-3" />
             {config.business_timezone.replace('America/', '').replace('_', ' ')}
           </span>
         )}
@@ -600,9 +588,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
               className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
               aria-label="Mes anterior"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-              </svg>
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-sm font-semibold text-ink capitalize">
               {MONTHS_ES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
@@ -612,9 +598,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
               className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-raised transition-all cursor-pointer"
               aria-label="Mes siguiente"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
           <div className="grid grid-cols-7 mb-2">
@@ -663,9 +647,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
           {!newDate && !waitingForSetup && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
-                </svg>
+                <Calendar className="w-5 h-5 text-ink-3" strokeWidth={1.5} />
               </div>
               <p className="text-sm text-ink-3">Selecciona una fecha</p>
             </div>
@@ -679,9 +661,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
           {newDate && !isFetching && isError && (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
               <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-                </svg>
+                <AlertTriangle className="w-5 h-5 text-red-400" strokeWidth={1.5} />
               </div>
               <div>
                 <p className="text-sm font-medium text-ink">Error al cargar horarios</p>
@@ -696,9 +676,7 @@ function GroupReschedulePanel({ group, config, timeFmt, isLoading = false, onCan
               {availableSlots.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-2 py-8">
                   <div className="w-12 h-12 rounded-xl bg-raised flex items-center justify-center">
-                    <svg className="w-5 h-5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
+                    <Clock className="w-5 h-5 text-ink-3" strokeWidth={1.5} />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-ink">Sin disponibilidad</p>
