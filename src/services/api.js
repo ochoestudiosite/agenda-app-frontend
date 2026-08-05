@@ -118,6 +118,7 @@ export const api = {
   getGroupAppointment: (code, options = {}) => request('GET', `/appointments/group/${code}`, null, 0, options),
   rescheduleGroupAppointment: (code, body) => request('PUT', `/appointments/group/${code}`, body),
   cancelGroupAppointment:     (code, body) => request('DELETE', `/appointments/group/${code}`, body),
+  confirmGroupAttendance:     (code, body) => request('POST', `/appointments/group/${code}/confirm-attendance`, body),
   getAvailability: (date, specialistId, branchId, serviceId, excludeCode, serviceIds, options = {}) => {
     const p = new URLSearchParams({ date });
     if (specialistId) p.set('specialistId', specialistId);
@@ -143,5 +144,6 @@ export const api = {
   getAppointment:      (code, options = {}) => request('GET', `/appointments/${code}`, null, 0, options),
   rescheduleAppointment: (code, body) => request('PUT', `/appointments/${code}`, body),
   cancelAppointment:   (code, body) => request('DELETE', `/appointments/${code}`, body),
+  confirmAttendance:   (code, body) => request('POST', `/appointments/${code}/confirm-attendance`, body),
   subscribeNewsletter: (email) => request('POST', '/newsletter', { email }),
 };

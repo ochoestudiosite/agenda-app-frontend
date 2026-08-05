@@ -48,14 +48,18 @@ vi.mock('../components/manage/AppointmentLookup', () => ({
 }))
 
 vi.mock('../components/manage/AppointmentCard', () => ({
-  default: ({ appointment }) => (
-    <div data-testid="appointment-card">{appointment?.code}</div>
+  default: ({ appointment, focusConfirm, confirmVia }) => (
+    <div data-testid="appointment-card" data-focus-confirm={String(!!focusConfirm)} data-confirm-via={confirmVia}>
+      {appointment?.code}
+    </div>
   ),
 }))
 
 vi.mock('../components/manage/GroupAppointmentCard', () => ({
-  default: ({ group }) => (
-    <div data-testid="group-appointment-card">{group?.group_code}</div>
+  default: ({ group, focusConfirm, confirmVia }) => (
+    <div data-testid="group-appointment-card" data-focus-confirm={String(!!focusConfirm)} data-confirm-via={confirmVia}>
+      {group?.group_code}
+    </div>
   ),
 }))
 
@@ -279,6 +283,66 @@ describe('Manage — error state', () => {
     await renderManage('?code=NOTFND')
     await waitFor(() => {
       expect(screen.getByText(/No se encontró/i)).toBeTruthy()
+    })
+  })
+})
+
+// ============================================================================
+// 5.5 ?action=confirm&via=... — enlace de "Confirmar asistencia" del recordatorio
+// ============================================================================
+
+describe('Manage — action=confirm / via desde el enlace del recordatorio', () => {
+  it('pasa focusConfirm=true y confirmVia="whatsapp" al AppointmentCard', async () => {
+    mockUseAppointmentLookup.mockReturnValue({
+      data: MOCK_APPOINTMENT, isLoading: false, isError: false, error: null,
+    })
+
+    await renderManage('?code=ABC123&action=confirm&via=whatsapp')
+    await waitFor(() => {
+      const el = screen.getByTestId('appointment-card')
+      expect(el.dataset.focusConfirm).toBe('true')
+      expect(el.dataset.confirmVia).toBe('whatsapp')
+    })
+  })
+
+  it('sin ?action=confirm, focusConfirm es false y confirmVia cae a manage_page', async () => {
+    mockUseAppointmentLookup.mockReturnValue({
+      data: MOCK_APPOINTMENT, isLoading: false, isError: false, error: null,
+    })
+
+    await renderManage('?code=ABC123')
+    await waitFor(() => {
+      const el = screen.getByTestId('appointment-card')
+      expect(el.dataset.focusConfirm).toBe('false')
+      expect(el.dataset.confirmVia).toBe('manage_page')
+    })
+  })
+
+  it('un valor de via desconocido cae a manage_page en vez de propagarse tal cual', async () => {
+    mockUseAppointmentLookup.mockReturnValue({
+      data: MOCK_APPOINTMENT, isLoading: false, isError: false, error: null,
+    })
+
+    await renderManage('?code=ABC123&action=confirm&via=algo-raro')
+    await waitFor(() => {
+      const el = screen.getByTestId('appointment-card')
+      expect(el.dataset.confirmVia).toBe('manage_page')
+    })
+  })
+
+  it('también se propaga a GroupAppointmentCard', async () => {
+    mockUseAppointmentLookup.mockReturnValue({
+      data: null, isLoading: false, isError: true, error: { status: 404 },
+    })
+    mockUseGroupAppointmentLookup.mockReturnValue({
+      data: MOCK_GROUP, isLoading: false, isError: false, error: null,
+    })
+
+    await renderManage('?code=GRP001&action=confirm&via=email')
+    await waitFor(() => {
+      const el = screen.getByTestId('group-appointment-card')
+      expect(el.dataset.focusConfirm).toBe('true')
+      expect(el.dataset.confirmVia).toBe('email')
     })
   })
 })

@@ -22,6 +22,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const mockCancelMutateAsync   = vi.fn()
 const mockRescheduleMutateAsync = vi.fn()
+const mockConfirmMutate = vi.fn()
 const mockToast = vi.fn()
 const mockOnUpdated = vi.fn()
 
@@ -32,6 +33,10 @@ vi.mock('../hooks/useAppointment.js', () => ({
   }),
   useRescheduleAppointment: () => ({
     mutateAsync: mockRescheduleMutateAsync,
+    isPending: false,
+  }),
+  useConfirmAttendance: () => ({
+    mutate: mockConfirmMutate,
     isPending: false,
   }),
 }))
@@ -110,13 +115,13 @@ function makeQC() {
   return new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
 }
 
-async function renderCard(appointment = CONFIRMED_APPT) {
+async function renderCard(appointment = CONFIRMED_APPT, extraProps = {}) {
   const { default: AppointmentCard } = await import('../components/manage/AppointmentCard.jsx')
   const qc = makeQC()
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <AppointmentCard appointment={appointment} onUpdated={mockOnUpdated} />
+        <AppointmentCard appointment={appointment} onUpdated={mockOnUpdated} {...extraProps} />
       </MemoryRouter>
     </QueryClientProvider>
   )
@@ -124,6 +129,7 @@ async function renderCard(appointment = CONFIRMED_APPT) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockConfirmMutate.mockReset()
   mockCatalogServices = [
     { id: 'corte', dbId: 10, name: 'Corte de cabello', duration: 30, price: 250, price_type: 'fixed' },
   ]
@@ -170,6 +176,60 @@ describe('AppointmentCard — confirmed status', () => {
     await renderCard(CONFIRMED_APPT)
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeTruthy()
     expect(screen.getByRole('button', { name: /reagendar/i })).toBeTruthy()
+  })
+})
+
+// ============================================================================
+// 2.5 Confirmación de asistencia (recordatorios) — 2026-08-05
+// ============================================================================
+
+describe('AppointmentCard — confirmación de asistencia', () => {
+  it('shows the "Confirmar mi asistencia" button when not yet confirmed', async () => {
+    await renderCard(CONFIRMED_APPT)
+    expect(screen.getByRole('button', { name: /confirmar mi asistencia/i })).toBeTruthy()
+  })
+
+  it('does not show the confirm button for a cancelled appointment', async () => {
+    await renderCard(CANCELLED_APPT)
+    expect(screen.queryByRole('button', { name: /confirmar mi asistencia/i })).toBeNull()
+  })
+
+  it('shows a confirmed banner instead of the button once attendanceConfirmedAt is set', async () => {
+    await renderCard({ ...CONFIRMED_APPT, attendanceConfirmedAt: '2027-06-19T10:00:00Z' })
+    expect(screen.queryByRole('button', { name: /confirmar mi asistencia/i })).toBeNull()
+    expect(screen.getByText(/confirmaste tu asistencia/i)).toBeTruthy()
+  })
+
+  it('clicking the button calls useConfirmAttendance.mutate with the code and default via', async () => {
+    const user = userEvent.setup()
+    await renderCard(CONFIRMED_APPT)
+    await user.click(screen.getByRole('button', { name: /confirmar mi asistencia/i }))
+    expect(mockConfirmMutate).toHaveBeenCalledWith(
+      { code: 'CITA001', via: 'manage_page' },
+      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+    )
+  })
+
+  it('forwards the via prop (e.g. from the ?via=whatsapp reminder link) instead of the default', async () => {
+    const user = userEvent.setup()
+    await renderCard(CONFIRMED_APPT, { confirmVia: 'whatsapp' })
+    await user.click(screen.getByRole('button', { name: /confirmar mi asistencia/i }))
+    expect(mockConfirmMutate).toHaveBeenCalledWith(
+      { code: 'CITA001', via: 'whatsapp' },
+      expect.anything(),
+    )
+  })
+
+  it('calling the mutate onSuccess callback updates the parent via onUpdated', async () => {
+    const user = userEvent.setup()
+    mockConfirmMutate.mockImplementation((_vars, { onSuccess }) => {
+      onSuccess({ ...CONFIRMED_APPT, attendanceConfirmedAt: '2027-06-19T10:00:00Z' })
+    })
+    await renderCard(CONFIRMED_APPT)
+    await user.click(screen.getByRole('button', { name: /confirmar mi asistencia/i }))
+    expect(mockOnUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({ attendanceConfirmedAt: '2027-06-19T10:00:00Z' }),
+    )
   })
 })
 

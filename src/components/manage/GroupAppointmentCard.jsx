@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Calendar, X, Clock, Ban, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Calendar, X, Clock, Ban, ChevronLeft, ChevronRight, AlertTriangle, Check } from 'lucide-react';
 import { formatDate, formatTime, formatPrice, toTitleCase } from '../../utils/formatters';
 import { PromoTag, StruckPrice, SavingsNote } from '../ui/PromoPrice';
 import RequirementsTag from '../ui/RequirementsTag';
@@ -8,7 +8,7 @@ import { findNextAvailableDate, todayDateInTz, isPastDateTime } from '../../util
 import { useServices } from '../../hooks/useServices';
 import { useConfig } from '../../hooks/useConfig';
 import { useSpecialists } from '../../hooks/useSpecialists';
-import { useRescheduleGroupAppointment, useCancelGroupAppointment } from '../../hooks/useAppointment';
+import { useRescheduleGroupAppointment, useCancelGroupAppointment, useConfirmGroupAttendance } from '../../hooks/useAppointment';
 import { useRescheduleFlow } from '../../hooks/useRescheduleFlow';
 import { useCancelFlow } from '../../hooks/useCancelFlow';
 import { useToast } from '../ui/Toast';
@@ -39,7 +39,7 @@ function minsToStr(m) {
   return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
 }
 
-export default function GroupAppointmentCard({ group, onUpdated }) {
+export default function GroupAppointmentCard({ group, onUpdated, focusConfirm = false, confirmVia = 'manage_page' }) {
   const toast            = useToast();
   const { data: config }  = useConfig();
   const { data: svcData } = useServices();
@@ -76,6 +76,27 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
   const [mode, setMode]    = useState('view');
   const cancelMutation     = useCancelGroupAppointment();
   const rescheduleMutation = useRescheduleGroupAppointment();
+  const confirmMutation    = useConfirmGroupAttendance();
+
+  // Auto-scroll (nunca auto-confirma) al bloque de confirmación cuando el
+  // cliente llega desde el enlace "Confirmar asistencia" del recordatorio.
+  const confirmSectionRef = useRef(null);
+  useEffect(() => {
+    if (focusConfirm && confirmSectionRef.current) {
+      confirmSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusConfirm]);
+
+  function handleConfirmAttendance() {
+    confirmMutation.mutate({ code: group.groupCode, via: confirmVia }, {
+      onSuccess: (updated) => {
+        onUpdated?.(updated);
+        toast('¡Gracias por confirmar tu asistencia!', 'success');
+      },
+      onError: () => toast('No pudimos confirmar tu asistencia. Intenta de nuevo.', 'error'),
+    });
+  }
 
   // Manage (cancelar/reagendar) usa su propio flag efectivo: con el cupo de SMS
   // agotado el backend lo apaga bajo AMBAS políticas (§12 R9) — cancelar nunca
@@ -292,6 +313,38 @@ export default function GroupAppointmentCard({ group, onUpdated }) {
             <X className="w-3.5 h-3.5 shrink-0" />
             Esta visita fue cancelada.
           </div>
+        )}
+
+        {/* Confirmación de asistencia — independiente del estado del ciclo de
+            vida (no reemplaza el badge "Confirmada"): solo mientras la visita
+            siga en pie y no haya pasado, y solo en modo vista (oculto durante
+            el flujo de cancelar/reagendar para no competir con esos botones). */}
+        {mode === 'view' && !isCancelled && !isPast && (
+          group.attendanceConfirmedAt ? (
+            <div className="mx-4 mt-3 mb-1 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-500/6 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
+              <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
+              Confirmaste tu asistencia.
+            </div>
+          ) : (
+            <div
+              ref={confirmSectionRef}
+              className={`mx-4 mt-3 mb-1 px-4 py-3.5 rounded-xl border transition-colors duration-300 ${
+                focusConfirm ? 'border-gold/50 bg-gold/6' : 'border-edge bg-raised/30'
+              }`}
+            >
+              <p className="text-[13px] font-semibold text-ink mb-0.5">¿Vas a asistir?</p>
+              <p className="text-xs text-ink-3 mb-3">Confírmanos tu asistencia para que sigamos contando contigo.</p>
+              <Button
+                variant="primary"
+                size="sm"
+                loading={confirmMutation.isPending}
+                onClick={handleConfirmAttendance}
+                className="w-full"
+              >
+                Confirmar mi asistencia
+              </Button>
+            </div>
+          )
         )}
 
         {/* Actions — view mode */}

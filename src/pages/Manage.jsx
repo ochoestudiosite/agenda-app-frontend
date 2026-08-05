@@ -18,6 +18,12 @@ export default function Manage() {
   const rawParam   = (searchParams.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const activeCode = CODE_RE.test(rawParam) ? rawParam : '';
 
+  // Enlace de "Confirmar asistencia" del recordatorio (email/WhatsApp) — solo
+  // resalta el botón dentro de la tarjeta, nunca dispara la confirmación por
+  // sí solo (la mutación real requiere un clic explícito dentro del SPA).
+  const focusConfirm = searchParams.get('action') === 'confirm';
+  const confirmVia    = ['email', 'whatsapp'].includes(searchParams.get('via')) ? searchParams.get('via') : 'manage_page';
+
   // Try individual lookup first. Only fall back to the group endpoint when the
   // single one 404s — avoids a noisy /appointments/group/:code 404 on every
   // normal individual booking.
@@ -84,6 +90,8 @@ export default function Manage() {
           <GroupAppointmentCard
             group={appointment}
             onUpdated={updated => setLocalAppt(updated)}
+            focusConfirm={focusConfirm}
+            confirmVia={confirmVia}
           />
         )}
 
@@ -91,6 +99,8 @@ export default function Manage() {
           <AppointmentCard
             appointment={appointment}
             onUpdated={updated => setLocalAppt(updated)}
+            focusConfirm={focusConfirm}
+            confirmVia={confirmVia}
           />
         )}
       </div>

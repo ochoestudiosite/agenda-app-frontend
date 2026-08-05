@@ -76,3 +76,25 @@ export function useCancelGroupAppointment() {
     },
   });
 }
+
+// via: 'email' | 'whatsapp' | 'manage_page' — de dónde vino el clic, solo
+// metadata descriptiva (el backend la sanitiza a un enum cerrado igual).
+export function useConfirmAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ code, via }) => api.confirmAttendance(code, { via }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['appointment', data.code], data);
+    },
+  });
+}
+
+export function useConfirmGroupAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ code, via }) => api.confirmGroupAttendance(code, { via }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['groupAppointment', data.groupCode], data);
+    },
+  });
+}

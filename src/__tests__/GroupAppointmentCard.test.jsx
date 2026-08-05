@@ -22,6 +22,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const mockCancelMutateAsync    = vi.fn()
 const mockRescheduleMutateAsync = vi.fn()
+const mockConfirmMutate = vi.fn()
 const mockToast = vi.fn()
 const mockOnUpdated = vi.fn()
 
@@ -32,6 +33,10 @@ vi.mock('../hooks/useAppointment.js', () => ({
   }),
   useRescheduleGroupAppointment: () => ({
     mutateAsync: mockRescheduleMutateAsync,
+    isPending: false,
+  }),
+  useConfirmGroupAttendance: () => ({
+    mutate: mockConfirmMutate,
     isPending: false,
   }),
 }))
@@ -192,13 +197,13 @@ function makeQC() {
   })
 }
 
-async function renderCard(group = CONFIRMED_GROUP) {
+async function renderCard(group = CONFIRMED_GROUP, extraProps = {}) {
   const { default: GroupAppointmentCard } = await import('../components/manage/GroupAppointmentCard.jsx')
   const qc = makeQC()
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <GroupAppointmentCard group={group} onUpdated={mockOnUpdated} />
+        <GroupAppointmentCard group={group} onUpdated={mockOnUpdated} {...extraProps} />
       </MemoryRouter>
     </QueryClientProvider>
   )
@@ -206,6 +211,7 @@ async function renderCard(group = CONFIRMED_GROUP) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockConfirmMutate.mockReset()
   mockPhoneVerificationRequired = true // default: Pro+OTP enabled
   mockManageVerificationRequired = undefined // default: config vieja → fallback
   mockCatalogServices = [
@@ -275,6 +281,38 @@ describe('GroupAppointmentCard — confirmed status', () => {
   it('shows Cancelar visita button', async () => {
     await renderCard(CONFIRMED_GROUP)
     expect(screen.getByRole('button', { name: /Cancelar visita/i })).toBeTruthy()
+  })
+})
+
+// ============================================================================
+// 2.5 Confirmación de asistencia (recordatorios) — 2026-08-05
+// ============================================================================
+
+describe('GroupAppointmentCard — confirmación de asistencia', () => {
+  it('shows the "Confirmar mi asistencia" button when not yet confirmed', async () => {
+    await renderCard(CONFIRMED_GROUP)
+    expect(screen.getByRole('button', { name: /confirmar mi asistencia/i })).toBeTruthy()
+  })
+
+  it('does not show the confirm button for a cancelled group', async () => {
+    await renderCard(CANCELLED_GROUP)
+    expect(screen.queryByRole('button', { name: /confirmar mi asistencia/i })).toBeNull()
+  })
+
+  it('shows a confirmed banner instead of the button once attendanceConfirmedAt is set', async () => {
+    await renderCard({ ...CONFIRMED_GROUP, attendanceConfirmedAt: '2027-06-19T10:00:00Z' })
+    expect(screen.queryByRole('button', { name: /confirmar mi asistencia/i })).toBeNull()
+    expect(screen.getByText(/confirmaste tu asistencia/i)).toBeTruthy()
+  })
+
+  it('clicking the button calls useConfirmGroupAttendance.mutate with the groupCode', async () => {
+    const user = userEvent.setup()
+    await renderCard(CONFIRMED_GROUP)
+    await user.click(screen.getByRole('button', { name: /confirmar mi asistencia/i }))
+    expect(mockConfirmMutate).toHaveBeenCalledWith(
+      { code: 'GRP-001', via: 'manage_page' },
+      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
+    )
   })
 })
 
