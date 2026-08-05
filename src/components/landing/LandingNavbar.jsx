@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Menu, X, Calendar, ArrowUpRight,
@@ -12,6 +12,15 @@ const ICON_MAP = {
   Calendar, Scissors, Coffee, Heart, Star, Smile, Crown, Anchor, Gem, Zap, Gift,
   ShieldCheck, Clock, Mail, MapPin, Phone, Sparkles, Briefcase,
 };
+
+// Distancia del borde superior de una sección al viewport a partir de la cual
+// se marca como "activa" en el navbar — altura de la barra (60px) + margen.
+// Mismo patrón que cita24-landing/src/components/Navbar.jsx.
+const TRIGGER_OFFSET = 72;
+
+// Ventana en la que se ignora el scroll-spy tras un click en el navbar, para
+// que el indicador no salte por secciones intermedias durante el smooth-scroll.
+const CLICK_LOCK_MS = 800;
 
 // Two distinct treatments that share the same design DNA as cita24-landing/Navbar:
 //   - Desktop (md+): full-width fixed bar that gains glass blur on scroll
@@ -37,6 +46,14 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
   // removed from the DOM the instant the user taps the hamburger again.
   const [drawerMounted, setDrawerMounted] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
+
+  // Resalta la sección visible + pill deslizante detrás del link activo,
+  // mismo mecanismo que cita24-landing/src/components/Navbar.jsx.
+  const [activeSection, setActiveSection] = useState('');
+  const [bar, setBar]         = useState({ x: 0, width: 0, visible: false, sliding: false });
+  const navLinksRef           = useRef(null);
+  const linkRefs              = useRef([]);
+  const scrollLockRef         = useRef(false);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 16);
@@ -87,6 +104,49 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
     const v = config[l.configKey]?.visible;
     return v == null ? l.defaultVisible : v === true;
   });
+  const navKey = navLinks.map(l => l.href).join('|');
+
+  // Scroll-spy: recorre navLinks en orden y se queda con la última sección
+  // cuyo borde superior ya cruzó TRIGGER_OFFSET (funciona igual con Home.jsx
+  // montando todas las secciones de una vez).
+  useEffect(() => {
+    const spy = () => {
+      if (scrollLockRef.current) return;
+      if (window.scrollY < 80) { setActiveSection(''); return; }
+      let found = '';
+      for (const link of navLinks) {
+        const el = document.getElementById(link.href.slice(1));
+        if (el && el.getBoundingClientRect().top <= TRIGGER_OFFSET) found = link.href.slice(1);
+      }
+      setActiveSection(found);
+    };
+    window.addEventListener('scroll', spy, { passive: true });
+    spy();
+    return () => window.removeEventListener('scroll', spy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navKey]);
+
+  // Posiciona la pill deslizante bajo el link activo. useLayoutEffect corre
+  // antes del paint para que no haya parpadeo.
+  useLayoutEffect(() => {
+    const idx = navLinks.findIndex(l => l.href.slice(1) === activeSection);
+    if (idx < 0 || !navLinksRef.current || !linkRefs.current[idx]) {
+      setBar(b => ({ ...b, visible: false, sliding: false }));
+      return;
+    }
+    const containerRect = navLinksRef.current.getBoundingClientRect();
+    const elRect         = linkRefs.current[idx].getBoundingClientRect();
+    const x     = Math.round(elRect.left - containerRect.left);
+    const width = Math.round(elRect.width);
+    setBar(b => ({ x, width, visible: true, sliding: b.visible }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection]);
+
+  const handleLinkClick = (sectionId) => {
+    setActiveSection(sectionId);
+    scrollLockRef.current = true;
+    setTimeout(() => { scrollLockRef.current = false; }, CLICK_LOCK_MS);
+  };
 
   const handleLogoClick = () => {
     setMobileMenu(false);
@@ -134,18 +194,44 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
           {LogoEl}
 
           {/* Center links — desktop only */}
-          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
-            {navLinks.map(link => (
-              <a
-                key={link.name}
-                href={link.href}
-                className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors ${
-                  lightNav ? 'text-white/85 hover:text-white hover:bg-white/10' : 'text-ink-2 hover:text-ink hover:bg-raised'
-                }`}
-              >
-                {link.name}
-              </a>
-            ))}
+          <div ref={navLinksRef} className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+            {/* Pill deslizante detrás del link activo — jumps to position on
+                first appearance (sliding=false), then slides between links. */}
+            <span
+              aria-hidden="true"
+              className="absolute top-1/2 h-8 rounded-lg pointer-events-none"
+              style={{
+                left: bar.x,
+                width: bar.width,
+                transform: 'translateY(-50%)',
+                background: 'rgb(var(--gold) / 0.12)',
+                opacity: bar.visible ? 1 : 0,
+                transition: bar.sliding
+                  ? 'left 0.32s cubic-bezier(0.23,1,0.32,1), width 0.32s cubic-bezier(0.23,1,0.32,1), opacity 0.2s ease'
+                  : 'opacity 0.2s ease',
+              }}
+            />
+            {navLinks.map((link, i) => {
+              const sectionId = link.href.slice(1);
+              const isActive  = activeSection === sectionId;
+              return (
+                <a
+                  key={link.name}
+                  ref={el => { linkRefs.current[i] = el; }}
+                  href={link.href}
+                  onClick={() => handleLinkClick(sectionId)}
+                  className={`relative px-3 py-1.5 text-[14px] rounded-lg transition-colors ${
+                    lightNav
+                      ? 'text-white/85 hover:text-white hover:bg-white/10 font-medium'
+                      : isActive
+                        ? 'text-gold font-semibold'
+                        : 'text-ink-2 hover:text-ink hover:bg-raised font-medium'
+                  }`}
+                >
+                  {link.name}
+                </a>
+              );
+            })}
           </div>
 
           {/* Right side — desktop */}
@@ -198,17 +284,25 @@ export default function LandingNavbar({ businessName, config = {}, overPhoto = f
                 className="rounded-3xl p-5 flex flex-col gap-1 border border-edge/40"
                 style={{ background: 'rgb(var(--card))', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}
               >
-                {navLinks.map(link => (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    onClick={() => setMobileMenu(false)}
-                    className="flex items-center justify-between py-3 px-1 text-base font-medium text-ink border-b border-edge/30 last:border-0"
-                  >
-                    {link.name}
-                    <ArrowUpRight size={16} className="text-ink-3" />
-                  </a>
-                ))}
+                {navLinks.map(link => {
+                  const sectionId = link.href.slice(1);
+                  const isActive  = activeSection === sectionId;
+                  return (
+                    <a
+                      key={link.name}
+                      href={link.href}
+                      onClick={() => { setMobileMenu(false); handleLinkClick(sectionId); }}
+                      className={`flex items-center justify-between py-3 px-1 text-base border-b border-edge/30 last:border-0 ${
+                        isActive ? 'text-gold font-semibold' : 'text-ink font-medium'
+                      }`}
+                    >
+                      {link.name}
+                      {isActive
+                        ? <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
+                        : <ArrowUpRight size={16} className="text-ink-3" />}
+                    </a>
+                  );
+                })}
                 <div className="mt-3 pt-3 border-t border-edge/30 flex items-center gap-3">
                   <ThemeToggle />
                   {showCta && (

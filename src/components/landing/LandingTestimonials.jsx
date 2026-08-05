@@ -18,7 +18,10 @@ function initials(name = '') {
 function Card({ t }) {
   return (
     <figure
-      className="w-72 sm:w-80 shrink-0 flex flex-col gap-4 p-6 rounded-[20px] landing-card-shape border border-section-contrast-text/10 bg-section-contrast-text/[0.05]"
+      className="w-72 sm:w-80 shrink-0 flex flex-col gap-4 p-6 rounded-[20px] landing-card-shape border border-section-contrast-text/10 bg-section-contrast-text/[0.05]
+                 transition-[transform,box-shadow,background-color,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]
+                 hover:-translate-y-1 hover:border-section-contrast-text/20 hover:bg-section-contrast-text/[0.08]
+                 hover:shadow-[0_0_0_1px_rgb(var(--gold)/0.35),0_20px_45px_-12px_rgba(0,0,0,0.6)]"
     >
       {/* Stars */}
       <div className="flex gap-0.5">
@@ -59,13 +62,17 @@ export default function LandingTestimonials({ items = [], title, subtitle, subti
   //   set_width ≥ viewport_width
   // Each card slot = w-80 (320px) + gap-4 (16px) = 336px.
   // We target 4096px minimum per half (covers 4K monitors).
-  // The animation duration scales proportionally so px/s stays constant.
-  const CARD_SLOT_PX = 336;
-  const MIN_HALF_PX  = 4096;
-  const copies       = Math.max(1, Math.ceil(MIN_HALF_PX / (base.length * CARD_SLOT_PX)));
-  const source       = Array.from({ length: copies }, () => base).flat();
-  const track        = [...source, ...source];
-  const animDuration = `${40 * copies}s`;
+  // Speed is pinned to a constant px/s (not tied to item count) so the
+  // marquee always feels as unhurried as cita24-landing/Testimonials.jsx —
+  // same rate there: 368px slot × 6 items ÷ 80s = 27.6px/s.
+  const CARD_SLOT_PX  = 336;
+  const MIN_HALF_PX   = 4096;
+  const PX_PER_SECOND = 27.6;
+  const copies        = Math.max(1, Math.ceil(MIN_HALF_PX / (base.length * CARD_SLOT_PX)));
+  const source        = Array.from({ length: copies }, () => base).flat();
+  const track         = [...source, ...source];
+  const trackWidthPx  = copies * base.length * CARD_SLOT_PX;
+  const animDuration  = `${(trackWidthPx / PX_PER_SECOND).toFixed(2)}s`;
 
   return (
     <section
